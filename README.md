@@ -330,3 +330,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
   - [Nest.js](https://docs.nestjs.com/)
   - [Drizzle ORM](https://orm.drizzle.team/)
   - [Tailwind CSS](https://tailwindcss.com/docs)
+
+---
+
+_Template créé avec ❤️ pour accélérer le développement full-stack_
