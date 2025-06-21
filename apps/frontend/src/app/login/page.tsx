@@ -195,11 +195,22 @@ export default function LoginPage() {
             </div>
 
             {/* Development helpers */}
-            {process.env.NODE_ENV === 'development' && (
+            {(process.env.NODE_ENV === 'development' ||
+              process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ||
+              process.env.NEXT_PUBLIC_ENABLE_TEST_BUTTONS === 'true') && (
               <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h3 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2 sm:mb-3">
-                  🔧 Comptes de test (dev only)
+                  🔧 Comptes de test{' '}
+                  {process.env.NODE_ENV === 'development'
+                    ? '(dev only)'
+                    : '(mode test)'}
                 </h3>
+                {process.env.NEXT_PUBLIC_VERCEL_ENV && (
+                  <div className="text-xs text-blue-600 mb-2 bg-blue-100 px-2 py-1 rounded">
+                    🌐 Environnement Vercel:{' '}
+                    {process.env.NEXT_PUBLIC_VERCEL_ENV}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {/* Marraine */}
                   <div className="grid grid-cols-2 gap-2">
