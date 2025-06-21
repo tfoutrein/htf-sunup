@@ -12,9 +12,9 @@ services:
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
-        value: https://htf-sunup-khbf39e25-thomasfoutreins-projects.vercel.app
+        value: https://htf-sunup-frontend.vercel.app
       - key: CORS_ORIGIN
-        value: https://htf-sunup-khbf39e25-thomasfoutreins-projects.vercel.app
+        value: https://htf-sunup-frontend.vercel.app
     healthCheckPath: /health
 
 databases:
