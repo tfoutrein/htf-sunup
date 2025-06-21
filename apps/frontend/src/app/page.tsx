@@ -1,134 +1,98 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Button,
-  Spinner,
-  Badge,
-} from '@/components/ui';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui';
+import { getUser, logout } from '@/utils/auth';
 
 export default function Home() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // Check if user is already logged in
+    const userData = getUser();
 
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
+    if (userData) {
+      // Redirect based on role
+      if (userData.role === 'marraine') {
+        router.push('/marraine/dashboard');
+      } else if (userData.role === 'manager') {
+        router.push('/manager/dashboard');
+      } else {
+        router.push('/fbo/dashboard');
       }
-      const data = await response.json();
-      setUsers(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [router]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-4">
-            SunUp by Happy Team Factory ☀️
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 flex items-center justify-center px-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-orange-200 rounded-full opacity-20"></div>
+        <div className="absolute top-1/4 -left-8 w-16 h-16 bg-yellow-200 rounded-full opacity-30"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-20 h-20 bg-amber-200 rounded-full opacity-25"></div>
+      </div>
+
+      <div className="text-center relative max-w-2xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-2">
+            ☀️ Les défis de l'été
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Application full-stack moderne avec Next.js, Nest.js et Hero UI
+          <h2 className="text-lg text-gray-500 mb-4">by Happy Team Factory</h2>
+          <p className="text-lg text-gray-600 mb-4">
+            Des défis quotidiens qui boostent ton équipe !
           </p>
-          <div className="flex justify-center gap-2 mt-4">
-            <Badge color="warning" variant="flat">
-              Next.js 14
-            </Badge>
-            <Badge color="primary" variant="flat">
-              Nest.js
-            </Badge>
-            <Badge color="success" variant="flat">
-              PostgreSQL
-            </Badge>
-            <Badge color="secondary" variant="flat">
-              Hero UI
-            </Badge>
+          <p className="text-gray-500 max-w-lg mx-auto">
+            Relevez des défis quotidiens en vente, recrutement et réseaux
+            sociaux. Progressez ensemble dans une ambiance estivale et
+            décontractée ! 🌻
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <Button
+            size="lg"
+            className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] w-full sm:w-auto px-8"
+            onPress={() => router.push('/login')}
+          >
+            Se connecter
+          </Button>
+
+          <div className="text-sm text-gray-500">
+            Pas encore de compte ?{' '}
+            <button
+              onClick={() => router.push('/register')}
+              className="text-orange-500 hover:text-orange-600 font-medium underline"
+            >
+              Inscris-toi ici
+            </button>
           </div>
         </div>
 
-        {/* Users Section */}
-        <Card className="w-full max-w-4xl mx-auto">
-          <CardHeader className="flex gap-3">
-            <div className="flex flex-col">
-              <p className="text-2xl font-semibold">Utilisateurs API</p>
-              <p className="text-small text-default-500">
-                Données récupérées depuis le backend
-              </p>
+        <div className="mt-12 p-6 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            🎯 Tes défis quotidiens
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="text-lg">💰</span>
+              <span>Vente</span>
             </div>
-            <Button
-              color="primary"
-              variant="flat"
-              onPress={fetchUsers}
-              isLoading={loading}
-              className="ml-auto"
-            >
-              Actualiser
-            </Button>
-          </CardHeader>
-          <CardBody>
-            {loading && (
-              <div className="flex justify-center items-center py-8">
-                <Spinner size="lg" color="warning" />
-                <span className="ml-3 text-lg">Chargement...</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="text-lg">🤝</span>
+              <span>Recrutement</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="text-lg">📱</span>
+              <span>Réseaux sociaux</span>
+            </div>
+          </div>
+        </div>
 
-            {error && (
-              <div className="text-center py-8">
-                <Badge color="danger" variant="flat" size="lg">
-                  Erreur: {error}
-                </Badge>
-              </div>
-            )}
-
-            {!loading && !error && users.length === 0 && (
-              <div className="text-center py-8">
-                <Badge color="warning" variant="flat" size="lg">
-                  Aucun utilisateur trouvé
-                </Badge>
-              </div>
-            )}
-
-            {users.length > 0 && (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {users.map((user) => (
-                  <Card key={user.id} className="border-none shadow-md">
-                    <CardBody className="p-4">
-                      <h3 className="font-semibold text-lg text-foreground">
-                        {user.name}
-                      </h3>
-                      <p className="text-default-500">{user.email}</p>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        <div className="mt-8 text-xs text-gray-500">
+          Une initiative de la Happy Team Factory 🌻
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

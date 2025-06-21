@@ -7,8 +7,9 @@ import { Navigation } from '@/components/Navigation';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'HTF SunUp',
-  description: 'HTF SunUp - Application full-stack avec Hero UI design system',
+  title: "Les défis de l'été - Happy Team Factory",
+  description:
+    "Les défis de l'été by Happy Team Factory - Des défis quotidiens pour booster ton équipe",
 };
 
 export default function RootLayout({

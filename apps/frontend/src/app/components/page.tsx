@@ -18,9 +18,8 @@ import {
   useDisclosure,
   Progress,
   Switch,
-  Tabs,
-  Tab,
 } from '@/components/ui';
+import { Tabs, Tab } from '@heroui/react';
 
 export default function ComponentsDemo() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -36,21 +35,18 @@ export default function ComponentsDemo() {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-4">
             Démonstration des Composants UI
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
+          <div className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
             Showcase complet du design system Hero UI utilisé dans HTF SunUp
-          </p>
-          <Badge color="secondary" variant="flat" size="lg">
-            Basé sur Hero UI v2.7
-          </Badge>
+          </div>
+          <div className="flex justify-center">
+            <Badge color="secondary" variant="flat" size="lg">
+              Basé sur Hero UI v2.7
+            </Badge>
+          </div>
         </div>
 
         {/* Navigation Tabs */}
-        <Tabs
-          aria-label="Components Demo"
-          color="warning"
-          variant="bordered"
-          className="mb-8"
-        >
+        <Tabs aria-label="Components Demo" className="mb-8">
           <Tab key="buttons" title="Boutons & Actions">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
               {/* Buttons */}
@@ -358,12 +354,12 @@ export default function ComponentsDemo() {
 
         {/* Footer */}
         <div className="text-center mt-12 p-6 bg-white/50 rounded-xl">
-          <p className="text-gray-600">
+          <div className="text-gray-600">
             Ces composants font partie du design system HTF SunUp basé sur{' '}
             <Badge color="primary" variant="flat">
               Hero UI
             </Badge>
-          </p>
+          </div>
         </div>
       </div>
     </main>

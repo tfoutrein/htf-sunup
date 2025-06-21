@@ -6,15 +6,25 @@ import {
   Param,
   Delete,
   Put,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDto } from './dto/user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
 @Controller('api/users')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -34,6 +44,24 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'List of users', type: [UserDto] })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('managers')
+  @ApiOperation({ summary: 'Get all managers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of managers',
+    type: [UserDto],
+  })
+  getAllManagers() {
+    return this.usersService.getAllManagers();
+  }
+
+  @Get('all-members')
+  @ApiOperation({ summary: 'Get all FBO members with their manager info' })
+  @ApiResponse({ status: 200, description: 'List of all FBO members' })
+  getAllMembers() {
+    return this.usersService.getAllMembers();
   }
 
   @Get(':id')
@@ -62,5 +90,40 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  // Team management routes
+  @Get('role/:role')
+  @ApiOperation({ summary: 'Get users by role' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users by role',
+    type: [UserDto],
+  })
+  getUsersByRole(@Param('role') role: string) {
+    return this.usersService.getUsersByRole(role);
+  }
+
+  @Get('team/:managerId')
+  @ApiOperation({ summary: 'Get team members for a manager' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of team members',
+    type: [UserDto],
+  })
+  getTeamMembers(@Param('managerId') managerId: string) {
+    return this.usersService.getTeamMembers(+managerId);
+  }
+
+  @Put(':id/assign-manager')
+  @ApiOperation({ summary: 'Assign a manager to a user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Manager assigned successfully',
+    type: UserDto,
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  assignManager(@Param('id') id: string, @Body() body: { managerId: number }) {
+    return this.usersService.assignManager(+id, body.managerId);
   }
 }
