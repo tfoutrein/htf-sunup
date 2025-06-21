@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
-    container_name: template_postgres
+    container_name: htf_sunup_postgres
     environment:
-      POSTGRES_DB: template_db
+      POSTGRES_DB: htf_sunup_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -22,9 +20,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/backend/Dockerfile
-    container_name: template_backend
+    container_name: htf_sunup_backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/template_db
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/htf_sunup_db
       PORT: 3001
       FRONTEND_URL: http://localhost:3000
     ports:
@@ -40,7 +38,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/frontend/Dockerfile
-    container_name: template_frontend
+    container_name: htf_sunup_frontend
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001
     ports:

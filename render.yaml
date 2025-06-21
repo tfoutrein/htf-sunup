@@ -1,0 +1,41 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: htf-sunup-postgres
+    runtime: docker
+    plan: free
+    dockerfilePath: ./docker/postgres/Dockerfile
+    envVars:
+      - key: POSTGRES_DB
+        value: htf_sunup_production
+      - key: POSTGRES_USER
+        value: htf_sunup_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    disk:
+      name: postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+  # Backend API
+  - type: web
+    name: htf-sunup-backend
+    runtime: node
+    plan: free
+    buildCommand: cd apps/backend && pnpm install && pnpm build
+    startCommand: cd apps/backend && pnpm start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: htf-sunup-postgres
+          property: connectionString
+      - key: FRONTEND_URL
+        value: https://htf-sunup.vercel.app
+      - key: CORS_ORIGIN
+        value: https://htf-sunup.vercel.app
+    healthCheckPath: /health

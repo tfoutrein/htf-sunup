@@ -1,7 +1,7 @@
 {
-  "name": "next-nest-template",
+  "name": "htf-sunup",
   "version": "1.0.0",
-  "description": "Full-stack Next.js template with frontend, backend API, and PostgreSQL",
+  "description": "HTF Sunup project - Full-stack application with Next.js frontend and Nest.js backend",
   "private": true,
   "workspaces": [
     "apps/*",

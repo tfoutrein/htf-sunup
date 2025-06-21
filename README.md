@@ -1,6 +1,6 @@
-# Next.js + Nest.js Template
+# HTF Sunup
 
-Template de projet full-stack avec Next.js en frontend, Nest.js en backend et PostgreSQL comme base de données, le tout dans une architecture monorepo.
+Projet HTF Sunup - Application full-stack avec Next.js en frontend, Nest.js en backend et PostgreSQL comme base de données, le tout dans une architecture monorepo.
 
 ## 🚀 Stack Technique
 
@@ -11,11 +11,13 @@ Template de projet full-stack avec Next.js en frontend, Nest.js en backend et Po
 - **Containerisation**: Docker & Docker Compose
 - **Linting**: ESLint + Prettier
 - **Commits**: Conventional Commits avec Commitlint et Husky
+- **Déploiement**: Vercel (frontend) + Render (backend + PostgreSQL)
+- **CI/CD**: GitHub Actions
 
 ## 📁 Structure du Projet
 
 ```
-next-nest-template/
+htf-sunup/
 ├── apps/
 │   ├── frontend/          # Application Next.js
 │   │   ├── src/
@@ -33,10 +35,13 @@ next-nest-template/
 │       ├── package.json
 │       └── Dockerfile
 ├── packages/              # Packages partagés (vide pour l'instant)
+├── .github/workflows/     # GitHub Actions CI/CD
 ├── docker-compose.yml     # Configuration Docker complète
 ├── docker-compose.dev.yml # Base de données seule pour dev local
-├── package.json           # Configuration monorepo
-└── pnpm-workspace.yaml    # Configuration pnpm workspaces
+├── vercel.json           # Configuration Vercel
+├── render.yaml           # Configuration Render
+├── package.json          # Configuration monorepo
+└── pnpm-workspace.yaml   # Configuration pnpm workspaces
 ```
 
 ## 🏃‍♂️ Démarrage Rapide
@@ -309,6 +314,21 @@ pnpm --filter backend add nom-du-package
 2. Créer le `package.json` avec le nom `@template/nom-package`
 3. L'importer dans les apps : `import { ... } from '@template/nom-package'`
 
+## 🚀 Déploiement
+
+Le projet est configuré pour un déploiement automatique via GitHub Actions :
+
+- **Frontend** : Déployé sur Vercel
+- **Backend + PostgreSQL** : Déployé sur Render
+
+Pour plus de détails, consulter le [Guide de Déploiement](./DEPLOYMENT.md).
+
+### URLs de Production
+
+- **Frontend** : https://htf-sunup.vercel.app
+- **Backend API** : https://htf-sunup-backend.onrender.com
+- **Documentation API** : https://htf-sunup-backend.onrender.com/api
+
 ## 🤝 Contribution
 
 1. Fork le projet
@@ -316,6 +336,8 @@ pnpm --filter backend add nom-du-package
 3. Commit les changements (`git commit -m 'feat: add amazing feature'`)
 4. Push la branche (`git push origin feature/amazing-feature`)
 5. Ouvrir une Pull Request
+
+Le déploiement se fera automatiquement après validation de la PR.
 
 ## 📝 Licence
 

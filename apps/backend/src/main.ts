@@ -14,8 +14,8 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('Template API')
-    .setDescription('The Template API description')
+    .setTitle('HTF SunUp API')
+    .setDescription('HTF SunUp Backend API')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);

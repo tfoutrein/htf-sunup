@@ -1,0 +1,80 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ['CI/CD Pipeline']
+    types:
+      - completed
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Deploy Frontend to Vercel
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  # Trigger Backend Deployment on Render
+  deploy-backend:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    steps:
+      - name: Trigger Render Deployment
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ github.sha }}"}'
+
+  # Health Check After Deployment
+  health-check:
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    steps:
+      - name: Wait for services to be ready
+        run: sleep 60
+
+      - name: Health check backend
+        run: |
+          curl -f https://htf-sunup-backend.onrender.com/health || exit 1
+
+      - name: Health check frontend
+        run: |
+          curl -f https://htf-sunup.vercel.app || exit 1
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Deployment successful!"
+          echo "🌐 Frontend: https://htf-sunup.vercel.app"
+          echo "🔧 Backend API: https://htf-sunup-backend.onrender.com"
+          echo "📖 API Documentation: https://htf-sunup-backend.onrender.com/api"
