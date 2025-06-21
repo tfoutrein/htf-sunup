@@ -14,7 +14,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers();
+    // Temporarily disable API call for testing
+    // fetchUsers();
+    setLoading(false);
   }, []);
 
   const fetchUsers = async () => {
