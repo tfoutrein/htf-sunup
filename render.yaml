@@ -3,8 +3,6 @@ services:
   - type: pserv
     name: htf-sunup-postgres
     plan: free
-    databaseName: htf_sunup_production
-    databaseUser: htf_sunup_user
 
   # Backend API
   - type: web
