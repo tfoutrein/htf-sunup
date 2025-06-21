@@ -34,14 +34,17 @@ Glossaire :
 - Manager : Manager de l'équipe
 - Marraine : Marraine de l'équipe
 - Happy Team factory : Équipe d'entrepreneurs partenaires de la société Forever Living
+- Campagne de défi : une période avec date de début et date de fin permettant d'y définir des défis (un défi pour un jour, un défi pouvant contenir de 1 à 6 actions). les campagnes de défis sont globales, la maraine et les manager voient et peuvent modifier les même campagnes.
 - Defi : Un ensemble d'actions à réaliser à réaliser chaque jour pour chaque FBO.
+- Action : Une action à réaliser par un FBO au sein d'un défi.
 
 MVP :
 
 - Mobile first
 - l'authentification par login/mot de passe
 - La gestion de son équipe (ajout, suppression, modification de membres)
-- La programmation des actions quotidiennes en amont par les manager.
+- La création d'une campagne de défi (ajout, suppression, modification de campagnes) par la marraine ou les managers.
+- La programmation des actions quotidiennes au sein d'une campagne de défi en amont par la marraine ou les managers.
 - l'affichage fun des défis à réaliser par jour pour les FBO
 - la soumission des actions par les FBO (check done)
 

@@ -6,49 +6,91 @@
 
 **Période :** Du 07 juillet au 31 août 2025
 
+## Concepts clés
+
+### Hiérarchie des défis
+
+- **Campagne de défi** : Période définie (date début/fin) contenant plusieurs défis
+- **Défi** : Ensemble d'actions à réaliser un jour donné (1 à 6 actions par défi)
+- **Action** : Tâche individuelle à réaliser par un FBO
+
+### Caractéristiques importantes
+
+- Les campagnes sont **globales** : marraine et managers voient et modifient les mêmes campagnes
+- Chaque défi quotidien contient 3 types d'actions : Vente, Recrutement, Réseaux sociaux
+- Les FBO valident leurs actions avec preuves
+
 ## Fonctionnalités MVP
 
 ### 1. Authentification
 
-- [ ] Système de connexion login/mot de passe
-- [ ] Gestion des sessions utilisateur
-- [ ] Protection des routes selon les rôles
+- [x] Système de connexion login/mot de passe
+- [x] Gestion des sessions utilisateur
+- [x] Protection des routes selon les rôles
 
 ### 2. Gestion des utilisateurs et équipes
 
-- [ ] CRUD des membres FBO
-- [ ] Attribution des managers aux membres
-- [ ] Interface de gestion d'équipe pour les managers
+- [x] CRUD des membres FBO
+- [x] Attribution des managers aux membres
+- [x] Interface de gestion d'équipe pour les managers
 
-### 3. Programmation des actions
+### 3. Gestion des campagnes de défis (NOUVEAU)
 
-- [ ] Interface manager pour créer/programmer les actions quotidiennes
-- [ ] 3 types d'actions : Vente, Recrutement, Réseaux sociaux
-- [ ] Planification sur la période du challenge
+- [ ] **CRUD des campagnes** (ajout, suppression, modification)
+  - Interface partagée marraine/managers
+  - Définition période (date début/fin)
+  - Vue globale des campagnes
+- [ ] **Gestion des défis quotidiens**
+  - Création défis pour chaque jour de la campagne
+  - Attribution de 1 à 6 actions par défi
+- [ ] **Programmation des actions**
+  - Interface pour définir les actions dans chaque défi
+  - 3 types d'actions : Vente, Recrutement, Réseaux sociaux
+  - Planification sur toute la période de la campagne
 
 ### 4. Interface FBO (membres)
 
-- [ ] Dashboard avec les 3 défis du jour
-- [ ] Interface fun et décontractée (style summer/chill)
-- [ ] Système de validation des actions (check done)
+- [x] Dashboard avec les 3 défis du jour
+- [x] Interface fun et décontractée (style summer/chill)
+- [x] Système de validation des actions (check done)
+- [ ] **Vue hebdomadaire** (dimanche 10h)
+  - Tableau imprimable des défis de la semaine
+  - Organisation et anticipation
 
 ### 5. Suivi et monitoring
 
-- [ ] Dashboard manager pour voir l'avancement de son équipe
-- [ ] Vue globale pour la marraine (Aurélia)
+- [x] Dashboard manager pour voir l'avancement de son équipe
+- [x] Vue globale pour la marraine (Aurélia)
+
+### 6. Fonctionnalités étendues (hors MVP actuel)
+
+- [ ] Chat communautaire
+  - Messages texte, vocaux, photos
+  - Espace d'échange pour la communauté
+- [ ] Notifications automatiques
+  - 8h00 : envoi des 3 actions du jour
+  - Dimanche 10h : vue hebdomadaire
 
 ## Architecture technique
 
-### Base de données
+### Base de données (MISE À JOUR)
 
 ```
 Users (id, email, password, role, manager_id, name)
 ├── Roles: 'marraine' | 'manager' | 'fbo'
 
-Actions (id, title, description, type, date, created_by)
-├── Types: 'vente' | 'recrutement' | 'reseaux_sociaux'
+Campaigns (id, name, description, start_date, end_date, created_by) [NOUVEAU]
+├── Campagnes de défis globales
 
-UserActions (id, user_id, action_id, completed, completed_at)
+Challenges (id, campaign_id, date, title, description) [NOUVEAU]
+├── Défis quotidiens liés à une campagne
+
+Actions (id, challenge_id, title, description, type, order) [MODIFIÉ]
+├── Types: 'vente' | 'recrutement' | 'reseaux_sociaux'
+├── order: position dans le défi (1-6)
+
+UserActions (id, user_id, action_id, challenge_id, completed, completed_at, proof_url)
+├── Lien avec le défi pour traçabilité
 ```
 
 ### Stack technique
@@ -58,102 +100,136 @@ UserActions (id, user_id, action_id, completed, completed_at)
 - **Base de données :** PostgreSQL
 - **Design :** Mobile-first, style décontracté/summer
 
-## Plan de développement (par phases)
+## Plan de développement (MISE À JOUR)
 
-### Phase 1 : Foundation (Semaine 1)
+### Phase 1 : Foundation (Semaine 1) ✅
 
 1. **Setup de la base de données**
 
-   - [ ] Création des entités Users, Actions, UserActions
-   - [ ] Migrations Drizzle
-   - [ ] Seed data pour tests
+   - [x] Création des entités Users, Actions, UserActions
+   - [x] Migrations Drizzle
+   - [x] Seed data pour tests
 
 2. **Authentification**
-   - [ ] JWT auth backend (login/register)
-   - [ ] Pages de connexion frontend
-   - [ ] Middleware de protection des routes
+   - [x] JWT auth backend (login/register)
+   - [x] Pages de connexion frontend
+   - [x] Middleware de protection des routes
 
-### Phase 2 : Gestion des utilisateurs (Semaine 1-2)
+### Phase 2 : Gestion des utilisateurs (Semaine 1-2) ✅
 
 3. **CRUD Utilisateurs**
-   - [ ] API endpoints CRUD users
-   - [ ] Interface de gestion d'équipe (managers)
-   - [ ] Attribution manager-membre
+   - [x] API endpoints CRUD users
+   - [x] Interface de gestion d'équipe (managers)
+   - [x] Attribution manager-membre
 
-### Phase 3 : Gestion des actions (Semaine 2)
+### Phase 3 : Architecture campagnes (NOUVEAU - Semaine 2-3)
 
-4. **Programmation des actions**
-   - [ ] API endpoints CRUD actions
-   - [ ] Interface manager pour créer/programmer
-   - [ ] Validation des types d'actions
+4. **Migration base de données**
 
-### Phase 4 : Interface FBO (Semaine 2-3)
+   - [ ] Ajout entités Campaigns et Challenges
+   - [ ] Migration des données existantes
+   - [ ] Mise à jour relations Actions
 
-5. **Dashboard FBO**
-   - [ ] Page d'accueil avec défis du jour
-   - [ ] Design mobile-first summer/chill
-   - [ ] Système de validation (check done)
+5. **CRUD Campagnes**
 
-### Phase 5 : Monitoring et finitions (Semaine 3)
+   - [ ] API endpoints CRUD campagnes
+   - [ ] Interface partagée marraine/managers
+   - [ ] Gestion périodes et statuts
 
-6. **Dashboards de suivi**
+6. **Gestion des défis**
+   - [ ] API CRUD défis quotidiens
+   - [ ] Interface de planification par campagne
+   - [ ] Attribution actions aux défis (1-6 par défi)
 
-   - [ ] Interface manager : suivi équipe
-   - [ ] Interface marraine : vue globale
-   - [ ] Statistiques et indicateurs
+### Phase 4 : Interface FBO adaptée (Semaine 3)
 
-7. **UX/UI Polish**
-   - [ ] Design système cohérent
-   - [ ] Animations et micro-interactions
-   - [ ] Tests utilisateur
+7. **Dashboard FBO mis à jour**
 
-## Rôles et permissions
+   - [ ] Affichage défis basé sur campagnes actives
+   - [ ] Vue détaillée d'un défi (1-6 actions)
+   - [ ] Système validation avec preuve
+
+8. **Vue hebdomadaire**
+   - [ ] Interface tableau imprimable
+   - [ ] Planification semaine (dimanche 10h)
+
+### Phase 5 : Monitoring campagnes (Semaine 4)
+
+9. **Dashboards adaptés**
+   - [ ] Suivi par campagne pour managers
+   - [ ] Vue globale campagnes pour marraine
+   - [ ] Statistiques et indicateurs campagne
+
+## Rôles et permissions (MISE À JOUR)
 
 ### Marraine (Aurélia)
 
-- Vue globale sur toutes les équipes
-- Accès à tous les dashboards
-- Gestion des managers
+- **Campagnes** : Création, modification, suppression (vue globale partagée)
+- **Défis** : Programmation actions quotidiennes dans les campagnes
+- **Suivi** : Vue globale toutes équipes, toutes campagnes
+- **Gestion** : Accès managers et leurs équipes
 
 ### Managers (Jéromine, Gaëlle, Audrey, Maud, Virginie)
 
-- Gestion de leur équipe (CRUD membres)
-- Programmation des actions pour leur équipe
-- Suivi de l'avancement de leur équipe
+- **Campagnes** : Accès aux mêmes campagnes que la marraine (vue partagée)
+- **Défis** : Co-programmation des actions quotidiennes
+- **Équipe** : Gestion CRUD de leur équipe
+- **Suivi** : Progression de leur équipe sur les campagnes
 
 ### Membres FBO
 
-- Accès à leurs défis quotidiens
-- Validation de leurs actions
-- Vue de leur progression
+- **Défis** : Accès aux défis du jour de la campagne active
+- **Actions** : Validation avec preuves (1 à 6 actions par défi)
+- **Suivi** : Vue de leur progression dans la campagne
+- **Planning** : Vue hebdomadaire des défis à venir
 
-## Critères de succès MVP
+## Critères de succès MVP (ACTUALISÉS)
 
 1. **Fonctionnel**
 
-   - Tous les rôles peuvent se connecter
-   - Les managers peuvent gérer leur équipe
-   - Les FBO reçoivent et valident leurs défis
-   - Le suivi fonctionne correctement
+   - Gestion complète des campagnes par marraine/managers
+   - Défis quotidiens avec 1-6 actions configurables
+   - FBO peuvent voir et valider leurs défis
+   - Vue partagée campagnes entre marraine et managers
 
 2. **Technique**
 
-   - Application responsive (mobile-first)
-   - Performance optimisée
-   - Sécurité des données
+   - Architecture campagnes/défis/actions fonctionnelle
+   - Migration données sans perte
+   - Performance avec nouvelles entités
 
 3. **UX**
-   - Interface intuitive
-   - Style décontracté et engageant
-   - Expérience fluide sur mobile
+   - Interface campagnes intuitive
+   - Planning défis claire pour FBO
+   - Vue hebdomadaire imprimable
 
-## Livraison
+## État actuel vs Nouvelles exigences
 
-- **Durée estimée :** 3 semaines
-- **Environnement de test :** Déploiement Vercel + Render
-- **Formation :** Documentation utilisateur
-- **Support :** Période d'accompagnement post-lancement
+### ✅ Fonctionnalités déjà complétées (à adapter)
+
+- Base authentification et utilisateurs : **OK**
+- Interface FBO basique : **À adapter pour campagnes**
+- Dashboards : **À étendre pour campagnes**
+
+### 🔄 Fonctionnalités à refactorer
+
+- **Actions** → intégrer dans défis et campagnes
+- **Planning** → basé sur campagnes plutôt qu'actions directes
+- **Suivi** → par campagne et défi
+
+### 🆕 Nouvelles fonctionnalités prioritaires
+
+1. **Gestion campagnes** (partagée marraine/managers)
+2. **Défis quotidiens** (1-6 actions configurables)
+3. **Vue hebdomadaire** FBO (tableau imprimable)
 
 ---
 
-_Ce plan sera affiné au fur et à mesure du développement selon les retours utilisateurs et les contraintes techniques rencontrées._
+## Prochaines étapes immédiates
+
+1. **Mise à jour schéma base** : Ajouter Campaigns et Challenges
+2. **Migration données** : Adapter les actions existantes
+3. **Interface campagnes** : Créer l'interface partagée
+4. **Tests** : Valider la nouvelle architecture
+
+_Plan mis à jour le 12 décembre 2024 - Intégration concept campagnes de défis_
