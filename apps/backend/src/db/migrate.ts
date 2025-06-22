@@ -24,6 +24,59 @@ async function runMigrations() {
 
     console.log('📁 Migrations folder:', migrationsFolder);
 
+    // Vérifier et créer les tables manquantes avant les migrations
+    console.log('🔍 Checking for missing tables...');
+
+    // Vérifier si la table challenges existe
+    const challengesExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'challenges'
+      );
+    `;
+
+    if (!challengesExists[0].exists) {
+      console.log('📝 Creating missing challenges table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "challenges" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "campaign_id" integer NOT NULL,
+          "date" date NOT NULL,
+          "title" varchar(255) NOT NULL,
+          "description" text,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL
+        );
+      `;
+    }
+
+    // Vérifier si la table campaigns existe
+    const campaignsExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'campaigns'
+      );
+    `;
+
+    if (!campaignsExists[0].exists) {
+      console.log('📝 Creating missing campaigns table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "campaigns" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "name" varchar(255) NOT NULL,
+          "description" text,
+          "start_date" date NOT NULL,
+          "end_date" date NOT NULL,
+          "status" varchar(50) DEFAULT 'draft' NOT NULL,
+          "created_by" integer NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL
+        );
+      `;
+    }
+
     await migrate(db, { migrationsFolder });
     console.log('✅ Database migrations completed successfully');
 
@@ -36,9 +89,9 @@ async function runMigrations() {
     `;
 
     if (result.length === 0) {
-      console.log('➕ Adding points_value column to actions table...');
+      console.log('📝 Adding points_value column to actions table...');
       await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10;`;
-      console.log('✅ points_value column added successfully');
+      console.log('✅ Added points_value column successfully');
     } else {
       console.log('✅ Legacy schema is up to date');
     }
