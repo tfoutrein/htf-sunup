@@ -13,6 +13,7 @@
     "front:dev": "pnpm --filter frontend dev",
     "build": "pnpm run --recursive build",
     "start": "pnpm run --parallel start",
+    "start:prod": "pnpm --filter backend start:prod",
     "lint": "pnpm run --recursive lint",
     "type-check": "pnpm run --recursive type-check",
     "test": "pnpm run --recursive test",
