@@ -101,7 +101,8 @@ export default function QuickChallengeForm({
         result = await campaignService.createChallenge(challengeData);
 
         // Créer les actions pour le nouveau défi
-        for (const [index, action] of actions.entries()) {
+        for (let index = 0; index < actions.length; index++) {
+          const action = actions[index];
           console.log('Creating action:', {
             challengeId: result.id,
             type: action.type,

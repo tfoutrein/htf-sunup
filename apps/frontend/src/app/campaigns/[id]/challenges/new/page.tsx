@@ -152,7 +152,8 @@ function NewChallengePageContent() {
       });
 
       // Créer les actions
-      for (const [index, action] of actions.entries()) {
+      for (let index = 0; index < actions.length; index++) {
+        const action = actions[index];
         await campaignService.createAction({
           challengeId: newChallenge.id,
           type: action.type!,
