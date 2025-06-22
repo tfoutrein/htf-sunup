@@ -152,4 +152,36 @@ export class ActionsController {
   ) {
     return this.actionsService.completeUserAction(userActionId, body.proofUrl);
   }
+
+  @Get('user/:userId/campaign-stats/:campaignId')
+  @ApiOperation({
+    summary: 'Récupérer les statistiques utilisateur pour une campagne',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistiques de la campagne utilisateur',
+  })
+  getUserCampaignStats(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('campaignId', ParseIntPipe) campaignId: number,
+  ) {
+    return this.actionsService.getUserCampaignStats(userId, campaignId);
+  }
+
+  @Get('user/:userId/streaks')
+  @ApiOperation({ summary: "Récupérer les streaks (séries) de l'utilisateur" })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistiques de streaks utilisateur',
+  })
+  getUserStreaks(@Param('userId', ParseIntPipe) userId: number) {
+    return this.actionsService.getUserStreaks(userId);
+  }
+
+  @Get('user/:userId/badges')
+  @ApiOperation({ summary: "Récupérer les badges de l'utilisateur" })
+  @ApiResponse({ status: 200, description: 'Liste des badges utilisateur' })
+  getUserBadges(@Param('userId', ParseIntPipe) userId: number) {
+    return this.actionsService.getUserBadges(userId);
+  }
 }

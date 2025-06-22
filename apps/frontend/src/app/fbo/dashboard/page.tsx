@@ -48,6 +48,50 @@ interface UserAction {
   action?: Action;
 }
 
+interface CampaignStats {
+  campaign: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+  };
+  stats: {
+    totalChallenges: number;
+    completedChallenges: number;
+    challengeCompletionRate: number;
+    totalActions: number;
+    completedActions: number;
+    actionCompletionRate: number;
+    totalPointsEarned: number;
+    maxPossiblePoints: number;
+  };
+  challengeDetails: Array<{
+    challengeId: number;
+    challengeTitle: string;
+    challengeDate: string;
+    totalActions: number;
+    completedActions: number;
+    isCompleted: boolean;
+    percentage: number;
+  }>;
+}
+
+interface UserStreaks {
+  currentStreak: number;
+  longestStreak: number;
+  totalActiveDays: number;
+  lastActivityDate: string | null;
+}
+
+interface UserBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  earnedAt: string;
+}
+
 const actionTypeConfig = {
   vente: {
     label: 'Vente',
@@ -78,6 +122,11 @@ export default function FBODashboard() {
   const [todayChallenge, setTodayChallenge] = useState<Challenge | null>(null);
   const [challengeActions, setChallengeActions] = useState<Action[]>([]);
   const [userActions, setUserActions] = useState<UserAction[]>([]);
+  const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(
+    null,
+  );
+  const [userStreaks, setUserStreaks] = useState<UserStreaks | null>(null);
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAction, setSelectedAction] = useState<{
     userAction?: UserAction;
@@ -105,10 +154,10 @@ export default function FBODashboard() {
     }
 
     setUser(userData);
-    fetchTodayData();
+    fetchTodayData(userData);
   }, [router]);
 
-  const fetchTodayData = async () => {
+  const fetchTodayData = async (userData?: User) => {
     try {
       setLoading(true);
 
@@ -137,7 +186,10 @@ export default function FBODashboard() {
       setChallengeActions(actions);
 
       // Récupérer les actions utilisateur pour ce défi
-      await fetchUserActionsForChallenge(challenge.id);
+      await fetchUserActionsForChallenge(challenge.id, userData);
+
+      // Récupérer les statistiques de campagne, streaks et badges
+      await fetchGamificationData(campaign.id, userData);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
     } finally {
@@ -145,11 +197,18 @@ export default function FBODashboard() {
     }
   };
 
-  const fetchUserActionsForChallenge = async (challengeId: number) => {
+  const fetchUserActionsForChallenge = async (
+    challengeId: number,
+    userData?: User,
+  ) => {
+    const currentUser = userData || user;
+
+    if (!currentUser) return;
+
     try {
       const token = getToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/user-actions/challenge/${challengeId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/challenge/${challengeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -164,6 +223,56 @@ export default function FBODashboard() {
     } catch (error) {
       console.error(
         'Erreur lors du chargement des actions utilisateur:',
+        error,
+      );
+    }
+  };
+
+  const fetchGamificationData = async (campaignId: number, userData?: User) => {
+    const currentUser = userData || user;
+    if (!currentUser) return;
+
+    try {
+      const token = getToken();
+
+      // Récupérer les statistiques de campagne
+      const campaignStatsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/campaign-stats/${campaignId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (campaignStatsResponse.ok) {
+        const stats = await campaignStatsResponse.json();
+        setCampaignStats(stats);
+      }
+
+      // Récupérer les streaks
+      const streaksResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/streaks`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (streaksResponse.ok) {
+        const streaks = await streaksResponse.json();
+        setUserStreaks(streaks);
+      }
+
+      // Récupérer les badges
+      const badgesResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/badges`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (badgesResponse.ok) {
+        const badges = await badgesResponse.json();
+        setUserBadges(badges);
+      }
+    } catch (error) {
+      console.error(
+        'Erreur lors du chargement des données de gamification:',
         error,
       );
     }
@@ -228,6 +337,9 @@ export default function FBODashboard() {
 
       // Rafraîchir les données
       await fetchUserActionsForChallenge(todayChallenge.id);
+      if (activeCampaign) {
+        await fetchGamificationData(activeCampaign.id);
+      }
       onClose();
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
@@ -305,17 +417,124 @@ export default function FBODashboard() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        {/* Gamification Section - Mobile First */}
+        {campaignStats && userStreaks && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 sm:mb-6">
+            {/* Campaign Progress Card */}
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-lg">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-blue-900">
+                    🏆 {campaignStats.campaign.name}
+                  </h3>
+                  <TrophyIcon className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="space-y-2">
+                  <div className="text-center mb-2">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {campaignStats.stats.completedChallenges}
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      défis complétés sur {campaignStats.stats.totalChallenges}
+                    </div>
+                  </div>
+                  <Progress
+                    value={campaignStats.stats.challengeCompletionRate}
+                    size="sm"
+                    aria-label="Progression des défis de la campagne"
+                    classNames={{
+                      indicator: 'bg-gradient-to-r from-blue-400 to-indigo-500',
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-blue-600">
+                    <span>🪙 {campaignStats.stats.totalPointsEarned} pts</span>
+                    <span>
+                      {Math.round(campaignStats.stats.challengeCompletionRate)}%
+                      global
+                    </span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Streaks Card */}
+            <Card className="bg-gradient-to-br from-orange-50 to-red-100 border-0 shadow-lg">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-orange-900">
+                    Séries
+                  </h3>
+                  <span className="text-lg">🔥</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {userStreaks.currentStreak}
+                    </div>
+                    <div className="text-xs text-orange-700">
+                      jours consécutifs
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-orange-600">
+                    <span>Record: {userStreaks.longestStreak}</span>
+                    <span>Actif: {userStreaks.totalActiveDays}j</span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Badges Card */}
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-100 border-0 shadow-lg sm:col-span-2 lg:col-span-1">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-purple-900">
+                    Badges
+                  </h3>
+                  <StarIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {userBadges.length > 0 ? (
+                    userBadges.slice(0, 4).map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1"
+                        title={badge.description}
+                      >
+                        <span className="text-sm">{badge.icon}</span>
+                        <span className="text-xs font-medium text-purple-800 hidden sm:inline">
+                          {badge.name}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-purple-600 text-center w-full">
+                      Complète tes premières actions pour gagner des badges ! 🎯
+                    </div>
+                  )}
+                  {userBadges.length > 4 && (
+                    <div className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1">
+                      <span className="text-xs font-medium text-purple-800">
+                        +{userBadges.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
+
         {/* Progress Section - Mobile First */}
         <Card className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
           <CardBody className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2 sm:gap-0">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
-                Progression du jour
+                Actions du défi d'aujourd'hui
               </h2>
               <div className="flex items-center gap-2">
                 <TrophyIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
                 <span className="text-xs sm:text-sm font-medium text-gray-600">
-                  {completedCount}/{totalCount} défis
+                  {completedCount}/{totalCount} actions
                 </span>
               </div>
             </div>
@@ -323,14 +542,25 @@ export default function FBODashboard() {
             <Progress
               value={completionPercentage}
               className="mb-3 sm:mb-4"
+              aria-label="Progression des actions du défi d'aujourd'hui"
               classNames={{
                 indicator: 'bg-gradient-to-r from-orange-400 to-amber-400',
               }}
             />
 
             <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-              <span>Continue comme ça ! 🔥</span>
-              <span>{Math.round(completionPercentage)}% complété</span>
+              <span>
+                {completionPercentage === 0
+                  ? "C'est parti ! 🚀"
+                  : completionPercentage < 50
+                    ? 'Continue comme ça ! 🔥'
+                    : completionPercentage < 100
+                      ? 'Tu y es presque ! 💪'
+                      : ''}
+              </span>
+              <span>
+                {Math.round(completionPercentage)}% du défi d'aujourd'hui
+              </span>
             </div>
 
             {completionPercentage === 100 && (

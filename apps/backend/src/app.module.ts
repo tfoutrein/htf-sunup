@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ActionsModule } from './actions/actions.module';
+import { UserActionsModule } from './user-actions/user-actions.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { ChallengesModule } from './challenges/challenges.module';
 
@@ -18,6 +19,7 @@ import { ChallengesModule } from './challenges/challenges.module';
     UsersModule,
     AuthModule,
     ActionsModule,
+    UserActionsModule,
     CampaignsModule,
     ChallengesModule,
   ],

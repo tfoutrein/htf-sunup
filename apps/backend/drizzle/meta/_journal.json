@@ -1,19 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1750527229439,
-      "tag": "0000_magical_black_bird",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
       "version": "7",
-      "when": 1750623197127,
-      "tag": "0001_material_kitty_pryde",
+      "when": 1750625057642,
+      "tag": "0000_tiny_dreadnoughts",
       "breakpoints": true
     }
   ]

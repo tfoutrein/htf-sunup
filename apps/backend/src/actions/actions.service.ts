@@ -179,6 +179,9 @@ export class ActionsService {
     return await this.db.db
       .select({
         id: userActions.id,
+        userId: userActions.userId,
+        actionId: userActions.actionId,
+        challengeId: userActions.challengeId,
         completed: userActions.completed,
         completedAt: userActions.completedAt,
         proofUrl: userActions.proofUrl,
@@ -393,5 +396,278 @@ export class ActionsService {
     );
 
     return teamProgress;
+  }
+
+  async getUserCampaignStats(userId: number, campaignId: number): Promise<any> {
+    // Vérifier que la campagne existe
+    const [campaign] = await this.db.db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId));
+
+    if (!campaign) {
+      throw new NotFoundException(
+        `Campagne avec l'ID ${campaignId} non trouvée`,
+      );
+    }
+
+    // Récupérer tous les défis de la campagne
+    const campaignChallenges = await this.db.db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.campaignId, campaignId));
+
+    // Récupérer toutes les actions de ces défis
+    const challengeIds = campaignChallenges.map((c) => c.id);
+    const campaignActions =
+      challengeIds.length > 0
+        ? await this.db.db
+            .select()
+            .from(actions)
+            .where(inArray(actions.challengeId, challengeIds))
+        : [];
+
+    // Récupérer les actions utilisateur pour ces défis
+    const userCampaignActions =
+      challengeIds.length > 0
+        ? await this.db.db
+            .select()
+            .from(userActions)
+            .where(
+              and(
+                eq(userActions.userId, userId),
+                inArray(userActions.challengeId, challengeIds),
+              ),
+            )
+        : [];
+
+    const completedActions = userCampaignActions.filter((ua) => ua.completed);
+    const totalPoints = completedActions.reduce((sum, ua) => {
+      const action = campaignActions.find((a) => a.id === ua.actionId);
+      return sum + (action?.pointsValue || 0);
+    }, 0);
+
+    // Calculer le nombre de défis complétés (100% des actions)
+    const challengeCompletionStats = campaignChallenges.map((challenge) => {
+      const challengeActions = campaignActions.filter(
+        (a) => a.challengeId === challenge.id,
+      );
+      const challengeUserActions = userCampaignActions.filter(
+        (ua) => ua.challengeId === challenge.id && ua.completed,
+      );
+      const isCompleted =
+        challengeActions.length > 0 &&
+        challengeUserActions.length === challengeActions.length;
+
+      return {
+        challengeId: challenge.id,
+        challengeTitle: challenge.title,
+        challengeDate: challenge.date,
+        totalActions: challengeActions.length,
+        completedActions: challengeUserActions.length,
+        isCompleted,
+        percentage:
+          challengeActions.length > 0
+            ? (challengeUserActions.length / challengeActions.length) * 100
+            : 0,
+      };
+    });
+
+    const completedChallenges = challengeCompletionStats.filter(
+      (c) => c.isCompleted,
+    ).length;
+
+    return {
+      campaign: {
+        id: campaign.id,
+        name: campaign.name,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+      },
+      stats: {
+        totalChallenges: campaignChallenges.length,
+        completedChallenges,
+        challengeCompletionRate:
+          campaignChallenges.length > 0
+            ? (completedChallenges / campaignChallenges.length) * 100
+            : 0,
+        totalActions: campaignActions.length,
+        completedActions: completedActions.length,
+        actionCompletionRate:
+          campaignActions.length > 0
+            ? (completedActions.length / campaignActions.length) * 100
+            : 0,
+        totalPointsEarned: totalPoints,
+        maxPossiblePoints: campaignActions.reduce(
+          (sum, a) => sum + a.pointsValue,
+          0,
+        ),
+      },
+      challengeDetails: challengeCompletionStats,
+    };
+  }
+
+  async getUserStreaks(userId: number): Promise<any> {
+    // Récupérer toutes les actions utilisateur complétées, triées par date
+    const completedUserActions = await this.db.db
+      .select({
+        id: userActions.id,
+        completedAt: userActions.completedAt,
+        challengeId: userActions.challengeId,
+        challengeDate: challenges.date,
+      })
+      .from(userActions)
+      .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
+      .where(
+        and(
+          eq(userActions.userId, userId),
+          eq(userActions.completed, true),
+          isNotNull(userActions.completedAt),
+        ),
+      )
+      .orderBy(challenges.date);
+
+    // Grouper par date de défi pour éviter les doublons
+    const uniqueDates = [
+      ...new Set(completedUserActions.map((ua) => ua.challengeDate)),
+    ].sort();
+
+    // Calculer la streak actuelle
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0];
+
+    // Calculer les streaks
+    for (let i = 0; i < uniqueDates.length; i++) {
+      if (i === 0) {
+        tempStreak = 1;
+      } else {
+        const prevDate = new Date(uniqueDates[i - 1] as string);
+        const currentDate = new Date(uniqueDates[i] as string);
+        const diffTime = currentDate.getTime() - prevDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          tempStreak = 1;
+        }
+      }
+
+      longestStreak = Math.max(longestStreak, tempStreak);
+
+      // Calculer la streak actuelle (doit inclure aujourd'hui ou hier)
+      const currentDate = uniqueDates[i];
+      if (currentDate === today || currentDate === yesterday) {
+        currentStreak = tempStreak;
+      }
+    }
+
+    // Si la dernière activité n'était ni aujourd'hui ni hier, la streak actuelle est 0
+    if (uniqueDates.length > 0) {
+      const lastActivityDate = uniqueDates[uniqueDates.length - 1];
+      if (lastActivityDate !== today && lastActivityDate !== yesterday) {
+        currentStreak = 0;
+      }
+    }
+
+    return {
+      currentStreak,
+      longestStreak,
+      totalActiveDays: uniqueDates.length,
+      lastActivityDate:
+        uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : null,
+    };
+  }
+
+  async getUserBadges(userId: number): Promise<any[]> {
+    const userStats = await this.getUserStreaks(userId);
+    const completedActions = await this.db.db
+      .select()
+      .from(userActions)
+      .where(
+        and(eq(userActions.userId, userId), eq(userActions.completed, true)),
+      );
+
+    const badges = [];
+
+    // Badge "Premier pas"
+    if (completedActions.length >= 1) {
+      badges.push({
+        id: 'first_action',
+        name: 'Premier pas',
+        description: 'Première action complétée',
+        icon: '🎯',
+        color: 'primary',
+        earnedAt: completedActions[0]?.completedAt,
+      });
+    }
+
+    // Badge "Productif"
+    if (completedActions.length >= 10) {
+      badges.push({
+        id: 'productive',
+        name: 'Productif',
+        description: '10 actions complétées',
+        icon: '💪',
+        color: 'success',
+        earnedAt: completedActions[9]?.completedAt,
+      });
+    }
+
+    // Badge "Expert"
+    if (completedActions.length >= 50) {
+      badges.push({
+        id: 'expert',
+        name: 'Expert',
+        description: '50 actions complétées',
+        icon: '🏆',
+        color: 'warning',
+        earnedAt: completedActions[49]?.completedAt,
+      });
+    }
+
+    // Badge "Régulier"
+    if (userStats.currentStreak >= 3) {
+      badges.push({
+        id: 'consistent',
+        name: 'Régulier',
+        description: '3 jours consécutifs',
+        icon: '🔥',
+        color: 'danger',
+        earnedAt: new Date().toISOString(),
+      });
+    }
+
+    // Badge "Déterminé"
+    if (userStats.currentStreak >= 7) {
+      badges.push({
+        id: 'determined',
+        name: 'Déterminé',
+        description: '7 jours consécutifs',
+        icon: '⚡',
+        color: 'secondary',
+        earnedAt: new Date().toISOString(),
+      });
+    }
+
+    // Badge "Champion"
+    if (userStats.longestStreak >= 14) {
+      badges.push({
+        id: 'champion',
+        name: 'Champion',
+        description: '14 jours consécutifs (record)',
+        icon: '👑',
+        color: 'warning',
+        earnedAt: new Date().toISOString(),
+      });
+    }
+
+    return badges;
   }
 }

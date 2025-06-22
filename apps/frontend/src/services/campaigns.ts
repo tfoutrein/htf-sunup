@@ -109,7 +109,15 @@ class CampaignService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to delete campaign');
+      if (response.status === 400) {
+        const errorText = await response.text();
+        if (errorText.includes('défis')) {
+          throw new Error(
+            "Impossible de supprimer cette campagne car elle contient des défis. Supprimez d'abord tous les défis de la campagne.",
+          );
+        }
+      }
+      throw new Error('Erreur lors de la suppression de la campagne');
     }
   }
 
@@ -215,14 +223,22 @@ class CampaignService {
 
   // Actions
   async getChallengeActions(challengeId: number): Promise<Action[]> {
-    const response = await fetch(
-      `${API_URL}/actions/challenge/${challengeId}`,
-      {
-        headers: this.getAuthHeaders(),
-      },
-    );
+    const url = `${API_URL}/actions?challengeId=${challengeId}`;
+    console.log('🔍 DEBUG: getChallengeActions URL:', url);
+    console.log('🔍 DEBUG: API_URL:', API_URL);
+    console.log('🔍 DEBUG: challengeId:', challengeId);
+
+    const response = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
 
     if (!response.ok) {
+      console.error(
+        '🚨 DEBUG: Response not OK:',
+        response.status,
+        response.statusText,
+      );
+      console.error('🚨 DEBUG: Response URL:', response.url);
       throw new Error('Failed to fetch challenge actions');
     }
 

@@ -97,6 +97,38 @@ export default function CampaignForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleStartDateChange = (value: string) => {
+    setFormData((prev) => {
+      const newFormData = { ...prev, startDate: value };
+
+      // Si une date de début est sélectionnée, mettre automatiquement la date de fin au lendemain minimum
+      if (value) {
+        const startDate = new Date(value);
+        const nextDay = new Date(startDate);
+        nextDay.setDate(startDate.getDate() + 1);
+        const nextDayString = nextDay.toISOString().split('T')[0];
+
+        // Si aucune date de fin n'est définie ou si la date de fin est antérieure à la nouvelle date minimum
+        if (!prev.endDate || prev.endDate <= value) {
+          newFormData.endDate = nextDayString;
+        }
+      }
+
+      return newFormData;
+    });
+  };
+
+  // Calculer la date minimum pour le champ date de fin
+  const getMinEndDate = () => {
+    if (formData.startDate) {
+      const startDate = new Date(formData.startDate);
+      const nextDay = new Date(startDate);
+      nextDay.setDate(startDate.getDate() + 1);
+      return nextDay.toISOString().split('T')[0];
+    }
+    return '';
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalContent>
@@ -135,7 +167,7 @@ export default function CampaignForm({
                 <Input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
                   required
                 />
               </div>
@@ -148,6 +180,7 @@ export default function CampaignForm({
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
+                  min={getMinEndDate()}
                   required
                 />
               </div>
