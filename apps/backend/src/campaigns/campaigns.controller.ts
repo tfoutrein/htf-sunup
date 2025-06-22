@@ -77,14 +77,18 @@ export class CampaignsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Supprimer une campagne' })
-  @ApiResponse({ status: 200, description: 'Campagne supprimée' })
+  @ApiOperation({ summary: 'Supprimer ou archiver une campagne' })
+  @ApiResponse({ status: 200, description: 'Campagne supprimée ou archivée' })
   @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
-  @ApiResponse({
-    status: 400,
-    description: 'Impossible de supprimer une campagne avec des défis',
-  })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.campaignsService.remove(id);
+  }
+
+  @Patch(':id/archive')
+  @ApiOperation({ summary: 'Archiver une campagne' })
+  @ApiResponse({ status: 200, description: 'Campagne archivée' })
+  @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
+  archive(@Param('id', ParseIntPipe) id: number) {
+    return this.campaignsService.archive(id);
   }
 }

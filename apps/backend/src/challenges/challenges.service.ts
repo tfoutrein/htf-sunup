@@ -65,8 +65,18 @@ export class ChallengesService {
 
   async findAll(): Promise<Challenge[]> {
     return await this.db.db
-      .select()
+      .select({
+        id: challenges.id,
+        campaignId: challenges.campaignId,
+        date: challenges.date,
+        title: challenges.title,
+        description: challenges.description,
+        createdAt: challenges.createdAt,
+        updatedAt: challenges.updatedAt,
+      })
       .from(challenges)
+      .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+      .where(eq(campaigns.archived, false))
       .orderBy(desc(challenges.date));
   }
 
@@ -108,9 +118,18 @@ export class ChallengesService {
 
   async findByDate(date: string): Promise<Challenge[]> {
     return await this.db.db
-      .select()
+      .select({
+        id: challenges.id,
+        campaignId: challenges.campaignId,
+        date: challenges.date,
+        title: challenges.title,
+        description: challenges.description,
+        createdAt: challenges.createdAt,
+        updatedAt: challenges.updatedAt,
+      })
       .from(challenges)
-      .where(eq(challenges.date, date))
+      .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+      .where(and(eq(challenges.date, date), eq(campaigns.archived, false)))
       .orderBy(challenges.campaignId);
   }
 

@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, desc, lte, gte, ne, count } from 'drizzle-orm';
 import { DatabaseService } from '../db/database.module';
 import {
   campaigns,
@@ -49,11 +49,39 @@ export class CampaignsService {
     return campaign;
   }
 
-  async findAll(): Promise<Campaign[]> {
-    return await this.db.db
+  async findAll(): Promise<
+    (Campaign & { challengeCount: number; totalDays: number })[]
+  > {
+    const campaignList = await this.db.db
       .select()
       .from(campaigns)
+      .where(eq(campaigns.archived, false))
       .orderBy(desc(campaigns.createdAt));
+
+    // Pour chaque campagne, récupérer le nombre de défis et calculer le nombre de jours
+    const campaignsWithStats = await Promise.all(
+      campaignList.map(async (campaign) => {
+        // Compter les défis de la campagne
+        const [challengeCountResult] = await this.db.db
+          .select({ count: count() })
+          .from(challenges)
+          .where(eq(challenges.campaignId, campaign.id));
+
+        // Calculer le nombre de jours dans la campagne
+        const startDate = new Date(campaign.startDate);
+        const endDate = new Date(campaign.endDate);
+        const timeDifference = endDate.getTime() - startDate.getTime();
+        const totalDays = Math.ceil(timeDifference / (1000 * 3600 * 24)) + 1; // +1 pour inclure le jour de fin
+
+        return {
+          ...campaign,
+          challengeCount: challengeCountResult.count,
+          totalDays,
+        };
+      }),
+    );
+
+    return campaignsWithStats;
   }
 
   async findOne(id: number): Promise<Campaign> {
@@ -130,12 +158,28 @@ export class CampaignsService {
       .limit(1);
 
     if (challenge) {
-      throw new BadRequestException(
-        'Impossible de supprimer une campagne qui contient des défis',
-      );
+      // Si la campagne a des défis, on l'archive au lieu de la supprimer
+      await this.archive(id);
+      return;
     }
 
+    // Sinon, suppression réelle si pas de défis
     await this.db.db.delete(campaigns).where(eq(campaigns.id, id));
+  }
+
+  async archive(id: number): Promise<Campaign> {
+    await this.findOne(id); // Check if exists
+
+    const [archivedCampaign] = await this.db.db
+      .update(campaigns)
+      .set({
+        archived: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(campaigns.id, id))
+      .returning();
+
+    return archivedCampaign;
   }
 
   async getActiveCampaigns(): Promise<Campaign[]> {
@@ -147,7 +191,9 @@ export class CampaignsService {
       .where(
         and(
           eq(campaigns.status, 'active'),
-          eq(campaigns.startDate, today), // You might want to use <= for startDate and >= for endDate
+          eq(campaigns.archived, false),
+          lte(campaigns.startDate, today),
+          gte(campaigns.endDate, today),
         ),
       )
       .orderBy(campaigns.startDate);

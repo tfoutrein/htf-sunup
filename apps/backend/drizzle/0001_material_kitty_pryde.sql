@@ -1,0 +1,1 @@
+ALTER TABLE "campaigns" ADD COLUMN "archived" boolean DEFAULT false NOT NULL;

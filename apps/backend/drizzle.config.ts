@@ -1,5 +1,3 @@
-import type { Config } from 'drizzle-kit';
-
 export default {
   schema: './src/db/schema.ts',
   out: './drizzle',
@@ -11,4 +9,4 @@ export default {
   },
   breakpoints: true,
   strict: true,
-} satisfies Config;
+};

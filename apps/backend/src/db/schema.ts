@@ -30,6 +30,7 @@ export const campaigns = pgTable('campaigns', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft' | 'active' | 'completed' | 'cancelled'
+  archived: boolean('archived').notNull().default(false), // true si archivée
   createdBy: integer('created_by')
     .notNull()
     .references(() => users.id),

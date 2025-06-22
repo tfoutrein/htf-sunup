@@ -8,6 +8,8 @@ export interface Campaign {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  challengeCount?: number;
+  totalDays?: number;
 }
 
 export interface Challenge {
