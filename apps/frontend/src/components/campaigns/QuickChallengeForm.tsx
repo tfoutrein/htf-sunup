@@ -161,7 +161,11 @@ export default function QuickChallengeForm({
       );
     } else {
       // Ajouter une nouvelle action
-      const newAction = { ...actionData, order: actions.length + 1 };
+      const newAction: Partial<Action> = {
+        ...actionData,
+        type: actionData.type as 'vente' | 'recrutement' | 'reseaux_sociaux',
+        order: actions.length + 1,
+      };
       setActions((prev) => [...prev, newAction]);
     }
     setShowingActionForm(false);
@@ -249,7 +253,7 @@ export default function QuickChallengeForm({
                 {actions.length < 6 && !showingActionForm && (
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="bordered"
                     onClick={handleAddAction}
                     size="sm"
                   >
@@ -282,7 +286,7 @@ export default function QuickChallengeForm({
                   </p>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="bordered"
                     onClick={handleAddAction}
                     size="sm"
                   >
@@ -299,7 +303,7 @@ export default function QuickChallengeForm({
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <Badge
-                                variant="outline"
+                                variant="bordered"
                                 className="flex items-center gap-1"
                               >
                                 <span>{typeInfo.icon}</span>
@@ -318,7 +322,7 @@ export default function QuickChallengeForm({
                             <div className="flex gap-1">
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant="bordered"
                                 size="sm"
                                 onClick={() => handleEditAction(index)}
                                 disabled={showingActionForm}
@@ -327,7 +331,7 @@ export default function QuickChallengeForm({
                               </Button>
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant="bordered"
                                 size="sm"
                                 onClick={() => handleDeleteAction(index)}
                                 className="text-red-600 hover:text-red-700"
@@ -356,7 +360,7 @@ export default function QuickChallengeForm({
           <ModalFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="bordered"
               onClick={onClose}
               disabled={loading}
               className="flex-1"

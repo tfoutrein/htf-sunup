@@ -203,7 +203,7 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
                 <div className="flex gap-2 ml-4">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="bordered"
                     onClick={() =>
                       onCampaignSelect
                         ? onCampaignSelect(campaign)
@@ -215,14 +215,14 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="bordered"
                     onClick={() => handleEditClick(campaign)}
                   >
                     Modifier
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="bordered"
                     onClick={() => handleDeleteClick(campaign)}
                     className="text-red-600 hover:text-red-700 hover:border-red-300"
                   >

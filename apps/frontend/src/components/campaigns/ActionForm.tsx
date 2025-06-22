@@ -112,7 +112,7 @@ export default function ActionForm({
             type="number"
             min="1"
             max="100"
-            value={formData.pointsValue}
+            value={formData.pointsValue.toString()}
             onChange={(e) =>
               handleChange('pointsValue', parseInt(e.target.value) || 10)
             }
@@ -128,7 +128,7 @@ export default function ActionForm({
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="bordered"
             onClick={onCancel}
             className="flex-1"
           >

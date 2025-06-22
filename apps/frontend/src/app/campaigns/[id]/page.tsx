@@ -124,7 +124,7 @@ export default function CampaignDetailPage() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Button
-                variant="outline"
+                variant="bordered"
                 onClick={() => router.push('/campaigns')}
                 className="p-2"
               >

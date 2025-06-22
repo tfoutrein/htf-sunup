@@ -243,8 +243,9 @@ function ChallengeEditPageContent() {
       return;
     }
 
-    const newAction = {
+    const newAction: Partial<Action> = {
       ...actionFormData,
+      type: actionFormData.type as 'vente' | 'recrutement' | 'reseaux_sociaux',
       order:
         editingActionIndex !== null
           ? editingActionIndex + 1
@@ -315,7 +316,7 @@ function ChallengeEditPageContent() {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3 mb-4">
               <Button
-                variant="outline"
+                variant="bordered"
                 onClick={handleCancel}
                 className="p-2 touch-target"
               >
@@ -468,7 +469,7 @@ function ChallengeEditPageContent() {
                           <div className="hidden sm:flex gap-2 ml-4 flex-shrink-0">
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="bordered"
                               size="sm"
                               onClick={() => handleEditAction(index)}
                               className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300"
@@ -477,7 +478,7 @@ function ChallengeEditPageContent() {
                             </Button>
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="bordered"
                               size="sm"
                               onClick={() => handleDeleteAction(index)}
                               className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300"
@@ -490,7 +491,7 @@ function ChallengeEditPageContent() {
                         <div className="flex flex-col gap-2 sm:hidden">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="bordered"
                             size="sm"
                             onClick={() => handleEditAction(index)}
                             className="touch-target w-full bg-blue-50 text-blue-700 border-blue-200"
@@ -499,7 +500,7 @@ function ChallengeEditPageContent() {
                           </Button>
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="bordered"
                             size="sm"
                             onClick={() => handleDeleteAction(index)}
                             className="touch-target w-full bg-red-50 text-red-700 border-red-200"
@@ -579,7 +580,7 @@ function ChallengeEditPageContent() {
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="bordered"
                         onClick={handleCancelAction}
                         className="flex-1 touch-target"
                       >
@@ -609,7 +610,7 @@ function ChallengeEditPageContent() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6">
               <Button
                 type="button"
-                variant="outline"
+                variant="bordered"
                 onClick={handleCancel}
                 disabled={submitting}
                 className="flex-1 touch-target"

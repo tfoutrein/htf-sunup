@@ -178,7 +178,7 @@ export default function ChallengeForm({
           <ModalFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="bordered"
               onClick={onClose}
               disabled={loading}
               className="flex-1"
