@@ -126,6 +126,33 @@ async function runMigrations() {
       console.log('✅ Added order column successfully');
     }
 
+    // Supprimer les colonnes obsolètes qui ne correspondent pas au schéma actuel
+    const dateColumnExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'date'
+    `;
+
+    const createdByColumnExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'created_by'
+    `;
+
+    if (dateColumnExists.length > 0) {
+      console.log('📝 Removing obsolete date column from actions table...');
+      await sql`ALTER TABLE actions DROP COLUMN IF EXISTS date CASCADE;`;
+      console.log('✅ Removed obsolete date column successfully');
+    }
+
+    if (createdByColumnExists.length > 0) {
+      console.log(
+        '📝 Removing obsolete created_by column from actions table...',
+      );
+      await sql`ALTER TABLE actions DROP COLUMN IF EXISTS created_by CASCADE;`;
+      console.log('✅ Removed obsolete created_by column successfully');
+    }
+
     // Créer les contraintes de clé étrangère manquantes
     console.log('🔍 Checking for missing foreign key constraints...');
 
