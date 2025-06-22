@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import { getUser, logout } from '@/utils/auth';
 
 export default function Home() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -21,8 +22,23 @@ export default function Home() {
       } else {
         router.push('/fbo/dashboard');
       }
+    } else {
+      // User not logged in, show the page
+      setIsChecking(false);
     }
   }, [router]);
+
+  // Show loading spinner while checking authentication
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 flex items-center justify-center px-4">
+        <div className="text-center">
+          <Spinner size="lg" color="warning" />
+          <p className="mt-4 text-gray-600">Redirection en cours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 flex items-center justify-center px-4">

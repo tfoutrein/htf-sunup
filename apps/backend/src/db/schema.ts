@@ -60,6 +60,7 @@ export const actions = pgTable('actions', {
   description: text('description'),
   type: varchar('type', { length: 50 }).notNull(), // 'vente' | 'recrutement' | 'reseaux_sociaux'
   order: integer('order').notNull().default(1), // Position in challenge (1-6)
+  pointsValue: integer('points_value').notNull().default(10), // Points awarded for completing this action
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

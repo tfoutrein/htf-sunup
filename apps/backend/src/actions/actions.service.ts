@@ -188,6 +188,7 @@ export class ActionsService {
           description: actions.description,
           type: actions.type,
           order: actions.order,
+          pointsValue: actions.pointsValue,
         },
       })
       .from(userActions)
@@ -219,6 +220,7 @@ export class ActionsService {
           description: actions.description,
           type: actions.type,
           order: actions.order,
+          pointsValue: actions.pointsValue,
         },
       })
       .from(userActions)

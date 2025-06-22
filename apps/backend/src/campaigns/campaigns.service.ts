@@ -39,7 +39,7 @@ export class CampaignsService {
       startDate,
       endDate,
       createdBy: userId,
-      status: 'draft',
+      status: createCampaignDto.status || 'draft',
     };
 
     const [campaign] = await this.db.db

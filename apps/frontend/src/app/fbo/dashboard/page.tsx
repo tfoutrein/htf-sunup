@@ -24,8 +24,11 @@ import {
   CameraIcon,
   StarIcon,
   TrophyIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import { getUser, getToken, logout } from '@/utils/auth';
+import { campaignService } from '@/services/campaigns';
+import { Challenge, Action, Campaign } from '@/types/campaigns';
 
 interface User {
   id: number;
@@ -34,20 +37,15 @@ interface User {
   role: string;
 }
 
-interface Action {
-  id: number;
-  title: string;
-  description: string;
-  type: 'vente' | 'recrutement' | 'reseaux_sociaux';
-  date: string;
-}
-
 interface UserAction {
   id: number;
+  userId: number;
+  actionId: number;
+  challengeId: number;
   completed: boolean;
   completedAt: string | null;
   proofUrl: string | null;
-  action: Action;
+  action?: Action;
 }
 
 const actionTypeConfig = {
@@ -76,9 +74,15 @@ const actionTypeConfig = {
 
 export default function FBODashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
+  const [todayChallenge, setTodayChallenge] = useState<Challenge | null>(null);
+  const [challengeActions, setChallengeActions] = useState<Action[]>([]);
   const [userActions, setUserActions] = useState<UserAction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAction, setSelectedAction] = useState<UserAction | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{
+    userAction?: UserAction;
+    action: Action;
+  } | null>(null);
   const [proofUrl, setProofUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -101,14 +105,51 @@ export default function FBODashboard() {
     }
 
     setUser(userData);
-    fetchUserActions(userData.id);
+    fetchTodayData();
   }, [router]);
 
-  const fetchUserActions = async (userId: number) => {
+  const fetchTodayData = async () => {
+    try {
+      setLoading(true);
+
+      // Récupérer les campagnes actives
+      const campaigns = await campaignService.getActiveCampaigns();
+      if (campaigns.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const campaign = campaigns[0]; // Prendre la première campagne active
+      setActiveCampaign(campaign);
+
+      // Récupérer les défis d'aujourd'hui
+      const todayChallenges = await campaignService.getTodayChallenges();
+      if (todayChallenges.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const challenge = todayChallenges[0]; // Prendre le premier défi d'aujourd'hui
+      setTodayChallenge(challenge);
+
+      // Récupérer les actions du défi
+      const actions = await campaignService.getChallengeActions(challenge.id);
+      setChallengeActions(actions);
+
+      // Récupérer les actions utilisateur pour ce défi
+      await fetchUserActionsForChallenge(challenge.id);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserActionsForChallenge = async (challengeId: number) => {
     try {
       const token = getToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions/user/${userId}/date/${today}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/user-actions/challenge/${challengeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -121,43 +162,73 @@ export default function FBODashboard() {
         setUserActions(data);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des actions:', error);
-    } finally {
-      setLoading(false);
+      console.error(
+        'Erreur lors du chargement des actions utilisateur:',
+        error,
+      );
     }
   };
 
-  const handleCompleteAction = (userAction: UserAction) => {
-    setSelectedAction(userAction);
-    setProofUrl('');
+  const handleCompleteAction = (action: Action, userAction?: UserAction) => {
+    setSelectedAction({ action, userAction });
+    setProofUrl(userAction?.proofUrl || '');
     onOpen();
   };
 
   const submitCompletion = async () => {
-    if (!selectedAction) return;
+    if (!selectedAction || !todayChallenge) return;
 
     setSubmitting(true);
     try {
       const token = getToken();
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions/complete/${selectedAction.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ proofUrl }),
-        },
-      );
 
-      if (response.ok) {
-        // Refresh actions
-        if (user) {
-          fetchUserActions(user.id);
+      if (selectedAction.userAction) {
+        // Mettre à jour une action existante
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${selectedAction.userAction.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              completed: true,
+              proofUrl,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la mise à jour');
         }
-        onClose();
+      } else {
+        // Créer une nouvelle action utilisateur
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/user-actions`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              actionId: selectedAction.action.id,
+              challengeId: todayChallenge.id,
+              completed: true,
+              proofUrl,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la création');
+        }
       }
+
+      // Rafraîchir les données
+      await fetchUserActionsForChallenge(todayChallenge.id);
+      onClose();
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
     } finally {
@@ -170,8 +241,20 @@ export default function FBODashboard() {
     router.push('/login');
   };
 
-  const completedCount = userActions.filter((ua) => ua.completed).length;
-  const totalCount = userActions.length;
+  // Fonction pour vérifier si une action est complétée
+  const isActionCompleted = (action: Action) => {
+    return userActions.some((ua) => ua.actionId === action.id && ua.completed);
+  };
+
+  // Fonction pour récupérer l'action utilisateur d'une action
+  const getUserAction = (action: Action) => {
+    return userActions.find((ua) => ua.actionId === action.id);
+  };
+
+  const completedCount = challengeActions.filter((action) =>
+    isActionCompleted(action),
+  ).length;
+  const totalCount = challengeActions.length;
   const completionPercentage =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -199,8 +282,16 @@ export default function FBODashboard() {
               </span>
             </h1>
             <p className="text-orange-100 text-sm sm:text-base">
-              Tes défis de l'été t'attendent
+              {activeCampaign ? activeCampaign.name : "Tes défis t'attendent"}
             </p>
+            {todayChallenge && (
+              <div className="flex items-center gap-2 mt-1">
+                <CalendarDaysIcon className="w-4 h-4" />
+                <span className="text-orange-100 text-xs">
+                  Défi du jour : {todayChallenge.title}
+                </span>
+              </div>
+            )}
           </div>
           <Button
             variant="flat"
@@ -255,90 +346,128 @@ export default function FBODashboard() {
 
         {/* Actions Grid - Mobile First */}
         <div className="grid gap-4 sm:gap-6">
-          {userActions.length === 0 ? (
+          {!activeCampaign ? (
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardBody className="text-center p-6 sm:p-8">
                 <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
-                  Pas de défis aujourd'hui
+                  Aucune campagne active
+                </h3>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  Les nouvelles campagnes arriveront bientôt ! ☀️
+                </p>
+              </CardBody>
+            </Card>
+          ) : !todayChallenge ? (
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardBody className="text-center p-6 sm:p-8">
+                <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
+                  Pas de défi aujourd'hui
                 </h3>
                 <p className="text-gray-500 text-sm sm:text-base">
                   Profite de cette journée libre ! ☀️
                 </p>
               </CardBody>
             </Card>
+          ) : challengeActions.length === 0 ? (
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardBody className="text-center p-6 sm:p-8">
+                <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
+                  Aucune action programmée
+                </h3>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  Les actions du défi arrivent bientôt ! ☀️
+                </p>
+              </CardBody>
+            </Card>
           ) : (
-            userActions.map((userAction) => {
-              const config = actionTypeConfig[userAction.action.type];
-              return (
-                <Card
-                  key={userAction.id}
-                  className={`${config.bgColor} ${config.borderColor} border-2 shadow-lg transition-all duration-200 hover:shadow-xl ${userAction.completed ? 'opacity-75' : ''}`}
-                >
-                  <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2">
-                    <div className="flex flex-col sm:flex-row justify-between items-start w-full gap-3 sm:gap-0">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="text-xl sm:text-2xl flex-shrink-0">
-                          {config.icon}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <Chip
-                            color={config.color}
-                            variant="flat"
-                            size="sm"
-                            className="mb-1 text-xs"
-                          >
-                            {config.label}
-                          </Chip>
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-2">
-                            {userAction.action.title}
-                          </h3>
-                        </div>
-                      </div>
-                      {userAction.completed && (
-                        <Badge
-                          color="success"
-                          variant="flat"
-                          className="text-xs w-fit"
-                        >
-                          <CheckCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          Terminé
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardBody className="pt-0 p-4 sm:p-6 sm:pt-0">
-                    <p className="text-gray-600 mb-4 text-sm sm:text-base line-clamp-3">
-                      {userAction.action.description}
-                    </p>
+            challengeActions
+              .sort((a, b) => a.order - b.order)
+              .map((action) => {
+                const config = actionTypeConfig[action.type];
+                const userAction = getUserAction(action);
+                const completed = isActionCompleted(action);
 
-                    {userAction.completed ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                        <span className="text-xs sm:text-sm">
-                          Complété le{' '}
-                          {new Date(userAction.completedAt!).toLocaleDateString(
-                            'fr-FR',
-                          )}
-                        </span>
+                return (
+                  <Card
+                    key={action.id}
+                    className={`${config.bgColor} ${config.borderColor} border-2 shadow-lg transition-all duration-200 hover:shadow-xl ${completed ? 'opacity-75' : ''}`}
+                  >
+                    <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-start w-full gap-3 sm:gap-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <span className="text-xl sm:text-2xl flex-shrink-0">
+                            {config.icon}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Chip
+                                color={config.color}
+                                variant="flat"
+                                size="sm"
+                                className="text-xs"
+                              >
+                                {config.label}
+                              </Chip>
+                              <span className="text-xs text-gray-500">
+                                Action {action.order}
+                              </span>
+                            </div>
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-2">
+                              {action.title}
+                            </h3>
+                          </div>
+                        </div>
+                        {completed && (
+                          <Badge
+                            color="success"
+                            variant="flat"
+                            className="text-xs w-fit"
+                          >
+                            <CheckCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            Terminé
+                          </Badge>
+                        )}
                       </div>
-                    ) : (
-                      <Button
-                        onPress={() => handleCompleteAction(userAction)}
-                        className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
-                        startContent={<CameraIcon className="w-4 h-4" />}
-                        size="sm"
-                      >
-                        <span className="hidden sm:inline">
-                          Marquer comme terminé
-                        </span>
-                        <span className="sm:hidden">Terminé</span>
-                      </Button>
-                    )}
-                  </CardBody>
-                </Card>
-              );
-            })
+                    </CardHeader>
+                    <CardBody className="pt-0 p-4 sm:p-6 sm:pt-0">
+                      <p className="text-gray-600 mb-4 text-sm sm:text-base line-clamp-3">
+                        {action.description}
+                      </p>
+
+                      {completed ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">
+                            Complété le{' '}
+                            {userAction?.completedAt
+                              ? new Date(
+                                  userAction.completedAt,
+                                ).toLocaleDateString('fr-FR')
+                              : ''}
+                          </span>
+                        </div>
+                      ) : (
+                        <Button
+                          onPress={() =>
+                            handleCompleteAction(action, userAction)
+                          }
+                          className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
+                          startContent={<CameraIcon className="w-4 h-4" />}
+                          size="sm"
+                        >
+                          <span className="hidden sm:inline">
+                            Marquer comme terminé
+                          </span>
+                          <span className="sm:hidden">Terminé</span>
+                        </Button>
+                      )}
+                    </CardBody>
+                  </Card>
+                );
+              })
           )}
         </div>
       </div>

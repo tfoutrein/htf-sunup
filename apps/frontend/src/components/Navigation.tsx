@@ -1,74 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button, Badge, Avatar } from '@/components/ui';
-import {
-  Bars3Icon,
-  XMarkIcon,
-  UserIcon,
-  ArrowRightOnRectangleIcon,
-} from '@heroicons/react/24/outline';
-import { logout, getUser } from '@/utils/auth';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'marraine' | 'manager' | 'fbo';
-}
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
+import { logout } from '@/utils/auth';
+import { useAuth } from '@/app/providers';
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-
-  // Function to update user state from localStorage
-  const updateUserFromStorage = () => {
-    const user = getUser();
-    setUser(user);
-  };
-
-  // Check if user is logged in on mount and listen for storage changes
-  useEffect(() => {
-    updateUserFromStorage();
-
-    // Listen for custom events when user logs in/out
-    const handleUserChange = () => {
-      updateUserFromStorage();
-    };
-
-    // Listen for storage changes (useful for multiple tabs)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user' || e.key === 'token') {
-        updateUserFromStorage();
-      }
-    };
-
-    window.addEventListener('user-login', handleUserChange);
-    window.addEventListener('user-logout', handleUserChange);
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('user-login', handleUserChange);
-      window.removeEventListener('user-logout', handleUserChange);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  const isActive = (path: string) => pathname === path;
-
-  const handleLogout = () => {
-    logout();
-    setUser(null);
-    router.push('/login');
-    setIsMenuOpen(false);
-  };
+  const { user, isLoading } = useAuth();
 
   const getDashboardLink = () => {
-    if (!user) return '/';
+    if (!user) return '#';
     switch (user.role) {
       case 'marraine':
         return '/marraine/dashboard';
@@ -77,25 +24,19 @@ export function Navigation() {
       case 'fbo':
         return '/fbo/dashboard';
       default:
-        return '/';
+        return '#';
     }
   };
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'marraine':
-        return 'Marraine';
-      case 'manager':
-        return 'Manager';
-      case 'fbo':
-        return 'FBO';
-      default:
-        return role;
-    }
+  const isActive = (path: string) => {
+    if (path === '#') return false;
+    return pathname.startsWith(path);
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+    closeMenu();
   };
 
   const closeMenu = () => {
@@ -135,93 +76,87 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <>
-                <Link href={getDashboardLink()}>
-                  <Button
-                    variant={isActive(getDashboardLink()) ? 'flat' : 'light'}
-                    color={isActive(getDashboardLink()) ? 'warning' : 'default'}
-                    size="sm"
-                    className="font-medium"
-                  >
-                    Dashboard
-                  </Button>
-                </Link>
-
-                <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <Avatar
-                      name={user.name}
+            {!isLoading &&
+              (user ? (
+                <>
+                  <Link href={getDashboardLink()}>
+                    <Button
+                      variant={isActive(getDashboardLink()) ? 'flat' : 'light'}
+                      color={
+                        isActive(getDashboardLink()) ? 'warning' : 'default'
+                      }
                       size="sm"
-                      className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {getRoleDisplayName(user.role)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="light"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="text-gray-600 hover:text-red-600"
-                    startContent={
-                      <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    }
-                  >
-                    Déconnexion
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link href="/">
-                  <Button
-                    variant={isActive('/') ? 'flat' : 'light'}
-                    color={isActive('/') ? 'warning' : 'default'}
-                    size="sm"
-                  >
-                    Accueil
-                  </Button>
-                </Link>
-
-                <Link href="/components">
-                  <Button
-                    variant={isActive('/components') ? 'flat' : 'light'}
-                    color={isActive('/components') ? 'warning' : 'default'}
-                    size="sm"
-                  >
-                    Composants UI
-                    <Badge
-                      color="primary"
-                      variant="flat"
-                      size="sm"
-                      className="ml-1"
+                      className="font-medium"
                     >
-                      Demo
-                    </Badge>
-                  </Button>
-                </Link>
+                      Dashboard
+                    </Button>
+                  </Link>
 
-                {!isActive('/login') && !isActive('/register') && (
+                  {(user.role === 'marraine' || user.role === 'manager') && (
+                    <Link href="/campaigns">
+                      <Button
+                        variant={isActive('/campaigns') ? 'flat' : 'light'}
+                        color={isActive('/campaigns') ? 'warning' : 'default'}
+                        size="sm"
+                        className="font-medium"
+                      >
+                        Campagnes
+                      </Button>
+                    </Link>
+                  )}
+
+                  {/* User Menu */}
+                  <div className="flex items-center space-x-3 ml-4">
+                    <div className="flex items-center space-x-2">
+                      <Avatar
+                        name={user.name}
+                        size="sm"
+                        className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
+                      />
+                      <div className="hidden lg:flex lg:flex-col">
+                        <span className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </span>
+                        <span className="text-xs text-gray-500 capitalize">
+                          {user.role}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="light"
+                      color="danger"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="font-medium"
+                    >
+                      Déconnexion
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link href="/">
+                    <Button
+                      variant={pathname === '/' ? 'flat' : 'light'}
+                      color={pathname === '/' ? 'warning' : 'default'}
+                      size="sm"
+                      className="font-medium"
+                    >
+                      Accueil
+                    </Button>
+                  </Link>
                   <Link href="/login">
                     <Button
-                      variant="flat"
-                      color="warning"
+                      variant={pathname === '/login' ? 'flat' : 'light'}
+                      color={pathname === '/login' ? 'warning' : 'default'}
                       size="sm"
-                      startContent={<UserIcon className="w-4 h-4" />}
+                      className="font-medium"
                     >
                       Connexion
                     </Button>
                   </Link>
-                )}
-              </>
-            )}
+                </>
+              ))}
           </div>
 
           {/* Mobile menu button */}
@@ -229,14 +164,31 @@ export function Navigation() {
             <Button
               variant="light"
               size="sm"
-              onClick={toggleMenu}
-              className="p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500"
             >
-              {isMenuOpen ? (
-                <XMarkIcon className="w-6 h-6" />
-              ) : (
-                <Bars3Icon className="w-6 h-6" />
-              )}
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {isMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
             </Button>
           </div>
         </div>
@@ -245,99 +197,89 @@ export function Navigation() {
         {isMenuOpen && (
           <div className="md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-sm">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {user ? (
-                <>
-                  {/* User Info */}
-                  <div className="flex items-center space-x-3 px-3 py-2 bg-orange-50 rounded-lg mb-3">
-                    <Avatar
-                      name={user.name}
-                      size="sm"
-                      className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {getRoleDisplayName(user.role)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dashboard Link */}
-                  <Link href={getDashboardLink()} onClick={closeMenu}>
-                    <Button
-                      variant={isActive(getDashboardLink()) ? 'flat' : 'light'}
-                      color={
-                        isActive(getDashboardLink()) ? 'warning' : 'default'
-                      }
-                      className="w-full justify-start font-medium"
-                      size="md"
-                    >
-                      Dashboard
-                    </Button>
-                  </Link>
-
-                  {/* Logout */}
-                  <Button
-                    variant="light"
-                    onClick={handleLogout}
-                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                    size="md"
-                    startContent={
-                      <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    }
-                  >
-                    Déconnexion
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/" onClick={closeMenu}>
-                    <Button
-                      variant={isActive('/') ? 'flat' : 'light'}
-                      color={isActive('/') ? 'warning' : 'default'}
-                      className="w-full justify-start"
-                      size="md"
-                    >
-                      Accueil
-                    </Button>
-                  </Link>
-
-                  <Link href="/components" onClick={closeMenu}>
-                    <Button
-                      variant={isActive('/components') ? 'flat' : 'light'}
-                      color={isActive('/components') ? 'warning' : 'default'}
-                      className="w-full justify-start"
-                      size="md"
-                    >
-                      Composants UI
-                      <Badge
-                        color="primary"
-                        variant="flat"
+              {!isLoading &&
+                (user ? (
+                  <>
+                    {/* User Info */}
+                    <div className="flex items-center space-x-3 px-3 py-2 bg-orange-50 rounded-lg mb-3">
+                      <Avatar
+                        name={user.name}
                         size="sm"
-                        className="ml-2"
-                      >
-                        Demo
-                      </Badge>
-                    </Button>
-                  </Link>
+                        className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </span>
+                        <span className="text-xs text-gray-500 capitalize">
+                          {user.role}
+                        </span>
+                      </div>
+                    </div>
 
-                  {!isActive('/login') && !isActive('/register') && (
+                    {/* Navigation Links */}
+                    <Link href={getDashboardLink()} onClick={closeMenu}>
+                      <Button
+                        variant={
+                          isActive(getDashboardLink()) ? 'flat' : 'light'
+                        }
+                        color={
+                          isActive(getDashboardLink()) ? 'warning' : 'default'
+                        }
+                        size="sm"
+                        className="w-full justify-start font-medium"
+                      >
+                        Dashboard
+                      </Button>
+                    </Link>
+
+                    {(user.role === 'marraine' || user.role === 'manager') && (
+                      <Link href="/campaigns" onClick={closeMenu}>
+                        <Button
+                          variant={isActive('/campaigns') ? 'flat' : 'light'}
+                          color={isActive('/campaigns') ? 'warning' : 'default'}
+                          size="sm"
+                          className="w-full justify-start font-medium"
+                        >
+                          Campagnes
+                        </Button>
+                      </Link>
+                    )}
+
+                    <Button
+                      variant="light"
+                      color="danger"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="w-full justify-start font-medium"
+                    >
+                      Déconnexion
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/" onClick={closeMenu}>
+                      <Button
+                        variant={pathname === '/' ? 'flat' : 'light'}
+                        color={pathname === '/' ? 'warning' : 'default'}
+                        size="sm"
+                        className="w-full justify-start font-medium"
+                      >
+                        Accueil
+                      </Button>
+                    </Link>
                     <Link href="/login" onClick={closeMenu}>
                       <Button
-                        variant="flat"
-                        color="warning"
-                        className="w-full justify-start mt-2"
-                        size="md"
-                        startContent={<UserIcon className="w-4 h-4" />}
+                        variant={pathname === '/login' ? 'flat' : 'light'}
+                        color={pathname === '/login' ? 'warning' : 'default'}
+                        size="sm"
+                        className="w-full justify-start font-medium"
                       >
                         Connexion
                       </Button>
                     </Link>
-                  )}
-                </>
-              )}
+                  </>
+                ))}
             </div>
           </div>
         )}

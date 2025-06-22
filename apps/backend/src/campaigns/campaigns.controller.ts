@@ -32,7 +32,7 @@ export class CampaignsController {
   @ApiOperation({ summary: 'Créer une nouvelle campagne' })
   @ApiResponse({ status: 201, description: 'Campagne créée avec succès' })
   create(@Body() createCampaignDto: CreateCampaignDto, @Request() req) {
-    return this.campaignsService.create(createCampaignDto, req.user.userId);
+    return this.campaignsService.create(createCampaignDto, req.user.id);
   }
 
   @Get()

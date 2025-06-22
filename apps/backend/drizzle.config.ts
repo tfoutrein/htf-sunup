@@ -7,6 +7,6 @@ export default {
   dbCredentials: {
     connectionString:
       process.env.DATABASE_URL ||
-      'postgresql://postgres:postgres@localhost:5432/template_db',
+      'postgresql://postgres:postgres@localhost:5432/htf_sunup_db',
   },
 } satisfies Config;
