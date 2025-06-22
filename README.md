@@ -1,18 +1,32 @@
 # HTF Sunup
 
-Projet HTF Sunup - Application full-stack avec Next.js en frontend, Nest.js en backend et PostgreSQL comme base de données, le tout dans une architecture monorepo.
+Application de gestion des défis quotidiens pour la Happy Team Factory - Équipe d'entrepreneurs Forever Living.
+
+**Objectif :** Gérer les campagnes de défis quotidiens pour booster l'activité des équipes pendant l'été 2025.
+
+## 🏆 Fonctionnalités Principales
+
+### Architecture des Défis
+
+- **Campagnes** : Périodes définies (ex: "Les défis de l'été") contenant plusieurs défis
+- **Défis quotidiens** : Ensemble de 1 à 6 actions à réaliser chaque jour
+- **Actions** : Tâches individuelles (Vente, Recrutement, Réseaux sociaux)
+
+### Rôles Utilisateurs
+
+- **Marraine** (Aurélia) : Gestion globale des campagnes et supervision
+- **Managers** : Co-gestion des campagnes et suivi de leurs équipes
+- **FBO** : Validation des actions quotidiennes avec preuves
 
 ## 🚀 Stack Technique
 
 - **Frontend**: Next.js 14 avec TypeScript et Tailwind CSS
-- **Backend**: Nest.js avec TypeScript
-- **Base de données**: PostgreSQL avec Drizzle ORM
+- **Backend**: Nest.js avec TypeScript ✅
+- **Base de données**: PostgreSQL avec Drizzle ORM ✅
+- **Authentification**: JWT avec rôles (marraine/manager/fbo) ✅
 - **Monorepo**: pnpm workspaces
 - **Containerisation**: Docker & Docker Compose
-- **Linting**: ESLint + Prettier
-- **Commits**: Conventional Commits avec Commitlint et Husky
-- **Déploiement**: Vercel (frontend) + Render (backend + PostgreSQL)
-- **CI/CD**: GitHub Actions
+- **API**: REST avec documentation Swagger
 
 ## 📁 Structure du Projet
 
@@ -21,27 +35,26 @@ htf-sunup/
 ├── apps/
 │   ├── frontend/          # Application Next.js
 │   │   ├── src/
-│   │   │   ├── app/
+│   │   │   ├── app/       # Pages par rôle (marraine, manager, fbo)
 │   │   │   ├── components/
-│   │   │   └── lib/
+│   │   │   └── utils/
 │   │   ├── package.json
 │   │   └── Dockerfile
-│   └── backend/           # API Nest.js
+│   └── backend/           # API Nest.js ✅
 │       ├── src/
-│       │   ├── db/
-│       │   ├── users/
-│       │   ├── app.module.ts
+│       │   ├── auth/      # Authentification JWT ✅
+│       │   ├── users/     # Gestion utilisateurs ✅
+│       │   ├── campaigns/ # Gestion campagnes ✅
+│       │   ├── challenges/# Gestion défis ✅
+│       │   ├── actions/   # Gestion actions ✅
+│       │   ├── db/        # Schema & migrations ✅
 │       │   └── main.ts
-│       ├── package.json
-│       └── Dockerfile
-├── packages/              # Packages partagés (vide pour l'instant)
-├── .github/workflows/     # GitHub Actions CI/CD
+│       ├── drizzle/       # Migrations Drizzle ✅
+│       └── package.json
+├── docs/                  # Documentation
+│   └── MVP_PLAN.md       # Plan détaillé du MVP ✅
 ├── docker-compose.yml     # Configuration Docker complète
-├── docker-compose.dev.yml # Base de données seule pour dev local
-├── vercel.json           # Configuration Vercel
-├── render.yaml           # Configuration Render
-├── package.json          # Configuration monorepo
-└── pnpm-workspace.yaml   # Configuration pnpm workspaces
+└── package.json          # Configuration monorepo
 ```
 
 ## 🏃‍♂️ Démarrage Rapide
@@ -49,47 +62,40 @@ htf-sunup/
 ### 1. Installation
 
 ```bash
-# Cloner le template
-git clone <votre-repo> mon-projet
-cd mon-projet
+# Cloner le projet
+git clone <votre-repo> htf-sunup
+cd htf-sunup
 
 # Installer les dépendances
 pnpm install
-
-# Copier les variables d'environnement
-cp .env.example .env
 ```
 
-### 2. Développement Local (Recommandé)
+### 2. Démarrage avec Docker (Recommandé)
+
+```bash
+# Démarrer tous les services (PostgreSQL + Backend + Frontend)
+docker-compose up -d
+
+# Vérifier que les services sont démarrés
+docker-compose ps
+
+# Les migrations et le seed sont automatiquement appliqués
+```
+
+### 3. Développement Local (Alternative)
 
 ```bash
 # Démarrer uniquement PostgreSQL
 docker-compose -f docker-compose.dev.yml up -d
 
-# Installer les dépendances
-pnpm install
-
-# Créer les tables de base de données
+# Appliquer les migrations
 pnpm db:migrate
 
-# Seed initial de la base de données
+# Seed initial avec données de test
 pnpm db:seed
 
 # Démarrer le backend et frontend en parallèle
 pnpm dev
-```
-
-### 3. Développement avec Docker (Alternative)
-
-```bash
-# Démarrer tous les services
-docker-compose up
-
-# Dans un autre terminal, créer les tables
-docker-compose exec backend pnpm db:migrate
-
-# Seed initial
-docker-compose exec backend pnpm db:seed
 ```
 
 ## 🔧 Scripts Disponibles
@@ -102,9 +108,6 @@ pnpm back:dev     # Démarrer uniquement le backend
 pnpm front:dev    # Démarrer uniquement le frontend
 pnpm build        # Build tous les apps
 pnpm start        # Démarrer tous les apps en production
-pnpm lint         # Linter tous les apps
-pnpm type-check   # Vérification TypeScript
-pnpm test         # Tests de tous les apps
 
 # Docker
 pnpm docker:up    # docker-compose up -d
@@ -113,31 +116,7 @@ pnpm docker:logs  # docker-compose logs -f
 
 # Base de données
 pnpm db:migrate   # Migrations Drizzle
-pnpm db:seed      # Seed initial
-```
-
-### Scripts Frontend
-
-```bash
-cd apps/frontend
-pnpm dev          # Next.js dev server (port 3000)
-pnpm build        # Build pour production
-pnpm start        # Serveur de production
-pnpm lint         # ESLint
-pnpm type-check   # TypeScript check
-```
-
-### Scripts Backend
-
-```bash
-cd apps/backend
-pnpm dev          # Nest.js dev server (port 3001)
-pnpm build        # Build pour production
-pnpm start        # Serveur de production
-pnpm start:prod   # Serveur de production optimisé
-pnpm lint         # ESLint
-pnpm test         # Tests Jest
-pnpm test:e2e     # Tests end-to-end
+pnpm db:seed      # Seed avec données de test
 ```
 
 ## 🌐 URLs et Ports
@@ -147,212 +126,247 @@ pnpm test:e2e     # Tests end-to-end
 - **API Documentation**: http://localhost:3001/api (Swagger)
 - **PostgreSQL**: localhost:5432
 
-## 🗄️ Base de Données
+## 🗄️ Base de Données ✅ **IMPLÉMENTÉE**
 
-### Configuration
+### Schéma Complet
 
-La base de données utilise Drizzle ORM avec PostgreSQL. La configuration se trouve dans :
+```sql
+-- Utilisateurs avec rôles
+Users (id, name, email, password, role, manager_id)
+├── Roles: 'marraine' | 'manager' | 'fbo'
 
-- `apps/backend/src/db/schema.ts` - Schéma des tables
-- `apps/backend/drizzle.config.ts` - Configuration Drizzle
-- `apps/backend/src/db/database.module.ts` - Module NestJS
+-- Campagnes de défis (globales)
+Campaigns (id, name, description, start_date, end_date, status, created_by)
+├── Statuts: 'active' | 'inactive' | 'completed'
 
-### Migrations
+-- Défis quotidiens
+Challenges (id, campaign_id, date, title, description)
+├── Contrainte unicité (campaign_id, date)
 
-```bash
-# Générer et appliquer les migrations
-pnpm db:migrate
+-- Actions des défis
+Actions (id, challenge_id, title, description, type, order)
+├── Types: 'vente' | 'recrutement' | 'reseaux_sociaux'
+├── Ordre: 1-6 actions par défi
 
-# Seed de développement
-pnpm db:seed
+-- Assignations et validations
+UserActions (id, user_id, action_id, challenge_id, completed, proof_url)
 ```
 
-## 🔄 API Backend
+### Données de Test
 
-L'API Nest.js fournit :
+Le seed crée automatiquement :
 
-### Endpoints Principaux
+- **1 Marraine** : aurelia@htf.com (mot de passe: `password`)
+- **3 Managers** : jeromine@htf.com, gaelle@htf.com, audrey@htf.com
+- **3 FBO** : marie@htf.com, pierre@htf.com, sophie@htf.com
+- **1 Campagne active** : "Les défis de l'été de la Happy Team"
+- **1 Défi** pour aujourd'hui avec 3 actions
 
-- `GET /` - Hello World
-- `GET /health` - Health check
-- `GET /api/users` - Liste des utilisateurs
-- `POST /api/users` - Créer un utilisateur
-- `GET /api/users/:id` - Récupérer un utilisateur
-- `PUT /api/users/:id` - Modifier un utilisateur
-- `DELETE /api/users/:id` - Supprimer un utilisateur
+## 🔄 API Backend ✅ **COMPLÈTE**
 
-### Documentation API
+### Authentification
 
-Swagger disponible sur http://localhost:3001/api
+```bash
+POST /api/auth/login    # Connexion (retourne JWT)
+POST /api/auth/register # Inscription
+```
 
-## 🎨 Frontend
+### Endpoints Campagnes
 
-Le frontend Next.js utilise :
+```bash
+GET    /campaigns           # Liste des campagnes
+POST   /campaigns           # Créer une campagne
+GET    /campaigns/active    # Campagnes actives
+GET    /campaigns/:id       # Détails d'une campagne
+GET    /campaigns/:id/challenges # Campagne avec ses défis
+PATCH  /campaigns/:id       # Modifier une campagne
+DELETE /campaigns/:id       # Supprimer une campagne
+```
 
-- **App Router** - Nouveau système de routing Next.js 13+
-- **Tailwind CSS** - Framework CSS utilitaire
-- **TypeScript** - Typage statique
-- **Composants** - Structure modulaire
+### Endpoints Défis
+
+```bash
+GET    /challenges          # Liste des défis (filtres disponibles)
+POST   /challenges          # Créer un défi
+GET    /challenges/today    # Défis du jour
+GET    /challenges/:id      # Détails d'un défi
+GET    /challenges/:id/actions # Défi avec ses actions
+PATCH  /challenges/:id      # Modifier un défi
+DELETE /challenges/:id      # Supprimer un défi
+```
+
+### Endpoints Actions
+
+```bash
+GET    /actions/challenge/:challengeId # Actions d'un défi
+POST   /actions             # Créer une action (liée à un défi)
+PATCH  /actions/:id         # Modifier une action
+DELETE /actions/:id         # Supprimer une action
+```
+
+### Endpoints Utilisateurs
+
+```bash
+GET    /users              # Liste des utilisateurs
+POST   /users              # Créer un utilisateur
+GET    /users/:id          # Détails d'un utilisateur
+PATCH  /users/:id          # Modifier un utilisateur
+DELETE /users/:id          # Supprimer un utilisateur
+```
+
+### Test des Endpoints
+
+```bash
+# Authentification
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"aurelia@htf.com","password":"password"}'
+
+# Utiliser le token retourné
+export TOKEN="your-jwt-token"
+
+# Tester les campagnes
+curl -X GET http://localhost:3001/campaigns \
+  -H "Authorization: Bearer $TOKEN"
+
+# Tester les défis du jour
+curl -X GET http://localhost:3001/challenges/today \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## 🎯 État d'Implémentation
+
+### ✅ **BACKEND COMPLET** (22 juin 2025)
+
+- **Authentification JWT** : Système complet avec rôles
+- **Base de données** : Schema complet avec migrations
+- **API REST** : Tous les endpoints CRUD fonctionnels
+- **Logique métier** : Validations, contraintes, relations
+- **Tests** : Endpoints validés et fonctionnels
+- **Documentation** : Swagger disponible
+
+### 🔄 **FRONTEND EN COURS**
+
+- **Pages existantes** : Login, dashboards basiques
+- **À adapter** : Interfaces pour les campagnes
+- **À créer** : Gestion campagnes, planification défis
+
+### 📋 **PROCHAINES ÉTAPES**
+
+1. **Interface gestion campagnes** (marraine/managers)
+2. **Dashboard FBO adapté** (défis de la campagne active)
+3. **Vue hebdomadaire imprimable** (planning défis)
 
 ## 🛠️ Développement
 
-### Conventional Commits
+### Authentification
 
-Le projet utilise les conventional commits avec Commitlint :
+Utilisez les comptes de test créés par le seed :
 
 ```bash
-feat: add user management
-fix: resolve database connection issue
-docs: update README
-style: format code with prettier
-refactor: reorganize user service
-test: add user controller tests
+# Marraine (gestion globale)
+Email: aurelia@htf.com
+Password: password
+
+# Manager (gestion d'équipe)
+Email: jeromine@htf.com
+Password: password
+
+# FBO (validation d'actions)
+Email: marie@htf.com
+Password: password
 ```
 
-### Hooks Git
+### Ajout de Nouvelles Fonctionnalités
 
-- **pre-commit**: Lint-staged pour formatter et vérifier le code
-- **commit-msg**: Validation des messages de commit
+1. **Backend** : Créer module/service/contrôleur dans `apps/backend/src/`
+2. **Frontend** : Ajouter pages/composants dans `apps/frontend/src/`
+3. **Base de données** : Modifier `schema.ts` et générer migration
 
-### Linting et Formatting
+### Structure des Commits
 
 ```bash
-# Linter tout le projet
-pnpm lint
-
-# Formatter avec Prettier (automatique avec pre-commit)
-pnpm exec prettier --write .
+feat: add campaign management interface
+fix: resolve challenge date validation
+docs: update API documentation
+refactor: optimize challenge queries
 ```
 
 ## 🐳 Docker
 
-### Développement
+### Services
+
+- **postgres** : Base de données PostgreSQL
+- **backend** : API Nest.js (port 3001)
+- **frontend** : Application Next.js (port 3000)
+
+### Commandes Utiles
 
 ```bash
-# Base de données seule
-docker-compose -f docker-compose.dev.yml up -d
+# Logs en temps réel
+docker-compose logs -f backend
 
-# Stack complète
-docker-compose up
+# Accéder au conteneur
+docker-compose exec backend bash
+
+# Redémarrer un service
+docker-compose restart backend
+
+# Voir l'état des services
+docker-compose ps
 ```
 
-### Production
+## 📊 Monitoring
+
+### Logs d'Application
 
 ```bash
-# Build des images
-docker-compose build
+# Logs backend
+docker-compose logs backend
 
-# Démarrage en production
-docker-compose up -d
+# Logs base de données
+docker-compose logs postgres
+```
+
+### Base de Données
+
+```bash
+# Connexion directe à PostgreSQL
+PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d htf_sunup_db
+
+# Vérifier les données
+SELECT * FROM campaigns;
+SELECT * FROM challenges;
+SELECT * FROM actions;
 ```
 
 ## 🚀 Déploiement
 
-### Variables d'Environnement
+Le projet est configuré pour un déploiement automatique :
 
-Créer un fichier `.env` basé sur `.env.example` :
+- **Frontend** : Vercel
+- **Backend + PostgreSQL** : Render
 
-```env
-DATABASE_URL=postgresql://user:password@host:5432/database
-NEXT_PUBLIC_API_URL=https://api.mondomaine.com
-PORT=3001
-FRONTEND_URL=https://mondomaine.com
-```
+Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les détails.
 
-### Build pour Production
+## 📚 Documentation
 
-```bash
-# Build tous les apps
-pnpm build
-
-# Ou individuellement
-pnpm --filter frontend build
-pnpm --filter backend build
-```
-
-## 🧪 Tests
-
-```bash
-# Tests backend
-cd apps/backend
-pnpm test
-pnpm test:e2e
-pnpm test:cov
-
-# Tests peuvent être ajoutés au frontend selon les besoins
-```
-
-## 📦 Ajout de Packages
-
-### Package global (monorepo)
-
-```bash
-pnpm add -w nom-du-package
-```
-
-### Package spécifique à une app
-
-```bash
-# Frontend
-pnpm --filter frontend add nom-du-package
-
-# Backend
-pnpm --filter backend add nom-du-package
-```
-
-## 🔧 Personnalisation
-
-### Ajouter une nouvelle app
-
-1. Créer le dossier dans `apps/`
-2. Ajouter le `package.json` avec le nom `@template/nom-app`
-3. Ajouter les scripts dans le `package.json` racine si nécessaire
-
-### Ajouter un package partagé
-
-1. Créer le dossier dans `packages/`
-2. Créer le `package.json` avec le nom `@template/nom-package`
-3. L'importer dans les apps : `import { ... } from '@template/nom-package'`
-
-## 🚀 Déploiement
-
-Le projet est configuré pour un déploiement automatique via GitHub Actions :
-
-- **Frontend** : Déployé sur Vercel
-- **Backend + PostgreSQL** : Déployé sur Render
-
-Pour plus de détails, consulter le [Guide de Déploiement](./DEPLOYMENT.md).
-
-### URLs de Production
-
-- **Frontend** : https://htf-sunup.vercel.app
-- **Backend API** : https://htf-sunup-backend.onrender.com
-- **Documentation API** : https://htf-sunup-backend.onrender.com/api
+- **Plan MVP** : [docs/MVP_PLAN.md](./docs/MVP_PLAN.md) - Plan détaillé du projet
+- **API** : http://localhost:3001/api - Documentation Swagger
+- **Déploiement** : [DEPLOYMENT.md](./DEPLOYMENT.md) - Guide de déploiement
 
 ## 🤝 Contribution
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/amazing-feature`)
-3. Commit les changements (`git commit -m 'feat: add amazing feature'`)
-4. Push la branche (`git push origin feature/amazing-feature`)
-5. Ouvrir une Pull Request
-
-Le déploiement se fera automatiquement après validation de la PR.
+1. Créer une branche feature depuis `main`
+2. Implémenter la fonctionnalité
+3. Tester les endpoints avec Postman/curl
+4. Commiter avec conventional commits
+5. Créer une Pull Request
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 🆘 Support
-
-- Créer une issue pour rapporter un bug
-- Créer une discussion pour poser une question
-- Consulter la documentation des technologies utilisées :
-  - [Next.js](https://nextjs.org/docs)
-  - [Nest.js](https://docs.nestjs.com/)
-  - [Drizzle ORM](https://orm.drizzle.team/)
-  - [Tailwind CSS](https://tailwindcss.com/docs)
+Ce projet est sous licence MIT.
 
 ---
 
-_Template créé avec ❤️ pour accélérer le développement full-stack_
+**HTF Sunup** - Gestion des défis quotidiens pour booster l'activité des équipes Forever Living 🌅

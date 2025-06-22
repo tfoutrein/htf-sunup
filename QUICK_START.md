@@ -1,241 +1,177 @@
-# 🚀 Guide de Démarrage Rapide
+# Guide de Démarrage Rapide - HTF SunUp
 
-## Utiliser ce Template
+## 🚀 Lancement en 5 minutes
 
-### 1. Créer un Nouveau Projet
+### 1. Prérequis
+
+- Docker et Docker Compose installés
+- Git installé
+- Node.js 18+ et pnpm (optionnel pour développement local)
+
+### 2. Installation
 
 ```bash
-# Méthode 1: Cloner le template
-git clone <url-du-template> mon-nouveau-projet
-cd mon-nouveau-projet
-rm -rf .git
-git init
+# Cloner le projet
+git clone <votre-repo> htf-sunup
+cd htf-sunup
 
-# Méthode 2: Utiliser GitHub Template
-# Cliquer sur "Use this template" sur GitHub
+# Démarrer tous les services avec Docker
+docker-compose up -d
+
+# Vérifier que tout fonctionne
+docker-compose ps
 ```
 
-### 2. Configuration Initiale
+### 3. Accès aux Services
+
+- **Frontend** : http://localhost:3000
+- **Backend API** : http://localhost:3001
+- **Documentation API** : http://localhost:3001/api
+
+### 4. Comptes de Test
+
+Utilisez ces comptes créés automatiquement :
+
+| Rôle         | Email            | Mot de passe | Accès              |
+| ------------ | ---------------- | ------------ | ------------------ |
+| **Marraine** | aurelia@htf.com  | password     | Gestion globale    |
+| **Manager**  | jeromine@htf.com | password     | Gestion équipe     |
+| **FBO**      | marie@htf.com    | password     | Validation actions |
+
+### 5. Test Rapide de l'API
 
 ```bash
-# Installer pnpm si pas déjà installé
-npm install -g pnpm
+# Connexion
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"aurelia@htf.com","password":"password"}'
+
+# Copier le token retourné et tester les campagnes
+curl -X GET http://localhost:3001/campaigns \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## 🎯 Fonctionnalités Disponibles ✅
+
+### Backend Complet
+
+- ✅ **Authentification JWT** avec 3 rôles (marraine/manager/fbo)
+- ✅ **Gestion des campagnes** : CRUD complet avec validation des dates
+- ✅ **Gestion des défis** : Défis quotidiens liés aux campagnes
+- ✅ **Gestion des actions** : 1-6 actions par défi (vente/recrutement/réseaux sociaux)
+- ✅ **Base de données** : PostgreSQL avec migrations Drizzle
+- ✅ **API REST** : Tous les endpoints fonctionnels
+- ✅ **Documentation** : Swagger intégré
+
+### Données de Test
+
+Le système crée automatiquement :
+
+- 1 Campagne active : "Les défis de l'été de la Happy Team"
+- 1 Défi pour aujourd'hui avec 3 actions
+- 7 utilisateurs (1 marraine, 3 managers, 3 FBO)
+
+## 🔧 Développement Local
+
+Si vous préférez développer sans Docker :
+
+```bash
+# Démarrer uniquement PostgreSQL
+docker-compose -f docker-compose.dev.yml up -d
 
 # Installer les dépendances
 pnpm install
 
-# Copier la configuration d'environnement
-cp .env.example .env
-
-# Configurer les hooks Git
-pnpm run prepare
-```
-
-### 3. Démarrage en 2 Minutes
-
-```bash
-# Option A: Développement local (recommandé)
-# Démarrer PostgreSQL seul
-docker-compose -f docker-compose.dev.yml up -d
-
-# Configurer la base de données
+# Appliquer les migrations
 pnpm db:migrate
+
+# Créer les données de test
 pnpm db:seed
 
-# Démarrer les applications
-pnpm dev                    # Les deux en parallèle
-# OU séparément :
-pnpm back:dev              # Backend seul
-pnpm front:dev             # Frontend seul
+# Démarrer backend et frontend
+pnpm dev
 ```
 
+## 📋 Prochaines Étapes
+
+### Frontend à Adapter
+
+- [ ] Interface de gestion des campagnes (marraine/managers)
+- [ ] Dashboard FBO adapté aux défis de campagnes
+- [ ] Vue hebdomadaire imprimable
+
+### Endpoints Principaux
+
+**Campagnes :**
+
+- `GET /campaigns` - Liste des campagnes
+- `POST /campaigns` - Créer une campagne
+- `GET /campaigns/active` - Campagnes actives
+
+**Défis :**
+
+- `GET /challenges` - Liste des défis
+- `GET /challenges/today` - Défis du jour
+- `GET /challenges/:id/actions` - Défi avec actions
+
+**Actions :**
+
+- `POST /actions` - Créer une action
+- `GET /actions/challenge/:id` - Actions d'un défi
+
+## 🐛 Résolution de Problèmes
+
+### Services ne démarrent pas
+
 ```bash
-# Option B: Tout avec Docker
+# Vérifier les logs
+docker-compose logs
+
+# Redémarrer les services
+docker-compose restart
+
+# Nettoyer et relancer
+docker-compose down
 docker-compose up -d
-
-# Attendre que les services démarrent, puis :
-docker-compose exec backend npx drizzle-kit push:pg
-docker-compose exec backend npx ts-node src/db/seed.ts
 ```
 
-### 4. Vérification
-
-Ouvrir dans le navigateur :
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **API Docs**: http://localhost:3001/api
-
-## Personnalisation du Projet
-
-### 1. Renommer le Projet
+### Base de données vide
 
 ```bash
-# Modifier package.json (racine)
-{
-  "name": "mon-nouveau-projet",
-  "description": "Ma description"
-}
+# Appliquer les migrations
+docker-compose exec backend pnpm db:migrate
 
-# Modifier apps/frontend/package.json
-{
-  "name": "@mon-projet/frontend"
-}
-
-# Modifier apps/backend/package.json
-{
-  "name": "@mon-projet/backend"
-}
+# Créer les données de test
+docker-compose exec backend pnpm db:seed
 ```
 
-### 2. Configuration Base de Données
+### Erreur 401 sur l'API
 
-Modifier `.env` :
-
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/ma_db
-```
-
-### 3. URLs et Domaines
-
-Modifier `.env` :
-
-```env
-NEXT_PUBLIC_API_URL=https://api.mon-domaine.com
-FRONTEND_URL=https://mon-domaine.com
-```
-
-## Développement Quotidien
-
-### Démarrage Rapide
+Vérifiez que vous utilisez le bon token JWT :
 
 ```bash
-# Démarrer la DB (une seule fois)
-docker-compose -f docker-compose.dev.yml up -d
-
-# Développement quotidien
-pnpm dev          # Frontend + Backend en parallèle
-# OU
-pnpm back:dev     # Backend uniquement
-pnpm front:dev    # Frontend uniquement
+# Générer un nouveau token
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"aurelia@htf.com","password":"password"}'
 ```
 
-### Commandes Utiles
+## 📚 Documentation Complète
 
-```bash
-# Logs de la base de données
-docker-compose -f docker-compose.dev.yml logs -f
+- **Plan MVP** : [docs/MVP_PLAN.md](./docs/MVP_PLAN.md)
+- **Documentation API** : [docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)
+- **README** : [README.md](./README.md)
 
-# Reset de la DB
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up -d
-pnpm db:migrate
-pnpm db:seed
+## 🚀 Déploiement
 
-# Arrêter tout
-docker-compose -f docker-compose.dev.yml down
-```
+Le projet est prêt pour le déploiement :
 
-### Commits
+- Frontend : Vercel
+- Backend : Render
+- Base de données : PostgreSQL sur Render
 
-```bash
-# Utiliser les conventional commits
-git add .
-git commit -m "feat: add user authentication"
-git commit -m "fix: resolve database connection issue"
-git commit -m "docs: update API documentation"
-```
-
-## Structure Recommandée
-
-### Ajout d'une nouvelle fonctionnalité
-
-```bash
-# Backend (Nest.js)
-cd apps/backend
-pnpm exec nest generate module ma-fonctionnalite
-pnpm exec nest generate controller ma-fonctionnalite
-pnpm exec nest generate service ma-fonctionnalite
-
-# Frontend (Next.js)
-# Créer dans apps/frontend/src/components/
-# Créer dans apps/frontend/src/app/
-```
-
-### Ajout d'une dépendance
-
-```bash
-# Frontend uniquement
-pnpm --filter frontend add ma-librairie
-
-# Backend uniquement
-pnpm --filter backend add ma-librairie
-
-# Globale (monorepo)
-pnpm add -w ma-librairie
-```
-
-## Bonnes Pratiques
-
-### 1. Schéma de Base de Données
-
-Modifier `apps/backend/src/db/schema.ts` puis :
-
-```bash
-pnpm db:migrate
-```
-
-### 2. Variables d'Environnement
-
-Ajouter dans `.env.example` et documenter dans le README.
-
-### 3. Types Partagés
-
-Créer `packages/types` pour partager les types entre frontend et backend.
-
-### 4. Tests
-
-```bash
-# Backend
-cd apps/backend
-pnpm test
-pnpm test:e2e
-
-# Ajouter des tests frontend selon les besoins
-```
-
-## Déploiement Rapide
-
-### Préparation
-
-```bash
-# Build local
-pnpm build
-
-# Vérification
-pnpm lint
-pnpm type-check
-```
-
-### Docker Production
-
-```bash
-# Build des images
-docker-compose build
-
-# Test local en mode production
-docker-compose up
-```
-
-### Variables d'Environnement Production
-
-```env
-DATABASE_URL=postgresql://prod-user:prod-pass@prod-host:5432/prod-db
-NEXT_PUBLIC_API_URL=https://api.mon-domaine.com
-FRONTEND_URL=https://mon-domaine.com
-NODE_ENV=production
-```
+Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les détails.
 
 ---
 
-🎉 **Votre projet est prêt !** Consultez le README.md principal pour plus de détails.
+**Vous êtes prêt !** 🎉 Le backend est entièrement fonctionnel avec toutes les fonctionnalités des campagnes de défis.
