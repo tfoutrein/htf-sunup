@@ -2,12 +2,23 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsIn,
-  IsDateString,
   IsOptional,
   MinLength,
+  IsInt,
+  IsPositive,
+  Min,
+  Max,
 } from 'class-validator';
 
 export class CreateActionDto {
+  @ApiProperty({
+    description: 'Challenge ID this action belongs to',
+    example: 1,
+  })
+  @IsInt()
+  @IsPositive()
+  challengeId: number;
+
   @ApiProperty({
     description: 'Action title',
     example: 'Appel prospection client',
@@ -36,9 +47,11 @@ export class CreateActionDto {
   type: string;
 
   @ApiProperty({
-    description: 'Action date (YYYY-MM-DD)',
-    example: '2025-06-21',
+    description: 'Order of action in the challenge (1-6)',
+    example: 1,
   })
-  @IsDateString()
-  date: string;
+  @IsInt()
+  @Min(1)
+  @Max(6)
+  order: number;
 }

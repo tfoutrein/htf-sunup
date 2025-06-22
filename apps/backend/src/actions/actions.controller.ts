@@ -9,12 +9,14 @@ import {
   UseGuards,
   Request,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ActionsService } from './actions.service';
 import { CreateActionDto } from './dto/create-action.dto';
@@ -22,102 +24,132 @@ import { UpdateActionDto } from './dto/update-action.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('actions')
-@Controller('api/actions')
+@Controller('actions')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ActionsController {
   constructor(private readonly actionsService: ActionsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new action' })
-  @ApiResponse({ status: 201, description: 'Action created successfully' })
-  create(@Body() createActionDto: CreateActionDto, @Request() req) {
-    return this.actionsService.create(createActionDto, req.user.id);
+  @ApiOperation({ summary: 'Créer une nouvelle action' })
+  @ApiResponse({ status: 201, description: 'Action créée avec succès' })
+  @ApiResponse({
+    status: 400,
+    description: 'Position déjà occupée ou défi plein',
+  })
+  create(@Body() createActionDto: CreateActionDto) {
+    return this.actionsService.create(createActionDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all actions' })
-  @ApiResponse({ status: 200, description: 'List of actions' })
-  findAll() {
+  @ApiOperation({ summary: 'Récupérer toutes les actions' })
+  @ApiQuery({
+    name: 'challengeId',
+    required: false,
+    description: 'Filtrer par défi',
+  })
+  @ApiResponse({ status: 200, description: 'Liste des actions' })
+  findAll(@Query('challengeId') challengeId?: string) {
+    if (challengeId) {
+      return this.actionsService.findByChallenge(parseInt(challengeId));
+    }
     return this.actionsService.findAll();
   }
 
-  @Get('date/:date')
-  @ApiOperation({ summary: 'Get actions by date' })
-  @ApiResponse({ status: 200, description: 'List of actions for date' })
-  getActionsByDate(@Param('date') date: string) {
-    return this.actionsService.getActionsByDate(date);
-  }
-
-  @Get('my-actions')
-  @ApiOperation({ summary: 'Get actions created by current user' })
-  @ApiResponse({ status: 200, description: 'List of user actions' })
-  getMyActions(@Request() req) {
-    return this.actionsService.getActionsByCreator(req.user.id);
-  }
-
   @Get('global-progress')
-  @ApiOperation({ summary: 'Get global progress for marraine dashboard' })
-  @ApiResponse({ status: 200, description: 'Global progress statistics' })
+  @ApiOperation({
+    summary: 'Récupérer le progrès global pour le dashboard marraine',
+  })
+  @ApiResponse({ status: 200, description: 'Statistiques de progrès global' })
   getGlobalProgress() {
     return this.actionsService.getGlobalProgress();
   }
 
   @Get('team-progress/:managerId')
-  @ApiOperation({ summary: 'Get team progress for manager dashboard' })
-  @ApiResponse({ status: 200, description: 'Team progress statistics' })
-  getTeamProgress(@Param('managerId') managerId: string) {
-    return this.actionsService.getTeamProgress(+managerId);
+  @ApiOperation({
+    summary: 'Récupérer le progrès équipe pour le dashboard manager',
+  })
+  @ApiResponse({ status: 200, description: 'Statistiques de progrès équipe' })
+  getTeamProgress(@Param('managerId', ParseIntPipe) managerId: number) {
+    return this.actionsService.getTeamProgress(managerId);
   }
 
   @Get('user/:userId/date/:date')
-  @ApiOperation({ summary: 'Get user actions for specific date' })
-  @ApiResponse({ status: 200, description: 'List of user actions for date' })
+  @ApiOperation({ summary: 'Récupérer les actions utilisateur pour une date' })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste des actions utilisateur pour la date',
+  })
   getUserActionsForDate(
-    @Param('userId') userId: string,
+    @Param('userId', ParseIntPipe) userId: number,
     @Param('date') date: string,
   ) {
-    return this.actionsService.getUserActionsForDate(+userId, date);
+    return this.actionsService.getUserActionsForDate(userId, date);
+  }
+
+  @Get('user/:userId/challenge/:challengeId')
+  @ApiOperation({ summary: 'Récupérer les actions utilisateur pour un défi' })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste des actions utilisateur pour le défi',
+  })
+  getUserActionsForChallenge(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('challengeId', ParseIntPipe) challengeId: number,
+  ) {
+    return this.actionsService.getUserActionsForChallenge(userId, challengeId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get an action by ID' })
-  @ApiResponse({ status: 200, description: 'Action found' })
-  @ApiResponse({ status: 404, description: 'Action not found' })
-  findOne(@Param('id') id: string) {
-    return this.actionsService.findOne(+id);
+  @ApiOperation({ summary: 'Récupérer une action par ID' })
+  @ApiResponse({ status: 200, description: 'Action trouvée' })
+  @ApiResponse({ status: 404, description: 'Action non trouvée' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.actionsService.findOne(id);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update an action' })
-  @ApiResponse({ status: 200, description: 'Action updated successfully' })
-  @ApiResponse({ status: 404, description: 'Action not found' })
-  update(@Param('id') id: string, @Body() updateActionDto: UpdateActionDto) {
-    return this.actionsService.update(+id, updateActionDto);
+  @ApiOperation({ summary: 'Mettre à jour une action' })
+  @ApiResponse({ status: 200, description: 'Action mise à jour avec succès' })
+  @ApiResponse({ status: 404, description: 'Action non trouvée' })
+  @ApiResponse({ status: 400, description: 'Position déjà occupée' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateActionDto: UpdateActionDto,
+  ) {
+    return this.actionsService.update(id, updateActionDto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete an action' })
-  @ApiResponse({ status: 200, description: 'Action deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Action not found' })
-  remove(@Param('id') id: string) {
-    return this.actionsService.remove(+id);
+  @ApiOperation({ summary: 'Supprimer une action' })
+  @ApiResponse({ status: 200, description: 'Action supprimée avec succès' })
+  @ApiResponse({ status: 404, description: 'Action non trouvée' })
+  @ApiResponse({
+    status: 400,
+    description: 'Impossible de supprimer une action assignée',
+  })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.actionsService.remove(id);
   }
 
   @Post(':id/assign')
-  @ApiOperation({ summary: 'Assign action to users' })
-  @ApiResponse({ status: 200, description: 'Action assigned successfully' })
-  assignToUsers(@Param('id') id: string, @Body() body: { userIds: number[] }) {
-    return this.actionsService.assignActionToUsers(+id, body.userIds);
+  @ApiOperation({ summary: 'Assigner une action aux utilisateurs' })
+  @ApiResponse({ status: 200, description: 'Action assignée avec succès' })
+  assignToUsers(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { userIds: number[] },
+  ) {
+    return this.actionsService.assignActionToUsers(id, body.userIds);
   }
 
   @Put('user-action/:userActionId/complete')
-  @ApiOperation({ summary: 'Complete a user action' })
-  @ApiResponse({ status: 200, description: 'Action completed successfully' })
+  @ApiOperation({ summary: 'Compléter une action utilisateur' })
+  @ApiResponse({ status: 200, description: 'Action complétée avec succès' })
+  @ApiResponse({ status: 404, description: 'Action utilisateur non trouvée' })
   completeUserAction(
-    @Param('userActionId') userActionId: string,
+    @Param('userActionId', ParseIntPipe) userActionId: number,
     @Body() body: { proofUrl?: string },
   ) {
-    return this.actionsService.completeUserAction(+userActionId, body.proofUrl);
+    return this.actionsService.completeUserAction(userActionId, body.proofUrl);
   }
 }

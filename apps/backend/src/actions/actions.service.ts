@@ -1,113 +1,182 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, and, gte, lte, inArray, isNotNull } from 'drizzle-orm';
-import { DATABASE_CONNECTION } from '../db/database.module';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { eq, and, inArray, isNotNull, ne } from 'drizzle-orm';
+import { DatabaseService } from '../db/database.module';
 import {
   actions,
   userActions,
   users,
-  Action,
-  NewAction,
-  UserAction,
+  challenges,
+  campaigns,
+  type Action,
+  type NewAction,
+  type UserAction,
 } from '../db/schema';
 import { CreateActionDto } from './dto/create-action.dto';
 import { UpdateActionDto } from './dto/update-action.dto';
 
 @Injectable()
 export class ActionsService {
-  constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  async create(
-    createActionDto: CreateActionDto,
-    createdBy: number,
-  ): Promise<Action> {
-    const [action] = await this.db
+  async create(createActionDto: CreateActionDto): Promise<Action> {
+    const { challengeId, order, ...rest } = createActionDto;
+
+    // Verify challenge exists
+    const [challenge] = await this.db.db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.id, challengeId));
+
+    if (!challenge) {
+      throw new NotFoundException(`Défi avec l'ID ${challengeId} non trouvé`);
+    }
+
+    // Check if order is already taken for this challenge
+    const [existingAction] = await this.db.db
+      .select()
+      .from(actions)
+      .where(
+        and(eq(actions.challengeId, challengeId), eq(actions.order, order)),
+      );
+
+    if (existingAction) {
+      throw new BadRequestException(
+        `Une action existe déjà à la position ${order} pour ce défi`,
+      );
+    }
+
+    // Check if challenge already has 6 actions (max)
+    const existingActions = await this.db.db
+      .select()
+      .from(actions)
+      .where(eq(actions.challengeId, challengeId));
+
+    if (existingActions.length >= 6) {
+      throw new BadRequestException(
+        'Un défi ne peut pas contenir plus de 6 actions',
+      );
+    }
+
+    const newAction: NewAction = {
+      challengeId,
+      order,
+      ...rest,
+    };
+
+    const [action] = await this.db.db
       .insert(actions)
-      .values({
-        ...createActionDto,
-        createdBy,
-      })
+      .values(newAction)
       .returning();
+
     return action;
   }
 
   async findAll(): Promise<Action[]> {
-    return await this.db.select().from(actions);
+    return await this.db.db.select().from(actions);
+  }
+
+  async findByChallenge(challengeId: number): Promise<Action[]> {
+    return await this.db.db
+      .select()
+      .from(actions)
+      .where(eq(actions.challengeId, challengeId))
+      .orderBy(actions.order);
   }
 
   async findOne(id: number): Promise<Action> {
-    const [action] = await this.db
+    const [action] = await this.db.db
       .select()
       .from(actions)
       .where(eq(actions.id, id));
 
     if (!action) {
-      throw new NotFoundException(`Action with ID ${id} not found`);
+      throw new NotFoundException(`Action avec l'ID ${id} non trouvée`);
     }
 
     return action;
   }
 
   async update(id: number, updateActionDto: UpdateActionDto): Promise<Action> {
-    const [action] = await this.db
+    await this.findOne(id); // Check if exists
+
+    // If updating order, check for conflicts
+    if (updateActionDto.order) {
+      const action = await this.findOne(id);
+      const [existingAction] = await this.db.db
+        .select()
+        .from(actions)
+        .where(
+          and(
+            eq(actions.challengeId, action.challengeId),
+            eq(actions.order, updateActionDto.order),
+            ne(actions.id, id), // Exclude current action
+          ),
+        );
+
+      if (existingAction) {
+        throw new BadRequestException(
+          `Une action existe déjà à la position ${updateActionDto.order} pour ce défi`,
+        );
+      }
+    }
+
+    const updateData = {
+      ...updateActionDto,
+      updatedAt: new Date(),
+    };
+
+    const [updatedAction] = await this.db.db
       .update(actions)
-      .set({ ...updateActionDto, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(actions.id, id))
       .returning();
 
-    if (!action) {
-      throw new NotFoundException(`Action with ID ${id} not found`);
-    }
-
-    return action;
+    return updatedAction;
   }
 
   async remove(id: number): Promise<void> {
-    const [action] = await this.db
-      .delete(actions)
-      .where(eq(actions.id, id))
-      .returning();
+    await this.findOne(id); // Check if exists
 
-    if (!action) {
-      throw new NotFoundException(`Action with ID ${id} not found`);
+    // Check if action has user actions
+    const [userAction] = await this.db.db
+      .select()
+      .from(userActions)
+      .where(eq(userActions.actionId, id))
+      .limit(1);
+
+    if (userAction) {
+      throw new BadRequestException(
+        'Impossible de supprimer une action assignée aux utilisateurs',
+      );
     }
-  }
 
-  // Specific methods for MVP
-  async getActionsByDate(date: string): Promise<Action[]> {
-    return await this.db.select().from(actions).where(eq(actions.date, date));
-  }
-
-  async getActionsByDateRange(
-    startDate: string,
-    endDate: string,
-  ): Promise<Action[]> {
-    return await this.db
-      .select()
-      .from(actions)
-      .where(and(gte(actions.date, startDate), lte(actions.date, endDate)));
-  }
-
-  async getActionsByCreator(createdBy: number): Promise<Action[]> {
-    return await this.db
-      .select()
-      .from(actions)
-      .where(eq(actions.createdBy, createdBy));
+    await this.db.db.delete(actions).where(eq(actions.id, id));
   }
 
   async assignActionToUsers(
     actionId: number,
     userIds: number[],
   ): Promise<UserAction[]> {
+    const action = await this.findOne(actionId);
+
     const assignments = userIds.map((userId) => ({
       actionId,
       userId,
+      challengeId: action.challengeId,
     }));
 
-    return await this.db.insert(userActions).values(assignments).returning();
+    return await this.db.db.insert(userActions).values(assignments).returning();
   }
 
-  async getUserActionsForDate(userId: number, date: string): Promise<any[]> {
-    return await this.db
+  async getUserActionsForChallenge(
+    userId: number,
+    challengeId: number,
+  ): Promise<any[]> {
+    return await this.db.db
       .select({
         id: userActions.id,
         completed: userActions.completed,
@@ -118,19 +187,52 @@ export class ActionsService {
           title: actions.title,
           description: actions.description,
           type: actions.type,
-          date: actions.date,
+          order: actions.order,
         },
       })
       .from(userActions)
       .innerJoin(actions, eq(userActions.actionId, actions.id))
-      .where(and(eq(userActions.userId, userId), eq(actions.date, date)));
+      .where(
+        and(
+          eq(userActions.userId, userId),
+          eq(userActions.challengeId, challengeId),
+        ),
+      )
+      .orderBy(actions.order);
+  }
+
+  async getUserActionsForDate(userId: number, date: string): Promise<any[]> {
+    return await this.db.db
+      .select({
+        id: userActions.id,
+        completed: userActions.completed,
+        completedAt: userActions.completedAt,
+        proofUrl: userActions.proofUrl,
+        challenge: {
+          id: challenges.id,
+          title: challenges.title,
+          date: challenges.date,
+        },
+        action: {
+          id: actions.id,
+          title: actions.title,
+          description: actions.description,
+          type: actions.type,
+          order: actions.order,
+        },
+      })
+      .from(userActions)
+      .innerJoin(actions, eq(userActions.actionId, actions.id))
+      .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
+      .where(and(eq(userActions.userId, userId), eq(challenges.date, date)))
+      .orderBy(actions.order);
   }
 
   async completeUserAction(
     userActionId: number,
     proofUrl?: string,
   ): Promise<UserAction> {
-    const [userAction] = await this.db
+    const [userAction] = await this.db.db
       .update(userActions)
       .set({
         completed: true,
@@ -143,7 +245,7 @@ export class ActionsService {
 
     if (!userAction) {
       throw new NotFoundException(
-        `UserAction with ID ${userActionId} not found`,
+        `UserAction avec l'ID ${userActionId} non trouvée`,
       );
     }
 
@@ -152,50 +254,31 @@ export class ActionsService {
 
   async getGlobalProgress(): Promise<any> {
     try {
-      console.log('[DEBUG] Starting getGlobalProgress');
-
       // Get total members (FBO role)
-      const totalMembers = await this.db
+      const totalMembers = await this.db.db
         .select()
         .from(users)
         .where(eq(users.role, 'fbo'));
 
-      console.log('[DEBUG] Total members found:', totalMembers.length);
-
-      // Get all actions
-      const allActions = await this.db.select().from(actions);
+      // Get all user actions
+      const allUserActions = await this.db.db.select().from(userActions);
 
       // Get completed actions
-      const completedActions = await this.db
+      const completedActions = await this.db.db
         .select()
         .from(userActions)
         .where(eq(userActions.completed, true));
 
       // Get manager stats
-      const managers = await this.db
+      const managers = await this.db.db
         .select()
         .from(users)
         .where(eq(users.role, 'manager'));
 
       const managerStats = await Promise.all(
         managers.map(async (manager) => {
-          console.log('[DEBUG] Processing manager:', manager.id, manager.name);
-
-          // Validate manager ID
-          if (!manager.id || isNaN(manager.id)) {
-            console.error('[ERROR] Invalid manager ID:', manager.id);
-            return {
-              managerId: 0,
-              managerName: manager.name || 'Unknown',
-              teamSize: 0,
-              completedActions: 0,
-              totalActions: 0,
-              completionRate: 0,
-            };
-          }
-
           // Get team members for this manager
-          const teamMembers = await this.db
+          const teamMembers = await this.db.db
             .select()
             .from(users)
             .where(
@@ -206,30 +289,18 @@ export class ActionsService {
               ),
             );
 
-          // Get actions assigned to this manager's team
           const teamUserIds = teamMembers.map((m) => m.id);
-
-          if (teamUserIds.length === 0) {
-            return {
-              managerId: manager.id,
-              managerName: manager.name,
-              teamSize: 0,
-              completedActions: 0,
-              totalActions: 0,
-              completionRate: 0,
-            };
-          }
 
           let teamTotalActions = [];
           let teamCompletedActions = [];
 
           if (teamUserIds.length > 0) {
-            teamTotalActions = await this.db
+            teamTotalActions = await this.db.db
               .select()
               .from(userActions)
               .where(inArray(userActions.userId, teamUserIds));
 
-            teamCompletedActions = await this.db
+            teamCompletedActions = await this.db.db
               .select()
               .from(userActions)
               .where(
@@ -257,15 +328,13 @@ export class ActionsService {
       );
 
       const globalCompletionRate =
-        allActions.length > 0
-          ? (completedActions.length / allActions.length) * 100
+        allUserActions.length > 0
+          ? (completedActions.length / allUserActions.length) * 100
           : 0;
-
-      console.log('[DEBUG] Returning global progress data');
 
       return {
         totalMembers: totalMembers.length,
-        totalActions: allActions.length,
+        totalActions: allUserActions.length,
         completedActions: completedActions.length,
         globalCompletionRate,
         managerStats,
@@ -278,7 +347,7 @@ export class ActionsService {
 
   async getTeamProgress(managerId: number): Promise<any[]> {
     // Get team members for this manager
-    const teamMembers = await this.db
+    const teamMembers = await this.db.db
       .select()
       .from(users)
       .where(
@@ -291,12 +360,12 @@ export class ActionsService {
 
     const teamProgress = await Promise.all(
       teamMembers.map(async (member) => {
-        const totalUserActions = await this.db
+        const totalUserActions = await this.db.db
           .select()
           .from(userActions)
           .where(eq(userActions.userId, member.id));
 
-        const completedUserActions = await this.db
+        const completedUserActions = await this.db.db
           .select()
           .from(userActions)
           .where(

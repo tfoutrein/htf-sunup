@@ -1,10 +1,15 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 const postgres = require('postgres');
 import * as schema from './schema';
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
+
+@Injectable()
+export class DatabaseService {
+  constructor(@Inject(DATABASE_CONNECTION) public readonly db: any) {}
+}
 
 @Global()
 @Module({
@@ -21,7 +26,8 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
       },
       inject: [ConfigService],
     },
+    DatabaseService,
   ],
-  exports: [DATABASE_CONNECTION],
+  exports: [DATABASE_CONNECTION, DatabaseService],
 })
 export class DatabaseModule {}

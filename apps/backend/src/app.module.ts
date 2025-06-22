@@ -6,6 +6,8 @@ import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ActionsModule } from './actions/actions.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+import { ChallengesModule } from './challenges/challenges.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { ActionsModule } from './actions/actions.module';
     UsersModule,
     AuthModule,
     ActionsModule,
+    CampaignsModule,
+    ChallengesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
