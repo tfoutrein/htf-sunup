@@ -2,6 +2,7 @@ const { drizzle } = require('drizzle-orm/postgres-js');
 const { migrate } = require('drizzle-orm/postgres-js/migrator');
 const postgres = require('postgres');
 const path = require('path');
+const fs = require('fs');
 
 async function runMigrations() {
   const connectionString =
@@ -14,9 +15,28 @@ async function runMigrations() {
 
   try {
     console.log('🚀 Running database migrations...');
-    // Utiliser le chemin absolu vers le dossier drizzle
-    const migrationsFolder = path.resolve(__dirname, '../../drizzle');
-    console.log('📁 Migrations folder:', migrationsFolder);
+
+    // Essayer différents chemins pour trouver le dossier drizzle
+    const possiblePaths = [
+      path.resolve(process.cwd(), 'drizzle'),
+      path.resolve(__dirname, '../../drizzle'),
+      path.resolve(process.cwd(), 'apps/backend/drizzle'),
+    ];
+
+    let migrationsFolder = null;
+    for (const possiblePath of possiblePaths) {
+      console.log('🔍 Checking path:', possiblePath);
+      if (fs.existsSync(path.join(possiblePath, 'meta', '_journal.json'))) {
+        migrationsFolder = possiblePath;
+        break;
+      }
+    }
+
+    if (!migrationsFolder) {
+      throw new Error('Could not find migrations folder with _journal.json');
+    }
+
+    console.log('📁 Migrations folder found:', migrationsFolder);
 
     await migrate(db, { migrationsFolder });
     console.log('✅ Database migrations completed successfully');
