@@ -77,6 +77,35 @@ async function runMigrations() {
       `;
     }
 
+    // Vérifier et ajouter les colonnes manquantes dans la table actions
+    console.log('🔍 Checking for missing columns in actions table...');
+
+    // Vérifier si challenge_id existe
+    const challengeIdExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'challenge_id'
+    `;
+
+    if (challengeIdExists.length === 0) {
+      console.log('📝 Adding challenge_id column to actions table...');
+      await sql`ALTER TABLE actions ADD COLUMN challenge_id INTEGER NOT NULL DEFAULT 1;`;
+      console.log('✅ Added challenge_id column successfully');
+    }
+
+    // Vérifier si points_value existe
+    const pointsValueExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'points_value'
+    `;
+
+    if (pointsValueExists.length === 0) {
+      console.log('📝 Adding points_value column to actions table...');
+      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10 NOT NULL;`;
+      console.log('✅ Added points_value column successfully');
+    }
+
     // Créer les contraintes de clé étrangère manquantes
     console.log('🔍 Checking for missing foreign key constraints...');
 
@@ -156,19 +185,38 @@ async function runMigrations() {
       }
     }
 
-    // Check if points_value column exists and add it if not (legacy migration)
+    // Vérification finale des colonnes legacy
     console.log('🔍 Checking for legacy schema updates...');
-    const result = await sql`
+
+    const finalCheckChallengeId = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'challenge_id';
+    `;
+
+    const finalCheckPointsValue = await sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'actions' AND column_name = 'points_value';
     `;
 
-    if (result.length === 0) {
-      console.log('📝 Adding points_value column to actions table...');
-      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10;`;
+    if (finalCheckChallengeId.length === 0) {
+      console.log(
+        '📝 Final attempt: Adding challenge_id column to actions table...',
+      );
+      await sql`ALTER TABLE actions ADD COLUMN challenge_id INTEGER NOT NULL DEFAULT 1;`;
+      console.log('✅ Added challenge_id column successfully');
+    }
+
+    if (finalCheckPointsValue.length === 0) {
+      console.log(
+        '📝 Final attempt: Adding points_value column to actions table...',
+      );
+      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10 NOT NULL;`;
       console.log('✅ Added points_value column successfully');
-    } else {
+    }
+
+    if (finalCheckChallengeId.length > 0 && finalCheckPointsValue.length > 0) {
       console.log('✅ Legacy schema is up to date');
     }
 
