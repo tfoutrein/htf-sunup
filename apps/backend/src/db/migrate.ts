@@ -2,7 +2,6 @@ const { drizzle } = require('drizzle-orm/postgres-js');
 const { migrate } = require('drizzle-orm/postgres-js/migrator');
 const postgres = require('postgres');
 const path = require('path');
-const fs = require('fs');
 
 async function runMigrations() {
   const connectionString =
@@ -16,27 +15,14 @@ async function runMigrations() {
   try {
     console.log('🚀 Running database migrations...');
 
-    // Essayer différents chemins pour trouver le dossier drizzle
-    const possiblePaths = [
-      path.resolve(process.cwd(), 'drizzle'),
-      path.resolve(__dirname, '../../drizzle'),
-      path.resolve(process.cwd(), 'apps/backend/drizzle'),
-    ];
+    // En production, utiliser le dossier drizzle copié dans dist/
+    // En développement, utiliser le dossier drizzle à la racine
+    const migrationsFolder =
+      process.env.NODE_ENV === 'production'
+        ? path.resolve(__dirname, '../../dist/drizzle') // apps/backend/dist/drizzle
+        : path.resolve(__dirname, '../../drizzle'); // apps/backend/drizzle
 
-    let migrationsFolder = null;
-    for (const possiblePath of possiblePaths) {
-      console.log('🔍 Checking path:', possiblePath);
-      if (fs.existsSync(path.join(possiblePath, 'meta', '_journal.json'))) {
-        migrationsFolder = possiblePath;
-        break;
-      }
-    }
-
-    if (!migrationsFolder) {
-      throw new Error('Could not find migrations folder with _journal.json');
-    }
-
-    console.log('📁 Migrations folder found:', migrationsFolder);
+    console.log('📁 Migrations folder:', migrationsFolder);
 
     await migrate(db, { migrationsFolder });
     console.log('✅ Database migrations completed successfully');
@@ -46,33 +32,24 @@ async function runMigrations() {
     const result = await sql`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'actions' 
-      AND column_name = 'points_value'
+      WHERE table_name = 'actions' AND column_name = 'points_value';
     `;
 
     if (result.length === 0) {
       console.log('➕ Adding points_value column to actions table...');
-      await sql`
-        ALTER TABLE actions 
-        ADD COLUMN points_value integer DEFAULT 10 NOT NULL
-      `;
-      console.log('✅ Legacy column added successfully');
+      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10;`;
+      console.log('✅ points_value column added successfully');
     } else {
       console.log('✅ Legacy schema is up to date');
     }
 
     console.log('🎉 All migrations completed successfully');
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('❌ Migration failed:', error.message);
     process.exit(1);
   } finally {
     await sql.end();
   }
 }
 
-module.exports = { runMigrations };
-
-// If run directly
-if (require.main === module) {
-  runMigrations();
-}
+runMigrations();
