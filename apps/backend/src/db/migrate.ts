@@ -9,7 +9,14 @@ async function runMigrations() {
     'postgresql://postgres:postgres@localhost:5432/htf_sunup_db';
 
   console.log('🔗 Connecting to database...');
-  const sql = postgres(connectionString, { max: 1 });
+  // Utiliser SSL seulement pour les connexions externes (production)
+  const isLocalDatabase =
+    connectionString.includes('localhost') ||
+    connectionString.includes('127.0.0.1');
+  const sql = postgres(connectionString, {
+    max: 1,
+    ssl: isLocalDatabase ? false : 'require',
+  });
   const db = drizzle(sql);
 
   try {
@@ -106,6 +113,19 @@ async function runMigrations() {
       console.log('✅ Added points_value column successfully');
     }
 
+    // Vérifier si order existe
+    const orderExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'order'
+    `;
+
+    if (orderExists.length === 0) {
+      console.log('📝 Adding order column to actions table...');
+      await sql`ALTER TABLE actions ADD COLUMN "order" INTEGER DEFAULT 1 NOT NULL;`;
+      console.log('✅ Added order column successfully');
+    }
+
     // Créer les contraintes de clé étrangère manquantes
     console.log('🔍 Checking for missing foreign key constraints...');
 
@@ -200,6 +220,12 @@ async function runMigrations() {
       WHERE table_name = 'actions' AND column_name = 'points_value';
     `;
 
+    const finalCheckOrder = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'actions' AND column_name = 'order';
+    `;
+
     if (finalCheckChallengeId.length === 0) {
       console.log(
         '📝 Final attempt: Adding challenge_id column to actions table...',
@@ -216,7 +242,17 @@ async function runMigrations() {
       console.log('✅ Added points_value column successfully');
     }
 
-    if (finalCheckChallengeId.length > 0 && finalCheckPointsValue.length > 0) {
+    if (finalCheckOrder.length === 0) {
+      console.log('📝 Final attempt: Adding order column to actions table...');
+      await sql`ALTER TABLE actions ADD COLUMN "order" INTEGER DEFAULT 1 NOT NULL;`;
+      console.log('✅ Added order column successfully');
+    }
+
+    if (
+      finalCheckChallengeId.length > 0 &&
+      finalCheckPointsValue.length > 0 &&
+      finalCheckOrder.length > 0
+    ) {
       console.log('✅ Legacy schema is up to date');
     }
 
