@@ -24,6 +24,7 @@ Application de gestion des défis quotidiens pour la Happy Team Factory - Équip
 - **Backend**: Nest.js avec TypeScript ✅
 - **Base de données**: PostgreSQL avec Drizzle ORM ✅
 - **Authentification**: JWT avec rôles (marraine/manager/fbo) ✅
+- **Gestion d'état**: TanStack Query v5 pour le cache et la synchronisation ✅
 - **Monorepo**: pnpm workspaces
 - **Containerisation**: Docker & Docker Compose
 - **API**: REST avec documentation Swagger
@@ -245,11 +246,13 @@ curl -X GET http://localhost:3001/challenges/today \
 - **Tests** : Endpoints validés et fonctionnels
 - **Documentation** : Swagger disponible
 
-### 🔄 **FRONTEND EN COURS**
+### ✅ **FRONTEND MODERNE** (25 juin 2025)
 
-- **Pages existantes** : Login, dashboards basiques
-- **À adapter** : Interfaces pour les campagnes
-- **À créer** : Gestion campagnes, planification défis
+- **TanStack Query v5** : Gestion d'état serveur avec cache intelligent
+- **Optimistic Updates** : Interface réactive avec mises à jour instantanées
+- **Cache automatique** : Réduction des appels API et performance optimisée
+- **Pages complètes** : Login, dashboards, gestion campagnes et défis
+- **Composants réutilisables** : Système de design cohérent
 
 ### 📋 **PROCHAINES ÉTAPES**
 
@@ -353,6 +356,7 @@ Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les détails.
 
 - **Plan MVP** : [docs/MVP_PLAN.md](./docs/MVP_PLAN.md) - Plan détaillé du projet
 - **API** : http://localhost:3001/api - Documentation Swagger
+- **TanStack Query** : [docs/TANSTACK_QUERY_DOCUMENTATION.md](./docs/TANSTACK_QUERY_DOCUMENTATION.md) - Gestion du cache et état serveur
 - **Déploiement** : [DEPLOYMENT.md](./DEPLOYMENT.md) - Guide de déploiement
 
 ## 🤝 Contribution
