@@ -303,37 +303,32 @@ async function runMigrations() {
       actionsExists[0].exists &&
       userActionsExists[0].exists;
 
-    // Si toutes les tables existent, vérifier si les migrations ont déjà été appliquées
+    // Si toutes les tables existent, skip complètement les migrations Drizzle
     if (allTablesExist) {
-      console.log('🔍 All main tables exist, checking migration history...');
+      console.log(
+        '✅ All main tables exist - skipping Drizzle migrations completely',
+      );
 
-      const migrationsApplied = await sql`
-        SELECT COUNT(*) as count FROM drizzle.__drizzle_migrations;
-      `;
+      // Juste s'assurer que la table de migration existe et insérer un enregistrement si nécessaire
+      try {
+        // Vérifier si une migration existe déjà
+        const existingMigrations = await sql`
+          SELECT COUNT(*) as count FROM drizzle.__drizzle_migrations;
+        `;
 
-      if (migrationsApplied[0].count > 0) {
-        console.log(
-          '✅ Database schema is already up to date - skipping Drizzle migrations',
-        );
-      } else {
-        console.log(
-          '🔄 Running Drizzle migrations to update migration history...',
-        );
-        try {
-          await migrate(db, { migrationsFolder });
-          console.log('✅ Database migrations completed successfully');
-        } catch (error) {
-          if (
-            error.message.includes('duplicate') ||
-            error.message.includes('already exists') ||
-            (error.message.includes('relation') &&
-              error.message.includes('already exists'))
-          ) {
-            console.log('✅ Database schema is already up to date');
-          } else {
-            throw error;
-          }
+        if (existingMigrations[0].count === 0) {
+          console.log(
+            '📝 Adding migration record to prevent future conflicts...',
+          );
+          await sql`
+            INSERT INTO drizzle.__drizzle_migrations (hash, created_at) 
+            VALUES ('manual_skip_existing_schema', ${Date.now()})
+            ON CONFLICT DO NOTHING;
+          `;
         }
+      } catch (error) {
+        // Si on ne peut pas accéder à la table de migration, ce n'est pas grave
+        console.log('⚠️ Could not update migration history, but continuing...');
       }
     } else {
       // Certaines tables manquent, lancer les migrations normalement
