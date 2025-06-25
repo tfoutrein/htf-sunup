@@ -1,6 +1,6 @@
 'use client';
 
-import { LogoChoice } from '@/hooks/useRandomLogo';
+import { LogoChoice } from '@/contexts/LogoContext';
 
 interface LogoDisplayProps {
   logoChoice: LogoChoice;

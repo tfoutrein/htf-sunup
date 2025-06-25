@@ -6,7 +6,7 @@ import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
-import { useRandomLogo } from '@/hooks/useRandomLogo';
+import { useLogo } from '@/contexts/LogoContext';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -17,7 +17,7 @@ export default function LoginPage() {
     password: '',
   });
   const router = useRouter();
-  const logoChoice = useRandomLogo();
+  const { logoChoice } = useLogo();
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 

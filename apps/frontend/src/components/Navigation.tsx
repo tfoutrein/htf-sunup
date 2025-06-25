@@ -11,7 +11,7 @@ import { logout } from '@/utils/auth';
 import { useAuth } from '@/app/providers';
 import { useAurora } from '@/contexts/AuroraContext';
 import { useAuroraPages } from '@/hooks/useAuroraPages';
-import { useRandomLogo } from '@/hooks/useRandomLogo';
+import { useLogo } from '@/contexts/LogoContext';
 
 export function Navigation() {
   const pathname = usePathname();
@@ -20,7 +20,7 @@ export function Navigation() {
   const { user, isLoading } = useAuth();
   const { isAuroraEnabled, toggleAurora } = useAurora();
   const { isAuroraPage } = useAuroraPages();
-  const logoChoice = useRandomLogo();
+  const { logoChoice } = useLogo();
 
   const getDashboardLink = () => {
     if (!user) return '#';

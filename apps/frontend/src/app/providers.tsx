@@ -5,6 +5,7 @@ import { HeroUIProvider } from '@heroui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuroraProvider } from '@/contexts/AuroraContext';
+import { LogoProvider } from '@/contexts/LogoContext';
 import { getUser, isAuthenticated } from '@/utils/auth';
 
 interface User {
@@ -100,9 +101,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <HeroUIProvider>
-        <AuroraProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </AuroraProvider>
+        <LogoProvider>
+          <AuroraProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </AuroraProvider>
+        </LogoProvider>
       </HeroUIProvider>
       {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
     </QueryClientProvider>
