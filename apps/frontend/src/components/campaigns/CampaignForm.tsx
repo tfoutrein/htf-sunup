@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Campaign } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCreateCampaign, useUpdateCampaign } from '@/hooks/useCampaigns';
 import {
   Card,
   Button,
@@ -20,7 +20,7 @@ interface CampaignFormProps {
   campaign?: Campaign | null;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (campaign: Campaign) => void;
+  onSuccess: () => void;
 }
 
 export default function CampaignForm({
@@ -36,8 +36,14 @@ export default function CampaignForm({
     endDate: '',
     status: 'draft' as Campaign['status'],
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query mutations
+  const createCampaignMutation = useCreateCampaign();
+  const updateCampaignMutation = useUpdateCampaign();
+
+  const isLoading =
+    createCampaignMutation.isPending || updateCampaignMutation.isPending;
 
   useEffect(() => {
     if (campaign) {
@@ -62,7 +68,6 @@ export default function CampaignForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     try {
@@ -72,24 +77,21 @@ export default function CampaignForm({
         endDate: new Date(formData.endDate).toISOString(),
       };
 
-      let result: Campaign;
       if (campaign) {
-        result = await campaignService.updateCampaign(
-          campaign.id,
-          campaignData,
-        );
+        await updateCampaignMutation.mutateAsync({
+          id: campaign.id,
+          data: campaignData,
+        });
       } else {
-        result = await campaignService.createCampaign(campaignData);
+        await createCampaignMutation.mutateAsync(campaignData);
       }
 
-      onSuccess(result);
+      onSuccess();
       onClose();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Erreur lors de la sauvegarde',
       );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -210,17 +212,18 @@ export default function CampaignForm({
               variant="ghost"
               color="default"
               onClick={onClose}
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Annuler
             </Button>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
+              isLoading={isLoading}
               className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
             >
-              {loading ? 'Sauvegarde...' : campaign ? 'Modifier' : 'Créer'}
+              {isLoading ? 'Sauvegarde...' : campaign ? 'Modifier' : 'Créer'}
             </Button>
           </ModalFooter>
         </form>

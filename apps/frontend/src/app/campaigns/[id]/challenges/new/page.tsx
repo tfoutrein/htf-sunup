@@ -4,7 +4,9 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { isAuthenticated, getUser } from '@/utils/auth';
 import { Campaign, Challenge, Action } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCampaign } from '@/hooks/useCampaigns';
+import { useChallenges, useCreateChallenge } from '@/hooks/useChallenges';
+import { useCreateAction } from '@/hooks/useActions';
 import {
   Card,
   Button,
@@ -31,12 +33,23 @@ function NewChallengePageContent() {
   // Récupérer la date présélectionnée depuis l'URL
   const preselectedDate = searchParams.get('date');
 
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [existingChallenges, setExistingChallenges] = useState<Challenge[]>([]);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query hooks
+  const {
+    data: campaign,
+    isLoading: campaignLoading,
+    error: campaignError,
+  } = useCampaign(campaignId);
+  const { data: existingChallenges = [], isLoading: challengesLoading } =
+    useChallenges(campaignId);
+  const createChallengeMutation = useCreateChallenge();
+  const createActionMutation = useCreateAction();
+
+  const loading = campaignLoading || challengesLoading;
+  const submitting =
+    createChallengeMutation.isPending || createActionMutation.isPending;
 
   // Formulaire principal du défi
   const [challengeData, setChallengeData] = useState({
@@ -80,31 +93,21 @@ function NewChallengePageContent() {
       }
 
       setUser(currentUser);
-      fetchCampaign();
     };
 
     checkAuth();
   }, [campaignId, router]);
 
-  const fetchCampaign = async () => {
-    try {
-      setLoading(true);
-      const [campaignData, challengesData] = await Promise.all([
-        campaignService.getCampaign(campaignId),
-        campaignService.getChallenges(campaignId),
-      ]);
-      setCampaign(campaignData);
-      setExistingChallenges(challengesData);
-    } catch (err) {
+  // Handle campaign loading error
+  useEffect(() => {
+    if (campaignError) {
       setError(
-        err instanceof Error
-          ? err.message
+        campaignError instanceof Error
+          ? campaignError.message
           : 'Erreur lors du chargement de la campagne',
       );
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [campaignError]);
 
   // Calculer les dates disponibles
   const getAvailableDates = () => {
@@ -123,7 +126,6 @@ function NewChallengePageContent() {
 
   const handleChallengeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
     // Validation des dates
@@ -144,7 +146,7 @@ function NewChallengePageContent() {
 
     try {
       // Créer le défi
-      const newChallenge = await campaignService.createChallenge({
+      const newChallenge = await createChallengeMutation.mutateAsync({
         campaignId,
         date: challengeData.date, // Utiliser directement la date string sans conversion
         title: challengeData.title,
@@ -154,7 +156,7 @@ function NewChallengePageContent() {
       // Créer les actions
       for (let index = 0; index < actions.length; index++) {
         const action = actions[index];
-        await campaignService.createAction({
+        await createActionMutation.mutateAsync({
           challengeId: newChallenge.id,
           type: action.type!,
           title: action.title!,
@@ -171,8 +173,6 @@ function NewChallengePageContent() {
           ? err.message
           : 'Erreur lors de la création du défi',
       );
-    } finally {
-      setSubmitting(false);
     }
   };
 

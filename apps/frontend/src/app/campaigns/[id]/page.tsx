@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { isAuthenticated, getUser } from '@/utils/auth';
 import { Campaign, Challenge, CampaignWithChallenges } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCampaignWithChallenges } from '@/hooks/useCampaigns';
 import { Card, Button, Badge } from '@/components/ui';
 import { CampaignCalendar } from '@/components/campaigns';
 
@@ -13,10 +13,14 @@ export default function CampaignDetailPage() {
   const params = useParams();
   const campaignId = parseInt(params.id as string);
 
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [campaign, setCampaign] = useState<CampaignWithChallenges | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query hook
+  const {
+    data: campaign,
+    isLoading: loading,
+    error,
+  } = useCampaignWithChallenges(campaignId);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -39,27 +43,10 @@ export default function CampaignDetailPage() {
       }
 
       setUser(currentUser);
-      fetchCampaign();
     };
 
     checkAuth();
   }, [campaignId, router]);
-
-  const fetchCampaign = async () => {
-    try {
-      setLoading(true);
-      const data = await campaignService.getCampaignWithChallenges(campaignId);
-      setCampaign(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Erreur lors du chargement de la campagne',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getStatusColor = (status: Campaign['status']) => {
     switch (status) {
@@ -99,13 +86,15 @@ export default function CampaignDetailPage() {
     );
   }
 
-  if (error || !campaign) {
+  if (error || (!loading && !campaign)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="container mx-auto px-4 py-8">
           <Card className="p-8 text-center border-red-200 bg-red-50">
             <p className="text-red-600 mb-4">
-              {error || 'Campagne introuvable'}
+              {error instanceof Error
+                ? error.message
+                : error || 'Campagne introuvable'}
             </p>
             <Button onClick={() => router.push('/campaigns')}>
               Retour aux campagnes

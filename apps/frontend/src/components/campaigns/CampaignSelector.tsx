@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Campaign } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCampaigns, useActiveCampaigns } from '@/hooks/useCampaigns';
 import { Card, Badge } from '@/components/ui';
 
 interface CampaignSelectorProps {
@@ -16,31 +15,11 @@ export default function CampaignSelector({
   onCampaignSelect,
   showInactive = false,
 }: CampaignSelectorProps) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchCampaigns();
-  }, [showInactive]);
-
-  const fetchCampaigns = async () => {
-    try {
-      setLoading(true);
-      const data = showInactive
-        ? await campaignService.getCampaigns()
-        : await campaignService.getActiveCampaigns();
-      setCampaigns(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Erreur lors du chargement des campagnes',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: campaigns = [],
+    isLoading: loading,
+    error,
+  } = showInactive ? useCampaigns() : useActiveCampaigns();
 
   const getStatusColor = (status: Campaign['status']) => {
     switch (status) {
@@ -86,7 +65,11 @@ export default function CampaignSelector({
   if (error) {
     return (
       <Card className="p-4 border-red-200 bg-red-50">
-        <p className="text-red-600 text-sm">{error}</p>
+        <p className="text-red-600 text-sm">
+          {error instanceof Error
+            ? error.message
+            : 'Erreur lors du chargement des campagnes'}
+        </p>
       </Card>
     );
   }

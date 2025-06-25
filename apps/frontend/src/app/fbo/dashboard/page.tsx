@@ -27,7 +27,9 @@ import {
   CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import { getUser, getToken, logout } from '@/utils/auth';
-import { campaignService } from '@/services/campaigns';
+import { useActiveCampaigns } from '@/hooks/useCampaigns';
+import { useTodayChallenges } from '@/hooks/useChallenges';
+import { useChallengeActions } from '@/hooks/useActions';
 import { Challenge, Action, Campaign } from '@/types/campaigns';
 
 interface User {
@@ -118,16 +120,27 @@ const actionTypeConfig = {
 
 export default function FBODashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
-  const [todayChallenge, setTodayChallenge] = useState<Challenge | null>(null);
-  const [challengeActions, setChallengeActions] = useState<Action[]>([]);
   const [userActions, setUserActions] = useState<UserAction[]>([]);
   const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(
     null,
   );
   const [userStreaks, setUserStreaks] = useState<UserStreaks | null>(null);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // TanStack Query hooks
+  const { data: activeCampaigns = [], isLoading: campaignsLoading } =
+    useActiveCampaigns();
+  const { data: todayChallenges = [], isLoading: challengesLoading } =
+    useTodayChallenges();
+
+  // Derived state
+  const activeCampaign = activeCampaigns[0] || null;
+  const todayChallenge = todayChallenges[0] || null;
+
+  const { data: challengeActions = [], isLoading: actionsLoading } =
+    useChallengeActions(todayChallenge?.id || 0);
+
+  const loading = campaignsLoading || challengesLoading || actionsLoading;
   const [selectedAction, setSelectedAction] = useState<{
     userAction?: UserAction;
     action: Action;
@@ -154,48 +167,20 @@ export default function FBODashboard() {
     }
 
     setUser(userData);
-    fetchTodayData(userData);
   }, [router]);
 
-  const fetchTodayData = async (userData?: User) => {
-    try {
-      setLoading(true);
-
-      // Récupérer les campagnes actives
-      const campaigns = await campaignService.getActiveCampaigns();
-      if (campaigns.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const campaign = campaigns[0]; // Prendre la première campagne active
-      setActiveCampaign(campaign);
-
-      // Récupérer les défis d'aujourd'hui
-      const todayChallenges = await campaignService.getTodayChallenges();
-      if (todayChallenges.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const challenge = todayChallenges[0]; // Prendre le premier défi d'aujourd'hui
-      setTodayChallenge(challenge);
-
-      // Récupérer les actions du défi
-      const actions = await campaignService.getChallengeActions(challenge.id);
-      setChallengeActions(actions);
-
-      // Récupérer les actions utilisateur pour ce défi
-      await fetchUserActionsForChallenge(challenge.id, userData);
-
-      // Récupérer les statistiques de campagne, streaks et badges
-      await fetchGamificationData(campaign.id, userData);
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-    } finally {
-      setLoading(false);
+  // Fetch user actions and gamification data when campaign/challenge data is available
+  useEffect(() => {
+    if (todayChallenge?.id && user) {
+      fetchUserActionsForChallenge(todayChallenge.id, user);
     }
-  };
+  }, [todayChallenge?.id, user]);
+
+  useEffect(() => {
+    if (activeCampaign?.id && user) {
+      fetchGamificationData(activeCampaign.id, user);
+    }
+  }, [activeCampaign?.id, user]);
 
   const fetchUserActionsForChallenge = async (
     challengeId: number,

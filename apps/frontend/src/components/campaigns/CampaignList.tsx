@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Campaign } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
 import { Card, Button, Badge, Progress } from '@/components/ui';
+import { useCampaigns, useDeleteCampaign } from '@/hooks/useCampaigns';
 import CampaignForm from './CampaignForm';
 
 interface CampaignListProps {
@@ -11,31 +11,19 @@ interface CampaignListProps {
 }
 
 export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
     null,
   );
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const fetchCampaigns = async () => {
-    try {
-      setLoading(true);
-      const data = await campaignService.getCampaigns();
-      setCampaigns(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Erreur lors du chargement',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // TanStack Query hooks
+  const {
+    data: campaigns = [],
+    isLoading: loading,
+    error,
+    refetch,
+  } = useCampaigns();
+  const deleteCampaignMutation = useDeleteCampaign();
 
   const handleCreateClick = () => {
     setSelectedCampaign(null);
@@ -57,8 +45,7 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
     }
 
     try {
-      await campaignService.deleteCampaign(campaign.id);
-      setCampaigns((prev) => prev.filter((c) => c.id !== campaign.id));
+      await deleteCampaignMutation.mutateAsync(campaign.id);
     } catch (err) {
       alert(
         err instanceof Error ? err.message : 'Erreur lors de la suppression',
@@ -66,14 +53,10 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
     }
   };
 
-  const handleFormSuccess = (campaign: Campaign) => {
-    if (selectedCampaign) {
-      setCampaigns((prev) =>
-        prev.map((c) => (c.id === campaign.id ? campaign : c)),
-      );
-    } else {
-      setCampaigns((prev) => [...prev, campaign]);
-    }
+  const handleFormSuccess = () => {
+    // TanStack Query will automatically update the cache via mutations
+    setShowForm(false);
+    setSelectedCampaign(null);
   };
 
   const getStatusColor = (status: Campaign['status']) => {
@@ -148,9 +131,13 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
               />
             </svg>
           </div>
-          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <p className="text-red-600 text-sm mb-4">
+            {error instanceof Error
+              ? error.message
+              : 'Erreur lors du chargement'}
+          </p>
           <Button
-            onClick={fetchCampaigns}
+            onClick={() => refetch()}
             size="sm"
             className="w-full sm:w-auto"
           >
@@ -313,6 +300,7 @@ export default function CampaignList({ onCampaignSelect }: CampaignListProps) {
                     size="sm"
                     variant="bordered"
                     onClick={() => handleDeleteClick(campaign)}
+                    isLoading={deleteCampaignMutation.isPending}
                     className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:border-red-300"
                   >
                     🗑️ Supprimer

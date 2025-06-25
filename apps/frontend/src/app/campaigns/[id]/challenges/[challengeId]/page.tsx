@@ -9,7 +9,13 @@ import {
   Action,
   ChallengeWithActions,
 } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCampaign } from '@/hooks/useCampaigns';
+import {
+  useChallenges,
+  useChallengeWithActions,
+  useUpdateChallenge,
+} from '@/hooks/useChallenges';
+import { useCreateAction, useDeleteAction } from '@/hooks/useActions';
 import {
   Card,
   Button,
@@ -33,13 +39,31 @@ function ChallengeEditPageContent() {
   const campaignId = parseInt(params.id as string);
   const challengeId = parseInt(params.challengeId as string);
 
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [challenge, setChallenge] = useState<ChallengeWithActions | null>(null);
-  const [existingChallenges, setExistingChallenges] = useState<Challenge[]>([]);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query hooks
+  const {
+    data: campaign,
+    isLoading: campaignLoading,
+    error: campaignError,
+  } = useCampaign(campaignId);
+  const {
+    data: challenge,
+    isLoading: challengeLoading,
+    error: challengeError,
+  } = useChallengeWithActions(challengeId);
+  const { data: existingChallenges = [], isLoading: challengesLoading } =
+    useChallenges(campaignId);
+  const updateChallengeMutation = useUpdateChallenge();
+  const createActionMutation = useCreateAction();
+  const deleteActionMutation = useDeleteAction();
+
+  const loading = campaignLoading || challengeLoading || challengesLoading;
+  const submitting =
+    updateChallengeMutation.isPending ||
+    createActionMutation.isPending ||
+    deleteActionMutation.isPending;
 
   // Formulaire principal du défi
   const [challengeData, setChallengeData] = useState({
@@ -83,44 +107,36 @@ function ChallengeEditPageContent() {
       }
 
       setUser(currentUser);
-      fetchData();
     };
 
     checkAuth();
   }, [campaignId, challengeId, router]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [campaignData, challengeData, challengesData] = await Promise.all([
-        campaignService.getCampaign(campaignId),
-        campaignService.getChallengeWithActions(challengeId),
-        campaignService.getChallenges(campaignId),
-      ]);
-
-      setCampaign(campaignData);
-      setChallenge(challengeData);
-      setExistingChallenges(challengesData);
-
-      // Pré-remplir le formulaire avec les données existantes
+  // Populate form when challenge data is loaded
+  useEffect(() => {
+    if (challenge) {
       setChallengeData({
-        date: challengeData.date.split('T')[0],
-        title: challengeData.title,
-        description: challengeData.description || '',
+        date: challenge.date.split('T')[0],
+        title: challenge.title,
+        description: challenge.description || '',
       });
 
-      // Pré-remplir les actions existantes
-      if (challengeData.actions) {
-        setActions(challengeData.actions.sort((a, b) => a.order - b.order));
+      if (challenge.actions) {
+        setActions(challenge.actions.sort((a, b) => a.order - b.order));
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Erreur lors du chargement',
-      );
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [challenge]);
+
+  // Handle errors
+  useEffect(() => {
+    if (campaignError || challengeError) {
+      setError(
+        (campaignError || challengeError) instanceof Error
+          ? (campaignError || challengeError)!.message
+          : 'Erreur lors du chargement',
+      );
+    }
+  }, [campaignError, challengeError]);
 
   // Calculer les dates disponibles (exclure la date actuelle du défi)
   const getAvailableDates = () => {
@@ -141,7 +157,6 @@ function ChallengeEditPageContent() {
 
   const handleChallengeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
 
     // Validation des dates
@@ -150,38 +165,36 @@ function ChallengeEditPageContent() {
       setError(
         'Cette date a déjà un défi associé. Veuillez choisir une autre date.',
       );
-      setSubmitting(false);
       return;
     }
 
     if (actions.length === 0) {
       setError('Vous devez avoir au moins une action pour ce défi.');
-      setSubmitting(false);
       return;
     }
 
     try {
       // Mettre à jour le défi
-      const updatedChallenge = await campaignService.updateChallenge(
-        challengeId,
-        {
+      const updatedChallenge = await updateChallengeMutation.mutateAsync({
+        id: challengeId,
+        data: {
           date: challengeData.date,
           title: challengeData.title,
           description: challengeData.description,
         },
-      );
+      });
 
       // Supprimer toutes les actions existantes
       if (challenge?.actions) {
         for (const action of challenge.actions) {
-          await campaignService.deleteAction(action.id);
+          await deleteActionMutation.mutateAsync(action.id);
         }
       }
 
       // Créer les nouvelles actions
       for (let index = 0; index < actions.length; index++) {
         const action = actions[index];
-        await campaignService.createAction({
+        await createActionMutation.mutateAsync({
           challengeId: challengeId,
           type: action.type!,
           title: action.title!,
@@ -198,8 +211,6 @@ function ChallengeEditPageContent() {
           ? err.message
           : 'Erreur lors de la mise à jour du défi',
       );
-    } finally {
-      setSubmitting(false);
     }
   };
 

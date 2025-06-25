@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Challenge, Action } from '@/types/campaigns';
-import { campaignService } from '@/services/campaigns';
+import { useCreateChallenge, useUpdateChallenge } from '@/hooks/useChallenges';
+import { useCreateAction } from '@/hooks/useActions';
 import {
   Button,
   Input,
@@ -43,8 +44,17 @@ export default function QuickChallengeForm({
     null,
   );
   const [showingActionForm, setShowingActionForm] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query mutations
+  const createChallengeMutation = useCreateChallenge();
+  const updateChallengeMutation = useUpdateChallenge();
+  const createActionMutation = useCreateAction();
+
+  const loading =
+    createChallengeMutation.isPending ||
+    updateChallengeMutation.isPending ||
+    createActionMutation.isPending;
 
   const actionTypes = [
     { key: 'vente', label: 'Vente', icon: '💰' },
@@ -74,12 +84,10 @@ export default function QuickChallengeForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     if (actions.length === 0) {
       setError('Vous devez créer au moins une action pour ce défi');
-      setLoading(false);
       return;
     }
 
@@ -93,12 +101,12 @@ export default function QuickChallengeForm({
 
       let result: Challenge;
       if (challenge) {
-        result = await campaignService.updateChallenge(
-          challenge.id,
-          challengeData,
-        );
+        result = await updateChallengeMutation.mutateAsync({
+          id: challenge.id,
+          data: challengeData,
+        });
       } else {
-        result = await campaignService.createChallenge(challengeData);
+        result = await createChallengeMutation.mutateAsync(challengeData);
 
         // Créer les actions pour le nouveau défi
         for (let index = 0; index < actions.length; index++) {
@@ -112,7 +120,7 @@ export default function QuickChallengeForm({
             pointsValue: action.pointsValue || 10,
           });
 
-          await campaignService.createAction({
+          await createActionMutation.mutateAsync({
             challengeId: result.id,
             type: action.type!,
             title: action.title!,
@@ -129,8 +137,6 @@ export default function QuickChallengeForm({
       setError(
         err instanceof Error ? err.message : 'Erreur lors de la sauvegarde',
       );
-    } finally {
-      setLoading(false);
     }
   };
 
