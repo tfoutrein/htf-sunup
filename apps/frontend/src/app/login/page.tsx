@@ -1,21 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [logoChoice, setLogoChoice] = useState<'sun' | 'logo1' | 'logo2'>(
+    'sun',
+  );
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const router = useRouter();
+
+  // Choix aléatoire du logo au chargement de la page
+  useEffect(() => {
+    const logos = ['sun', 'logo1', 'logo2'] as const;
+    const randomLogo = logos[Math.floor(Math.random() * logos.length)];
+    setLogoChoice(randomLogo);
+  }, []);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
@@ -119,7 +130,25 @@ export default function LoginPage() {
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                {logoChoice === 'sun' ? (
+                  <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                ) : logoChoice === 'logo1' ? (
+                  <Image
+                    src="/logo1.png"
+                    alt="Logo 1"
+                    width={40}
+                    height={40}
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                  />
+                ) : (
+                  <Image
+                    src="/logo2.png"
+                    alt="Logo 2"
+                    width={40}
+                    height={40}
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                  />
+                )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
                 Les défis de l'été ☀️
