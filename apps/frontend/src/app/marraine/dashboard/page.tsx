@@ -172,7 +172,7 @@ export default function MarraineDashboard() {
 
       // Fetch all managers
       const managersResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/managers`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/managers`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -185,7 +185,7 @@ export default function MarraineDashboard() {
 
       // Fetch all team members
       const membersResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/all-members`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/all-members`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -198,7 +198,7 @@ export default function MarraineDashboard() {
 
       // Fetch all actions
       const actionsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -211,7 +211,7 @@ export default function MarraineDashboard() {
 
       // Fetch global progress
       const progressResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions/global-progress`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/global-progress`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -233,7 +233,7 @@ export default function MarraineDashboard() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           method: 'POST',
           headers: {
@@ -269,7 +269,7 @@ export default function MarraineDashboard() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions`,
         {
           method: 'POST',
           headers: {

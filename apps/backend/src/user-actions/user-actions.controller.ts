@@ -9,7 +9,10 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -63,5 +66,16 @@ export class UserActionsController {
   @ApiResponse({ status: 404, description: 'Action utilisateur non trouvée' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userActionsService.remove(id);
+  }
+
+  @Post(':id/proof')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Uploader une preuve pour une action utilisateur' })
+  @ApiResponse({ status: 201, description: 'Preuve uploadée' })
+  uploadProof(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userActionsService.uploadProof(id, file);
   }
 }

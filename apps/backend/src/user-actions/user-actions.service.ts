@@ -13,14 +13,19 @@ import {
 } from '../db/schema';
 import { CreateUserActionDto } from './dto/create-user-action.dto';
 import { UpdateUserActionDto } from './dto/update-user-action.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class UserActionsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async create(
     createUserActionDto: CreateUserActionDto & { userId: number },
   ): Promise<UserAction> {
+    console.log('CreateUserActionDto', createUserActionDto);
     const { actionId, challengeId, userId, ...rest } = createUserActionDto;
 
     // Vérifier que l'action existe
@@ -107,5 +112,29 @@ export class UserActionsService {
     await this.findOne(id); // Vérifier que l'action existe
 
     await this.db.db.delete(userActions).where(eq(userActions.id, id));
+  }
+
+  async uploadProof(
+    id: number,
+    file: Express.Multer.File,
+  ): Promise<UserAction> {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+
+    const userAction = await this.findOne(id); // Check if action exists and get details
+
+    const fileExtension = file.originalname.split('.').pop();
+    const key = `proofs/${userAction.userId}/${id}-${Date.now()}.${fileExtension}`;
+
+    const proofUrl = await this.storageService.uploadFile(file, key);
+
+    const [updatedUserAction] = await this.db.db
+      .update(userActions)
+      .set({ proofUrl: proofUrl, updatedAt: new Date() })
+      .where(eq(userActions.id, id))
+      .returning();
+
+    return updatedUserAction;
   }
 }

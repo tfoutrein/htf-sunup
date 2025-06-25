@@ -141,7 +141,7 @@ export default function ManagerDashboard() {
 
       // Fetch team members
       const teamResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/team/${managerId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/team/${managerId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -154,7 +154,7 @@ export default function ManagerDashboard() {
 
       // Fetch actions created by manager
       const actionsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions/manager/${managerId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/manager/${managerId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -167,7 +167,7 @@ export default function ManagerDashboard() {
 
       // Fetch team progress
       const progressResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions/team-progress/${managerId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions/team-progress/${managerId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -191,7 +191,7 @@ export default function ManagerDashboard() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           method: 'POST',
           headers: {
@@ -225,7 +225,7 @@ export default function ManagerDashboard() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/actions`,
+        `${process.env.NEXT_PUBLIC_API_URL}/actions`,
         {
           method: 'POST',
           headers: {

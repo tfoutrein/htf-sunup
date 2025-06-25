@@ -46,7 +46,7 @@ export default function RegisterPage() {
     setManagersLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/public/users/managers`,
+        `${process.env.NEXT_PUBLIC_API_URL}/public/users/managers`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -95,7 +95,7 @@ export default function RegisterPage() {
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           method: 'POST',
           headers: {

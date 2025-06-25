@@ -3,9 +3,9 @@ services:
     image: postgres:15
     container_name: htf_sunup_postgres
     environment:
-      POSTGRES_DB: htf_sunup_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - '5432:5432'
     volumes:
@@ -22,9 +22,16 @@ services:
       dockerfile: ./apps/backend/Dockerfile
     container_name: htf_sunup_backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/htf_sunup_db
-      PORT: 3001
-      FRONTEND_URL: http://localhost:3000
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: ${PORT}
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      NODE_ENV: ${NODE_ENV}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
     ports:
       - '3001:3001'
     depends_on:
@@ -40,7 +47,7 @@ services:
       dockerfile: ./apps/frontend/Dockerfile
     container_name: htf_sunup_frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - '3000:3000'
     depends_on:

@@ -146,6 +146,7 @@ export default function FBODashboard() {
     action: Action;
   } | null>(null);
   const [proofUrl, setProofUrl] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const router = useRouter();
@@ -266,6 +267,7 @@ export default function FBODashboard() {
   const handleCompleteAction = (action: Action, userAction?: UserAction) => {
     setSelectedAction({ action, userAction });
     setProofUrl(userAction?.proofUrl || '');
+    setProofFile(null);
     onOpen();
   };
 
@@ -275,30 +277,11 @@ export default function FBODashboard() {
     setSubmitting(true);
     try {
       const token = getToken();
+      let userActionToUpdate = selectedAction.userAction;
 
-      if (selectedAction.userAction) {
-        // Mettre à jour une action existante
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${selectedAction.userAction.id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              completed: true,
-              proofUrl,
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error('Erreur lors de la mise à jour');
-        }
-      } else {
-        // Créer une nouvelle action utilisateur
-        const response = await fetch(
+      // 1. Create userAction if it doesn't exist
+      if (!userActionToUpdate) {
+        const createResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/user-actions`,
           {
             method: 'POST',
@@ -309,18 +292,57 @@ export default function FBODashboard() {
             body: JSON.stringify({
               actionId: selectedAction.action.id,
               challengeId: todayChallenge.id,
-              completed: true,
-              proofUrl,
+              completed: false, // Start as not completed
             }),
           },
         );
-
-        if (!response.ok) {
-          throw new Error('Erreur lors de la création');
-        }
+        if (!createResponse.ok) throw new Error('Failed to create user action');
+        userActionToUpdate = await createResponse.json();
       }
 
-      // Rafraîchir les données
+      // 2. Upload proof if a file is selected
+      let finalProofUrl = userActionToUpdate?.proofUrl || proofUrl;
+      if (proofFile && userActionToUpdate) {
+        const formData = new FormData();
+        formData.append('file', proofFile);
+
+        const uploadResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${userActionToUpdate.id}/proof`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          },
+        );
+
+        if (!uploadResponse.ok) throw new Error('Failed to upload proof');
+        const uploadData = await uploadResponse.json();
+        finalProofUrl = uploadData.proofUrl;
+      }
+
+      // 3. Mark action as completed
+      const updateResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${userActionToUpdate.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            completed: true,
+            proofUrl: finalProofUrl,
+          }),
+        },
+      );
+
+      if (!updateResponse.ok) {
+        throw new Error('Erreur lors de la mise à jour');
+      }
+
+      // Refresh data
       await fetchUserActionsForChallenge(todayChallenge.id);
       if (activeCampaign) {
         await fetchGamificationData(activeCampaign.id);
@@ -330,6 +352,7 @@ export default function FBODashboard() {
       console.error('Erreur lors de la soumission:', error);
     } finally {
       setSubmitting(false);
+      setProofFile(null);
     }
   };
 
@@ -699,14 +722,27 @@ export default function FBODashboard() {
               <strong>{selectedAction?.action.title}</strong>
             </p>
             <Input
-              label="Lien de preuve (optionnel)"
-              placeholder="https://... (photo, vidéo, lien)"
-              value={proofUrl}
-              onValueChange={setProofUrl}
+              type="file"
+              label="Preuve (photo, vidéo)"
+              placeholder="Choisir un fichier"
+              onChange={(e) =>
+                setProofFile(e.target.files ? e.target.files[0] : null)
+              }
               variant="bordered"
-              description="Partage un lien vers une photo, vidéo ou autre preuve de ton action"
+              description="Partage une photo ou une vidéo de ton action"
               size="sm"
             />
+            {proofFile && (
+              <div className="mt-2 p-2 bg-gray-50 rounded-md border">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Fichier sélectionné :</span>{' '}
+                  {proofFile.name}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Taille : {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            )}
           </ModalBody>
           <ModalFooter className="p-4 sm:p-6 pt-0">
             <Button

@@ -9,6 +9,7 @@ import { ActionsModule } from './actions/actions.module';
 import { UserActionsModule } from './user-actions/user-actions.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { ChallengesModule } from './challenges/challenges.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ChallengesModule } from './challenges/challenges.module';
     UserActionsModule,
     CampaignsModule,
     ChallengesModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
