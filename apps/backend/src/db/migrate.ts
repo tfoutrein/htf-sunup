@@ -34,6 +34,32 @@ async function runMigrations() {
     // Vérifier et créer les tables manquantes avant les migrations
     console.log('🔍 Checking for missing tables...');
 
+    // Vérifier si la table users existe
+    const usersExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `;
+
+    if (!usersExists[0].exists) {
+      console.log('📝 Creating missing users table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "users" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "name" varchar(255) NOT NULL,
+          "email" varchar(255) NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL,
+          "password" varchar(255) NOT NULL,
+          "role" varchar(50) DEFAULT 'fbo' NOT NULL,
+          "manager_id" integer,
+          CONSTRAINT "users_email_unique" UNIQUE("email")
+        );
+      `;
+    }
+
     // Vérifier si la table challenges existe
     const challengesExists = await sql`
       SELECT EXISTS (
@@ -79,7 +105,60 @@ async function runMigrations() {
           "status" varchar(50) DEFAULT 'draft' NOT NULL,
           "created_by" integer NOT NULL,
           "created_at" timestamp DEFAULT now() NOT NULL,
-          "updated_at" timestamp DEFAULT now() NOT NULL
+          "updated_at" timestamp DEFAULT now() NOT NULL,
+          "archived" boolean DEFAULT false NOT NULL
+        );
+      `;
+    }
+
+    // Vérifier si la table actions existe
+    const actionsExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'actions'
+      );
+    `;
+
+    if (!actionsExists[0].exists) {
+      console.log('📝 Creating missing actions table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "actions" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "title" varchar(255) NOT NULL,
+          "description" text,
+          "type" varchar(50) NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL,
+          "points_value" integer DEFAULT 10 NOT NULL,
+          "challenge_id" integer NOT NULL,
+          "order" integer DEFAULT 1 NOT NULL
+        );
+      `;
+    }
+
+    // Vérifier si la table user_actions existe
+    const userActionsExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_actions'
+      );
+    `;
+
+    if (!userActionsExists[0].exists) {
+      console.log('📝 Creating missing user_actions table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "user_actions" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "user_id" integer NOT NULL,
+          "action_id" integer NOT NULL,
+          "completed" boolean DEFAULT false NOT NULL,
+          "completed_at" timestamp,
+          "proof_url" varchar(500),
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL,
+          "challenge_id" integer NOT NULL
         );
       `;
     }
@@ -216,19 +295,63 @@ async function runMigrations() {
       }
     }
 
-    // Maintenant lancer les migrations Drizzle (qui devrait passer sans problème)
-    try {
-      await migrate(db, { migrationsFolder });
-      console.log('✅ Database migrations completed successfully');
-    } catch (error) {
-      // Si les migrations échouent encore, c'est probablement parce que tout est déjà en place
-      if (
-        error.message.includes('duplicate') ||
-        error.message.includes('already exists')
-      ) {
-        console.log('✅ Database schema is already up to date');
+    // Vérifier si toutes les tables principales existent déjà
+    const allTablesExist =
+      usersExists[0].exists &&
+      challengesExists[0].exists &&
+      campaignsExists[0].exists &&
+      actionsExists[0].exists &&
+      userActionsExists[0].exists;
+
+    // Si toutes les tables existent, vérifier si les migrations ont déjà été appliquées
+    if (allTablesExist) {
+      console.log('🔍 All main tables exist, checking migration history...');
+
+      const migrationsApplied = await sql`
+        SELECT COUNT(*) as count FROM drizzle.__drizzle_migrations;
+      `;
+
+      if (migrationsApplied[0].count > 0) {
+        console.log(
+          '✅ Database schema is already up to date - skipping Drizzle migrations',
+        );
       } else {
-        throw error;
+        console.log(
+          '🔄 Running Drizzle migrations to update migration history...',
+        );
+        try {
+          await migrate(db, { migrationsFolder });
+          console.log('✅ Database migrations completed successfully');
+        } catch (error) {
+          if (
+            error.message.includes('duplicate') ||
+            error.message.includes('already exists') ||
+            (error.message.includes('relation') &&
+              error.message.includes('already exists'))
+          ) {
+            console.log('✅ Database schema is already up to date');
+          } else {
+            throw error;
+          }
+        }
+      }
+    } else {
+      // Certaines tables manquent, lancer les migrations normalement
+      console.log('🔄 Some tables are missing, running Drizzle migrations...');
+      try {
+        await migrate(db, { migrationsFolder });
+        console.log('✅ Database migrations completed successfully');
+      } catch (error) {
+        if (
+          error.message.includes('duplicate') ||
+          error.message.includes('already exists') ||
+          (error.message.includes('relation') &&
+            error.message.includes('already exists'))
+        ) {
+          console.log('✅ Database schema is already up to date');
+        } else {
+          throw error;
+        }
       }
     }
 
