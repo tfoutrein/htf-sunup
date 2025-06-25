@@ -43,6 +43,7 @@
   },
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@heroicons/react": "^2.2.0"
+    "@heroicons/react": "^2.2.0",
+    "ogl": "^1.0.11"
   }
 }

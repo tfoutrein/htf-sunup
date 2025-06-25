@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { HeroUIProvider } from '@heroui/react';
+import { AuroraProvider } from '@/contexts/AuroraContext';
 import { getUser, isAuthenticated } from '@/utils/auth';
 
 interface User {
@@ -74,7 +75,9 @@ export function useAuth() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <HeroUIProvider>
-      <AuthProvider>{children}</AuthProvider>
+      <AuroraProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </AuroraProvider>
     </HeroUIProvider>
   );
 }

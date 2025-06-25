@@ -5,14 +5,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
+import { Switch } from '@/components/ui';
 import { logout } from '@/utils/auth';
 import { useAuth } from '@/app/providers';
+import { useAurora } from '@/contexts/AuroraContext';
+import { useAuroraPages } from '@/hooks/useAuroraPages';
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isLoading } = useAuth();
+  const { isAuroraEnabled, toggleAurora } = useAurora();
+  const { isAuroraPage } = useAuroraPages();
 
   const getDashboardLink = () => {
     if (!user) return '#';
@@ -105,6 +110,20 @@ export function Navigation() {
                     </Link>
                   )}
 
+                  {/* Aurora Toggle - Only on Aurora pages */}
+                  {isAuroraPage && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">🌟</span>
+                      <Switch
+                        isSelected={isAuroraEnabled}
+                        onValueChange={toggleAurora}
+                        size="sm"
+                        color="warning"
+                        aria-label="Activer/désactiver l'animation Aurora"
+                      />
+                    </div>
+                  )}
+
                   {/* User Menu */}
                   <div className="flex items-center space-x-3 ml-4">
                     <div className="flex items-center space-x-2">
@@ -155,6 +174,20 @@ export function Navigation() {
                       Connexion
                     </Button>
                   </Link>
+
+                  {/* Aurora Toggle - Only on Aurora pages */}
+                  {isAuroraPage && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">🌟</span>
+                      <Switch
+                        isSelected={isAuroraEnabled}
+                        onValueChange={toggleAurora}
+                        size="sm"
+                        color="warning"
+                        aria-label="Activer/désactiver l'animation Aurora"
+                      />
+                    </div>
+                  )}
                 </>
               ))}
           </div>
@@ -280,6 +313,27 @@ export function Navigation() {
                     </Link>
                   </>
                 ))}
+
+              {/* Aurora Toggle for Mobile - Only on Aurora pages */}
+              {isAuroraPage && (
+                <div className="border-t border-orange-200 pt-3 mt-2">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">🌟</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        Animation
+                      </span>
+                    </div>
+                    <Switch
+                      isSelected={isAuroraEnabled}
+                      onValueChange={toggleAurora}
+                      size="sm"
+                      color="warning"
+                      aria-label="Activer/désactiver l'animation Aurora"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

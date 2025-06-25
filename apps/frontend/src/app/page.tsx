@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Spinner } from '@/components/ui';
+import { Button, Spinner, AuroraBackground } from '@/components/ui';
 import { getUser, logout } from '@/utils/auth';
 
 export default function Home() {
@@ -41,15 +41,21 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 flex items-center justify-center px-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-4 -right-4 w-24 h-24 bg-orange-200 rounded-full opacity-20"></div>
-        <div className="absolute top-1/4 -left-8 w-16 h-16 bg-yellow-200 rounded-full opacity-30"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-20 h-20 bg-amber-200 rounded-full opacity-25"></div>
+    <div className="min-h-screen relative flex items-center justify-center px-4">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#FF4500', '#FF6B00', '#FFD700']}
+          blend={0.6}
+          amplitude={1.2}
+          speed={1.0}
+        />
       </div>
 
-      <div className="text-center relative max-w-2xl mx-auto">
+      {/* Background overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+      <div className="text-center relative max-w-2xl mx-auto z-20">
         <div className="mb-8">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-2">
             ☀️ Les défis de l'été

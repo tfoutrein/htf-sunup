@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
+import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
 
 export default function LoginPage() {
@@ -98,9 +99,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#FF4500', '#FF6B00', '#FFD700']}
+          blend={0.6}
+          amplitude={1.2}
+          speed={1.0}
+        />
+      </div>
+
+      {/* Background overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+      <div className="w-full max-w-md relative z-20">
+        <Card className="bg-white/20 backdrop-blur-md shadow-2xl border border-white/30 shadow-orange-500/20">
           <CardBody className="p-6 sm:p-8">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
