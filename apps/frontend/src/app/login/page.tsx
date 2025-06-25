@@ -129,7 +129,7 @@ export default function LoginPage() {
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
               {logoChoice === 'sun' ? (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-[pulse-scale_3s_ease-in-out_1]">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-[pulse-scale_1.5s_ease-in-out_1]">
                   <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
               ) : (
@@ -138,13 +138,13 @@ export default function LoginPage() {
                     <img
                       src="/logo1.png"
                       alt="Logo 1"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_3s_ease-in-out_1]"
+                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
                     />
                   ) : (
                     <img
                       src="/logo2.png"
                       alt="Logo 2"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_3s_ease-in-out_1]"
+                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
                     />
                   )}
                 </div>
