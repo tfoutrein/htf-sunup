@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
-import Image from 'next/image';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -133,20 +132,16 @@ export default function LoginPage() {
                 {logoChoice === 'sun' ? (
                   <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 ) : logoChoice === 'logo1' ? (
-                  <Image
+                  <img
                     src="/logo1.png"
                     alt="Logo 1"
-                    width={40}
-                    height={40}
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                   />
                 ) : (
-                  <Image
+                  <img
                     src="/logo2.png"
                     alt="Logo 2"
-                    width={40}
-                    height={40}
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                   />
                 )}
               </div>
