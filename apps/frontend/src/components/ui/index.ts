@@ -14,5 +14,6 @@ export * from './Modal';
 export * from './Progress';
 export * from './Switch';
 export * from './Tabs';
+export * from './LogoDisplay';
 export { default as Aurora } from './Aurora';
 export { default as AuroraBackground } from './AuroraBackground';

@@ -6,26 +6,18 @@ import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
+import { useRandomLogo } from '@/hooks/useRandomLogo';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [logoChoice, setLogoChoice] = useState<'sun' | 'logo1' | 'logo2'>(
-    'sun',
-  );
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const router = useRouter();
-
-  // Choix aléatoire du logo au chargement de la page
-  useEffect(() => {
-    const logos = ['sun', 'logo1', 'logo2'] as const;
-    const randomLogo = logos[Math.floor(Math.random() * logos.length)];
-    setLogoChoice(randomLogo);
-  }, []);
+  const logoChoice = useRandomLogo();
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 

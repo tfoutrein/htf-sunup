@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Switch } from '@/components/ui';
+import { LogoDisplay } from '@/components/ui/LogoDisplay';
 import { logout } from '@/utils/auth';
 import { useAuth } from '@/app/providers';
 import { useAurora } from '@/contexts/AuroraContext';
 import { useAuroraPages } from '@/hooks/useAuroraPages';
+import { useRandomLogo } from '@/hooks/useRandomLogo';
 
 export function Navigation() {
   const pathname = usePathname();
@@ -18,6 +20,7 @@ export function Navigation() {
   const { user, isLoading } = useAuth();
   const { isAuroraEnabled, toggleAurora } = useAurora();
   const { isAuroraPage } = useAuroraPages();
+  const logoChoice = useRandomLogo();
 
   const getDashboardLink = () => {
     if (!user) return '#';
@@ -59,7 +62,7 @@ export function Navigation() {
               className="flex items-center space-x-2"
               onClick={closeMenu}
             >
-              <span className="text-2xl">☀️</span>
+              <LogoDisplay logoChoice={logoChoice} size="sm" />
               <div className="hidden xs:flex xs:flex-col">
                 <span className="font-bold text-lg bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-tight">
                   Les défis de l'été
