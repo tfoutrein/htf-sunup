@@ -24,6 +24,7 @@ Application de gestion des défis quotidiens pour la Happy Team Factory - Équip
 - **Backend**: Nest.js avec TypeScript ✅
 - **Base de données**: PostgreSQL avec Drizzle ORM ✅
 - **Authentification**: JWT avec rôles (marraine/manager/fbo) ✅
+- **Stockage**: S3 compatible (iDrive e2) pour les preuves d'actions ✅
 - **Gestion d'état**: TanStack Query v5 pour le cache et la synchronisation ✅
 - **Monorepo**: pnpm workspaces
 - **Containerisation**: Docker & Docker Compose
@@ -48,6 +49,8 @@ htf-sunup/
 │       │   ├── campaigns/ # Gestion campagnes ✅
 │       │   ├── challenges/# Gestion défis ✅
 │       │   ├── actions/   # Gestion actions ✅
+│       │   ├── user-actions/ # Actions utilisateurs & upload preuves ✅
+│       │   ├── storage/   # Service S3 pour upload fichiers ✅
 │       │   ├── db/        # Schema & migrations ✅
 │       │   └── main.ts
 │       ├── drizzle/       # Migrations Drizzle ✅
@@ -123,9 +126,10 @@ pnpm db:seed      # Seed avec données de test
 ## 🌐 URLs et Ports
 
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
+- **Backend API**: http://localhost:3001/api (avec préfixe global /api)
 - **API Documentation**: http://localhost:3001/api (Swagger)
 - **PostgreSQL**: localhost:5432
+- **Stockage S3**: https://b2y8.par5.idrivee2-11.com (iDrive e2)
 
 ## 🗄️ Base de Données ✅ **IMPLÉMENTÉE**
 
@@ -235,6 +239,89 @@ curl -X GET http://localhost:3001/challenges/today \
   -H "Authorization: Bearer $TOKEN"
 ```
 
+### Upload de Preuves d'Actions
+
+```bash
+# Upload d'une preuve (photo/vidéo) pour une action utilisateur
+POST /api/user-actions/:id/proof   # Upload fichier avec FormData
+
+# Obtenir les badges/statistiques utilisateur
+GET  /api/actions/user/:userId/badges  # Badges et stats gamification
+```
+
+#### Test de l'Upload de Preuves
+
+```bash
+# Créer un FormData pour l'upload
+curl -X POST http://localhost:3001/api/user-actions/1/proof \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@/path/to/image.jpg"
+
+# Réponse : UserAction mis à jour avec proofUrl
+{
+  "id": 1,
+  "userId": 2,
+  "actionId": 1,
+  "completed": true,
+  "proofUrl": "https://b2y8.par5.idrivee2-11.com/happy-team-factory/proofs/2/1-1735162800000.jpg"
+}
+```
+
+## 📁 Stockage S3 (iDrive e2)
+
+### Configuration
+
+Le système utilise un stockage S3 compatible (iDrive e2) pour l'upload de preuves :
+
+```bash
+# Variables d'environnement requises dans .env
+S3_ENDPOINT=https://b2y8.par5.idrivee2-11.com
+S3_REGION=us-east-1
+S3_ACCESS_KEY_ID=your-access-key
+S3_SECRET_ACCESS_KEY=your-secret-key
+S3_BUCKET_NAME=happy-team-factory
+```
+
+### Structure des Fichiers
+
+```
+bucket/
+└── proofs/
+    └── {userId}/
+        └── {actionId}-{timestamp}.{extension}
+```
+
+**Exemple** : `proofs/2/1-1735162800000.jpg`
+
+### Types de Fichiers Supportés
+
+- **Images** : JPG, JPEG, PNG, GIF, WebP
+- **Vidéos** : MP4, MOV, AVI, WebM
+- **Taille max** : 10MB par fichier
+
+### Interface Utilisateur
+
+Dans la modal de completion d'action, l'utilisateur peut :
+
+1. **Sélectionner un fichier** via l'input file
+2. **Voir le fichier sélectionné** avec nom et taille affichés
+3. **Uploader la preuve** lors de la validation
+4. **Accéder à l'URL publique** une fois uploadée
+
+```typescript
+// Exemple de feedback visuel après sélection
+{proofFile && (
+  <div className="mt-2 p-2 bg-gray-50 rounded-md border">
+    <p className="text-sm text-gray-600">
+      <span className="font-medium">Fichier sélectionné :</span> {proofFile.name}
+    </p>
+    <p className="text-xs text-gray-500 mt-1">
+      Taille : {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+    </p>
+  </div>
+)}
+```
+
 ## 🎯 État d'Implémentation
 
 ### ✅ **BACKEND COMPLET** (22 juin 2025)
@@ -253,6 +340,16 @@ curl -X GET http://localhost:3001/challenges/today \
 - **Cache automatique** : Réduction des appels API et performance optimisée
 - **Pages complètes** : Login, dashboards, gestion campagnes et défis
 - **Composants réutilisables** : Système de design cohérent
+
+### ✅ **UPLOAD PREUVES D'ACTIONS** (25 juin 2025)
+
+- **Stockage S3** : Intégration iDrive e2 avec AWS SDK
+- **Upload sécurisé** : Validation de fichiers et gestion des erreurs
+- **Interface intuitive** : Feedback visuel avec nom et taille du fichier
+- **Organisation des fichiers** : Structure hiérarchique par utilisateur
+- **URLs publiques** : Accès direct aux preuves uploadées
+- **Types de médias** : Support images et vidéos (JPG, PNG, MP4, etc.)
+- **Configuration centralisée** : Variables d'environnement via .env
 
 ### 📋 **PROCHAINES ÉTAPES**
 
