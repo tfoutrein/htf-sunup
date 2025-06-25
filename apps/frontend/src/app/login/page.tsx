@@ -128,23 +128,27 @@ export default function LoginPage() {
           <CardBody className="p-6 sm:p-8">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                {logoChoice === 'sun' ? (
+              {logoChoice === 'sun' ? (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
                   <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                ) : logoChoice === 'logo1' ? (
-                  <img
-                    src="/logo1.png"
-                    alt="Logo 1"
-                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-                  />
-                ) : (
-                  <img
-                    src="/logo2.png"
-                    alt="Logo 2"
-                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-                  />
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center mx-auto mb-4">
+                  {logoChoice === 'logo1' ? (
+                    <img
+                      src="/logo1.png"
+                      alt="Logo 1"
+                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+                    />
+                  ) : (
+                    <img
+                      src="/logo2.png"
+                      alt="Logo 2"
+                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+                    />
+                  )}
+                </div>
+              )}
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
                 Les défis de l'été ☀️
               </h1>
