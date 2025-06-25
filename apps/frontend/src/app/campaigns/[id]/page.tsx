@@ -132,32 +132,40 @@ export default function CampaignDetailPage() {
                 </svg>
               </Button>
               <Badge
-                color={getStatusColor(campaign.status)}
+                color={getStatusColor(campaign?.status || 'draft')}
                 className="ml-auto"
               >
-                {getStatusLabel(campaign.status)}
+                {getStatusLabel(campaign?.status || 'draft')}
               </Badge>
             </div>
 
             <h1 className="text-3xl font-bold text-gray-800 drop-shadow-sm mb-4">
-              {campaign.name}
+              {campaign?.name}
             </h1>
 
-            <p className="text-gray-700 mb-4">{campaign.description}</p>
+            <p className="text-gray-700 mb-4">{campaign?.description}</p>
 
             <div className="text-sm text-gray-600">
-              Du {new Date(campaign.startDate).toLocaleDateString('fr-FR')} au{' '}
-              {new Date(campaign.endDate).toLocaleDateString('fr-FR')}
+              Du{' '}
+              {campaign?.startDate
+                ? new Date(campaign.startDate).toLocaleDateString('fr-FR')
+                : ''}{' '}
+              au{' '}
+              {campaign?.endDate
+                ? new Date(campaign.endDate).toLocaleDateString('fr-FR')
+                : ''}
             </div>
           </div>
 
           {/* Calendrier de campagne */}
-          <CampaignCalendar
-            campaign={campaign}
-            challenges={campaign.challenges}
-            onCreateChallenge={() => {}} // Fonction vide car maintenant géré via navigation directe
-            onEditChallenge={() => {}} // Fonction vide car maintenant géré via navigation directe
-          />
+          {campaign && (
+            <CampaignCalendar
+              campaign={campaign}
+              challenges={campaign.challenges}
+              onCreateChallenge={() => {}} // Fonction vide car maintenant géré via navigation directe
+              onEditChallenge={() => {}} // Fonction vide car maintenant géré via navigation directe
+            />
+          )}
         </div>
       </div>
     </div>

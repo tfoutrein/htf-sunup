@@ -134,13 +134,11 @@ function NewChallengePageContent() {
       setError(
         'Cette date a déjà un défi associé. Veuillez choisir une autre date.',
       );
-      setSubmitting(false);
       return;
     }
 
     if (actions.length === 0) {
       setError('Vous devez créer au moins une action pour ce défi.');
-      setSubmitting(false);
       return;
     }
 
