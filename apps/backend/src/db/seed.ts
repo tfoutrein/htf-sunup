@@ -1,11 +1,12 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 const postgres = require('postgres');
 import * as bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 import { users, campaigns, challenges, actions, userActions } from './schema';
 
 const connectionString =
   process.env.DATABASE_URL ||
-  'postgresql://postgres:postgres@localhost:5432/template_db';
+  'postgresql://postgres:postgres@localhost:5432/htf_sunup_db';
 
 async function seed() {
   const sql = postgres(connectionString);
@@ -19,87 +20,43 @@ async function seed() {
     await db.delete(actions);
     await db.delete(challenges);
     await db.delete(campaigns);
-    await db.delete(users);
+    // Ne pas supprimer les users qui existent déjà
 
-    // Hash password for all users
-    const hashedPassword = await bcrypt.hash('password', 10);
+    // Récupérer les utilisateurs existants
+    const existingUsers = await db.select().from(users);
+    const marraine = existingUsers.find((u) => u.role === 'marraine');
+    const managers = existingUsers.filter((u) => u.role === 'manager');
+    const fbos = existingUsers.filter((u) => u.role === 'fbo');
 
-    // Create Marraine (Aurélia)
-    const [marraine] = await db
-      .insert(users)
-      .values({
-        name: 'Aurélia',
-        email: 'aurelia@htf.com',
-        password: hashedPassword,
-        role: 'marraine',
-      })
-      .returning();
+    if (!marraine || managers.length === 0 || fbos.length === 0) {
+      throw new Error('Utilisateurs manquants dans la base de données');
+    }
 
-    // Create Managers
-    const [manager1] = await db
-      .insert(users)
-      .values({
-        name: 'Jéromine',
-        email: 'jeromine@htf.com',
-        password: hashedPassword,
-        role: 'manager',
-      })
-      .returning();
+    // Utiliser les managers existants
+    const manager1 = managers[0];
+    const manager2 = managers[1];
+    const manager3 = managers[2];
 
-    const [manager2] = await db
-      .insert(users)
-      .values({
-        name: 'Gaëlle',
-        email: 'gaelle@htf.com',
-        password: hashedPassword,
-        role: 'manager',
-      })
-      .returning();
+    // Assigner les FBO existants aux managers
+    const fbo1 = fbos[0];
+    const fbo2 = fbos[1];
+    const fbo3 = fbos[2];
 
-    const [manager3] = await db
-      .insert(users)
-      .values({
-        name: 'Audrey',
-        email: 'audrey@htf.com',
-        password: hashedPassword,
-        role: 'manager',
-      })
-      .returning();
-
-    // Create FBO members for manager1
-    const [fbo1] = await db
-      .insert(users)
-      .values({
-        name: 'Marie Dupont',
-        email: 'marie@htf.com',
-        password: hashedPassword,
-        role: 'fbo',
-        managerId: manager1.id,
-      })
-      .returning();
-
-    const [fbo2] = await db
-      .insert(users)
-      .values({
-        name: 'Pierre Martin',
-        email: 'pierre@htf.com',
-        password: hashedPassword,
-        role: 'fbo',
-        managerId: manager1.id,
-      })
-      .returning();
-
-    // Create FBO members for manager2
-    const [fbo3] = await db
-      .insert(users)
-      .values({
-        name: 'Sophie Bernard',
-        email: 'sophie@htf.com',
-        password: hashedPassword,
-        role: 'fbo',
-        managerId: manager2.id,
-      })
-      .returning();
+    // Mettre à jour les manager_id des FBO
+    await db
+      .update(users)
+      .set({ managerId: manager1.id })
+      .where(eq(users.id, fbo1.id));
+    await db
+      .update(users)
+      .set({ managerId: manager1.id })
+      .where(eq(users.id, fbo2.id));
+    if (fbo3) {
+      await db
+        .update(users)
+        .set({ managerId: manager2.id })
+        .where(eq(users.id, fbo3.id));
+    }
 
     // Create a sample campaign
     const [campaign] = await db

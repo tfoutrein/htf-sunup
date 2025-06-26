@@ -670,4 +670,268 @@ export class ActionsService {
 
     return badges;
   }
+
+  async getManagerActions(managerId: number): Promise<Action[]> {
+    return await this.db.db
+      .select({
+        id: actions.id,
+        challengeId: actions.challengeId,
+        title: actions.title,
+        description: actions.description,
+        type: actions.type,
+        order: actions.order,
+        pointsValue: actions.pointsValue,
+        createdAt: actions.createdAt,
+        updatedAt: actions.updatedAt,
+      })
+      .from(actions)
+      .innerJoin(challenges, eq(actions.challengeId, challenges.id))
+      .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+      .where(eq(campaigns.createdBy, managerId));
+  }
+
+  async getTeamCampaignProgress(managerId: number, campaignId: number) {
+    // Get campaign details
+    const [campaign] = await this.db.db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId));
+
+    if (!campaign) {
+      throw new NotFoundException(
+        `Campagne avec l'ID ${campaignId} non trouvée`,
+      );
+    }
+
+    // Get team members
+    const teamMembers = await this.db.db
+      .select()
+      .from(users)
+      .where(and(eq(users.managerId, managerId), eq(users.role, 'fbo')));
+
+    // Get all challenges for this campaign
+    const campaignChallenges = await this.db.db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.campaignId, campaignId));
+
+    const totalDays = this.getTotalCampaignDays(
+      campaign.startDate,
+      campaign.endDate,
+    );
+    const currentDay = this.getCurrentDay(campaign.startDate, campaign.endDate);
+
+    const progressData = [];
+
+    for (const member of teamMembers) {
+      // Get member's completed actions for this campaign
+      const completedUserActions = await this.db.db
+        .select({
+          userActionId: userActions.id,
+          challengeId: userActions.challengeId,
+          completed: userActions.completed,
+          actionId: userActions.actionId,
+        })
+        .from(userActions)
+        .innerJoin(actions, eq(userActions.actionId, actions.id))
+        .innerJoin(challenges, eq(actions.challengeId, challenges.id))
+        .where(
+          and(
+            eq(userActions.userId, member.id),
+            eq(challenges.campaignId, campaignId),
+            eq(userActions.completed, true),
+          ),
+        );
+
+      // Get all assigned actions for this campaign
+      const allUserActions = await this.db.db
+        .select({
+          userActionId: userActions.id,
+          challengeId: userActions.challengeId,
+          completed: userActions.completed,
+          actionId: userActions.actionId,
+        })
+        .from(userActions)
+        .innerJoin(actions, eq(userActions.actionId, actions.id))
+        .innerJoin(challenges, eq(actions.challengeId, challenges.id))
+        .where(
+          and(
+            eq(userActions.userId, member.id),
+            eq(challenges.campaignId, campaignId),
+          ),
+        );
+
+      // Count completed challenges (at least one action completed per challenge)
+      const completedChallengeIds = new Set(
+        completedUserActions.map((ua) => ua.challengeId),
+      );
+      const completedChallenges = completedChallengeIds.size;
+
+      const progressPercentage =
+        campaignChallenges.length > 0
+          ? (completedChallenges / campaignChallenges.length) * 100
+          : 0;
+
+      progressData.push({
+        userId: member.id,
+        userName: member.name,
+        totalActions: allUserActions.length,
+        completedActions: completedUserActions.length,
+        percentage: Math.round(progressPercentage),
+        campaignProgress: {
+          campaignId: campaign.id,
+          campaignName: campaign.name,
+          totalDays,
+          currentDay,
+          completedChallenges,
+          totalChallenges: campaignChallenges.length,
+          progressPercentage: Math.round(progressPercentage),
+        },
+      });
+    }
+
+    return progressData;
+  }
+
+  async getUserCampaignDetails(userId: number, campaignId: number) {
+    // Get campaign details
+    const [campaign] = await this.db.db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId));
+
+    if (!campaign) {
+      throw new NotFoundException(
+        `Campagne avec l'ID ${campaignId} non trouvée`,
+      );
+    }
+
+    // Get all challenges for this campaign
+    const campaignChallenges = await this.db.db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.campaignId, campaignId))
+      .orderBy(challenges.date);
+
+    const today = new Date().toISOString().split('T')[0];
+    const dailyChallenges = [];
+    let completedChallenges = 0;
+    let totalChallenges = campaignChallenges.length;
+
+    for (let i = 0; i < campaignChallenges.length; i++) {
+      const challenge = campaignChallenges[i];
+      const dayNumber = i + 1;
+      const isToday = challenge.date === today;
+
+      // Get actions for this challenge
+      const challengeActions = await this.db.db
+        .select({
+          id: actions.id,
+          title: actions.title,
+          description: actions.description,
+          type: actions.type,
+          order: actions.order,
+          pointsValue: actions.pointsValue,
+        })
+        .from(actions)
+        .where(eq(actions.challengeId, challenge.id))
+        .orderBy(actions.order);
+
+      // Get user actions for this challenge
+      const userChallengeActions = await this.db.db
+        .select({
+          id: userActions.id,
+          actionId: userActions.actionId,
+          completed: userActions.completed,
+          completedAt: userActions.completedAt,
+          proofUrl: userActions.proofUrl,
+          action: {
+            id: actions.id,
+            title: actions.title,
+            description: actions.description,
+            type: actions.type,
+            order: actions.order,
+            pointsValue: actions.pointsValue,
+          },
+        })
+        .from(userActions)
+        .innerJoin(actions, eq(userActions.actionId, actions.id))
+        .where(
+          and(
+            eq(userActions.userId, userId),
+            eq(userActions.challengeId, challenge.id),
+          ),
+        )
+        .orderBy(actions.order);
+
+      // Merge actions with user completion status
+      const actionsWithStatus = challengeActions.map((action) => {
+        const userAction = userChallengeActions.find(
+          (ua) => ua.actionId === action.id,
+        );
+        return {
+          ...action,
+          completed: userAction?.completed || false,
+          completedAt: userAction?.completedAt,
+          proofUrl: userAction?.proofUrl,
+          userActionId: userAction?.id,
+        };
+      });
+
+      const challengeCompleted = actionsWithStatus.some(
+        (action) => action.completed,
+      );
+      if (challengeCompleted) {
+        completedChallenges++;
+      }
+
+      dailyChallenges.push({
+        challengeId: challenge.id,
+        date: challenge.date,
+        dayNumber,
+        title: challenge.title,
+        description: challenge.description,
+        isToday,
+        completed: challengeCompleted,
+        actions: actionsWithStatus,
+      });
+    }
+
+    const overallProgress =
+      totalChallenges > 0 ? (completedChallenges / totalChallenges) * 100 : 0;
+
+    return {
+      campaign: {
+        id: campaign.id,
+        name: campaign.name,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+      },
+      overallProgress: Math.round(overallProgress),
+      completedChallenges,
+      totalChallenges,
+      dailyChallenges,
+    };
+  }
+
+  private getTotalCampaignDays(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return (
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    );
+  }
+
+  private getCurrentDay(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+
+    if (today < start) return 0;
+    if (today > end) return this.getTotalCampaignDays(startDate, endDate);
+
+    return (
+      Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    );
+  }
 }

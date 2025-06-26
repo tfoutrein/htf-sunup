@@ -28,6 +28,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { getUser, getToken, logout } from '@/utils/auth';
 import { useActiveCampaigns } from '@/hooks/useCampaigns';
+import { ApiClient, API_ENDPOINTS } from '@/services/api';
 import { useTodayChallenges } from '@/hooks/useChallenges';
 import { useChallengeActions } from '@/hooks/useActions';
 import { Challenge, Action, Campaign } from '@/types/campaigns';
@@ -192,14 +193,8 @@ export default function FBODashboard() {
     if (!currentUser) return;
 
     try {
-      const token = getToken();
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/challenge/${challengeId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+      const response = await ApiClient.get(
+        API_ENDPOINTS.ACTIONS_USER_CHALLENGE(currentUser.id, challengeId),
       );
 
       if (response.ok) {
@@ -219,14 +214,9 @@ export default function FBODashboard() {
     if (!currentUser) return;
 
     try {
-      const token = getToken();
-
       // Récupérer les statistiques de campagne
-      const campaignStatsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/campaign-stats/${campaignId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const campaignStatsResponse = await ApiClient.get(
+        API_ENDPOINTS.ACTIONS_USER_CAMPAIGN_STATS(currentUser.id, campaignId),
       );
       if (campaignStatsResponse.ok) {
         const stats = await campaignStatsResponse.json();
@@ -234,11 +224,8 @@ export default function FBODashboard() {
       }
 
       // Récupérer les streaks
-      const streaksResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/streaks`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const streaksResponse = await ApiClient.get(
+        API_ENDPOINTS.ACTIONS_USER_STREAKS(currentUser.id),
       );
       if (streaksResponse.ok) {
         const streaks = await streaksResponse.json();
@@ -246,11 +233,8 @@ export default function FBODashboard() {
       }
 
       // Récupérer les badges
-      const badgesResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions/user/${currentUser.id}/badges`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const badgesResponse = await ApiClient.get(
+        API_ENDPOINTS.ACTIONS_USER_BADGES(currentUser.id),
       );
       if (badgesResponse.ok) {
         const badges = await badgesResponse.json();
@@ -281,19 +265,12 @@ export default function FBODashboard() {
 
       // 1. Create userAction if it doesn't exist
       if (!userActionToUpdate) {
-        const createResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/user-actions`,
+        const createResponse = await ApiClient.post(
+          API_ENDPOINTS.USER_ACTIONS,
           {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              actionId: selectedAction.action.id,
-              challengeId: todayChallenge.id,
-              completed: false, // Start as not completed
-            }),
+            actionId: selectedAction.action.id,
+            challengeId: todayChallenge.id,
+            completed: false, // Start as not completed
           },
         );
         if (!createResponse.ok) throw new Error('Failed to create user action');
@@ -307,7 +284,7 @@ export default function FBODashboard() {
         formData.append('file', proofFile);
 
         const uploadResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${userActionToUpdate.id}/proof`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/user-actions/${userActionToUpdate.id}/proof`,
           {
             method: 'POST',
             headers: {
@@ -323,23 +300,18 @@ export default function FBODashboard() {
       }
 
       // 3. Mark action as completed
-      const updateResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/user-actions/${userActionToUpdate.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
+      if (userActionToUpdate) {
+        const updateResponse = await ApiClient.patch(
+          API_ENDPOINTS.USER_ACTIONS_BY_ID(userActionToUpdate.id),
+          {
             completed: true,
             proofUrl: finalProofUrl,
-          }),
-        },
-      );
+          },
+        );
 
-      if (!updateResponse.ok) {
-        throw new Error('Erreur lors de la mise à jour');
+        if (!updateResponse.ok) {
+          throw new Error('Erreur lors de la mise à jour');
+        }
       }
 
       // Refresh data

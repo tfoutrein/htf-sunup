@@ -7,6 +7,7 @@ import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground } from '@/components/ui';
 import { login } from '@/utils/auth';
 import { useLogo } from '@/contexts/LogoContext';
+import { ApiClient, API_ENDPOINTS } from '@/services/api';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -27,16 +28,13 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        },
+      console.log('🔥 DEBUT LOGIN - Utilisation ApiClient.postPublic');
+      console.log('🔥 API_ENDPOINTS.LOGIN:', API_ENDPOINTS.LOGIN);
+      const response = await ApiClient.postPublic(
+        API_ENDPOINTS.LOGIN,
+        formData,
       );
+      console.log('🔥 Response reçue:', response.url);
 
       if (!response.ok) {
         throw new Error('Email ou mot de passe incorrect');
@@ -69,14 +67,13 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(testData),
-        },
+      console.log('🔥 QUICK LOGIN - Utilisation ApiClient.postPublic');
+      console.log('🔥 API_ENDPOINTS.LOGIN:', API_ENDPOINTS.LOGIN);
+      const response = await ApiClient.postPublic(
+        API_ENDPOINTS.LOGIN,
+        testData,
       );
+      console.log('🔥 Quick login response URL:', response.url);
 
       if (!response.ok) {
         throw new Error('Erreur de connexion');

@@ -11,6 +11,7 @@ import {
   Select,
   SelectItem,
 } from '@heroui/react';
+import { ApiClient, API_ENDPOINTS } from '@/services/api';
 
 interface Manager {
   id: number;
@@ -45,8 +46,8 @@ export default function RegisterPage() {
   const fetchManagers = async () => {
     setManagersLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/public/users/managers`,
+      const response = await ApiClient.getPublic(
+        API_ENDPOINTS.PUBLIC_USERS_MANAGERS,
       );
       if (response.ok) {
         const data = await response.json();
@@ -94,15 +95,9 @@ export default function RegisterPage() {
         }),
       };
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        },
+      const response = await ApiClient.postPublic(
+        API_ENDPOINTS.REGISTER,
+        requestData,
       );
 
       if (!response.ok) {

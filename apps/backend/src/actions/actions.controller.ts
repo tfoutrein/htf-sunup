@@ -184,4 +184,42 @@ export class ActionsController {
   getUserBadges(@Param('userId', ParseIntPipe) userId: number) {
     return this.actionsService.getUserBadges(userId);
   }
+
+  @Get('manager/:managerId')
+  @ApiOperation({ summary: 'Récupérer les actions créées par un manager' })
+  @ApiResponse({ status: 200, description: 'Liste des actions du manager' })
+  getManagerActions(@Param('managerId', ParseIntPipe) managerId: number) {
+    return this.actionsService.getManagerActions(managerId);
+  }
+
+  @Get('team-campaign-progress/:managerId/:campaignId')
+  @ApiOperation({
+    summary: "Récupérer le progrès de l'équipe pour une campagne spécifique",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistiques de progrès équipe pour la campagne',
+  })
+  getTeamCampaignProgress(
+    @Param('managerId', ParseIntPipe) managerId: number,
+    @Param('campaignId', ParseIntPipe) campaignId: number,
+  ) {
+    return this.actionsService.getTeamCampaignProgress(managerId, campaignId);
+  }
+
+  @Get('user/:userId/campaign-details/:campaignId')
+  @ApiOperation({
+    summary:
+      "Récupérer les détails quotidiens d'un utilisateur pour une campagne",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Détails des actions quotidiennes avec preuves',
+  })
+  getUserCampaignDetails(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('campaignId', ParseIntPipe) campaignId: number,
+  ) {
+    return this.actionsService.getUserCampaignDetails(userId, campaignId);
+  }
 }

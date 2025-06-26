@@ -22,7 +22,7 @@ import { UserDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
-@Controller('api/users')
+@Controller('users')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UsersController {

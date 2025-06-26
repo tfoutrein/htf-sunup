@@ -36,6 +36,7 @@ import {
   StarIcon as CrownIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import { ApiClient, API_ENDPOINTS } from '@/services/api';
 
 interface User {
   id: number;
@@ -168,14 +169,9 @@ export default function MarraineDashboard() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-
       // Fetch all managers
-      const managersResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/managers`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const managersResponse = await ApiClient.get(
+        API_ENDPOINTS.USERS_MANAGERS,
       );
 
       if (managersResponse.ok) {
@@ -184,11 +180,8 @@ export default function MarraineDashboard() {
       }
 
       // Fetch all team members
-      const membersResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/all-members`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const membersResponse = await ApiClient.get(
+        API_ENDPOINTS.USERS_ALL_MEMBERS,
       );
 
       if (membersResponse.ok) {
@@ -197,12 +190,7 @@ export default function MarraineDashboard() {
       }
 
       // Fetch all actions
-      const actionsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const actionsResponse = await ApiClient.get(API_ENDPOINTS.ACTIONS);
 
       if (actionsResponse.ok) {
         const actionsData = await actionsResponse.json();
@@ -210,11 +198,8 @@ export default function MarraineDashboard() {
       }
 
       // Fetch global progress
-      const progressResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions/global-progress`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const progressResponse = await ApiClient.get(
+        API_ENDPOINTS.ACTIONS_GLOBAL_PROGRESS,
       );
 
       if (progressResponse.ok) {
@@ -231,21 +216,10 @@ export default function MarraineDashboard() {
   const handleAddManager = async () => {
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...managerForm,
-            role: 'manager',
-          }),
-        },
-      );
+      const response = await ApiClient.post(API_ENDPOINTS.REGISTER, {
+        ...managerForm,
+        role: 'manager',
+      });
 
       if (response.ok) {
         onAddManagerClose();
@@ -267,21 +241,10 @@ export default function MarraineDashboard() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/actions`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...actionForm,
-            createdBy: Number(user.id),
-          }),
-        },
-      );
+      const response = await ApiClient.post(API_ENDPOINTS.ACTIONS, {
+        ...actionForm,
+        createdBy: Number(user.id),
+      });
 
       if (response.ok) {
         onAddActionClose();

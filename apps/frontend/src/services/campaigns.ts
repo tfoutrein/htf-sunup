@@ -5,23 +5,12 @@ import {
   CampaignWithChallenges,
   ChallengeWithActions,
 } from '@/types/campaigns';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { ApiClient, API_ENDPOINTS } from './api';
 
 class CampaignService {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
   // Campaigns
   async getCampaigns(): Promise<Campaign[]> {
-    const response = await fetch(`${API_URL}/campaigns`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(API_ENDPOINTS.CAMPAIGNS);
 
     if (!response.ok) {
       throw new Error('Failed to fetch campaigns');
@@ -31,9 +20,7 @@ class CampaignService {
   }
 
   async getActiveCampaigns(): Promise<Campaign[]> {
-    const response = await fetch(`${API_URL}/campaigns/active`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(API_ENDPOINTS.CAMPAIGNS_ACTIVE);
 
     if (!response.ok) {
       throw new Error('Failed to fetch active campaigns');
@@ -43,9 +30,7 @@ class CampaignService {
   }
 
   async getCampaign(id: number): Promise<Campaign> {
-    const response = await fetch(`${API_URL}/campaigns/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(API_ENDPOINTS.CAMPAIGNS_BY_ID(id));
 
     if (!response.ok) {
       throw new Error('Failed to fetch campaign');
@@ -55,9 +40,9 @@ class CampaignService {
   }
 
   async getCampaignWithChallenges(id: number): Promise<CampaignWithChallenges> {
-    const response = await fetch(`${API_URL}/campaigns/${id}/challenges`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(
+      API_ENDPOINTS.CAMPAIGNS_WITH_CHALLENGES(id),
+    );
 
     if (!response.ok) {
       throw new Error('Failed to fetch campaign with challenges');
@@ -69,11 +54,7 @@ class CampaignService {
   async createCampaign(
     campaign: Omit<Campaign, 'id' | 'createdBy' | 'createdAt' | 'updatedAt'>,
   ): Promise<Campaign> {
-    const response = await fetch(`${API_URL}/campaigns`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(campaign),
-    });
+    const response = await ApiClient.post(API_ENDPOINTS.CAMPAIGNS, campaign);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -89,11 +70,10 @@ class CampaignService {
     id: number,
     campaign: Partial<Campaign>,
   ): Promise<Campaign> {
-    const response = await fetch(`${API_URL}/campaigns/${id}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(campaign),
-    });
+    const response = await ApiClient.patch(
+      API_ENDPOINTS.CAMPAIGNS_BY_ID(id),
+      campaign,
+    );
 
     if (!response.ok) {
       throw new Error('Failed to update campaign');
@@ -103,10 +83,7 @@ class CampaignService {
   }
 
   async deleteCampaign(id: number): Promise<void> {
-    const response = await fetch(`${API_URL}/campaigns/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.delete(API_ENDPOINTS.CAMPAIGNS_BY_ID(id));
 
     if (!response.ok) {
       if (response.status === 400) {
@@ -130,9 +107,10 @@ class CampaignService {
     if (campaignId) params.append('campaignId', campaignId.toString());
     if (date) params.append('date', date);
 
-    const response = await fetch(`${API_URL}/challenges?${params}`, {
-      headers: this.getAuthHeaders(),
-    });
+    const endpoint = params.toString()
+      ? `${API_ENDPOINTS.CHALLENGES}?${params}`
+      : API_ENDPOINTS.CHALLENGES;
+    const response = await ApiClient.get(endpoint);
 
     if (!response.ok) {
       throw new Error('Failed to fetch challenges');
@@ -142,9 +120,7 @@ class CampaignService {
   }
 
   async getTodayChallenges(): Promise<Challenge[]> {
-    const response = await fetch(`${API_URL}/challenges/today`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(API_ENDPOINTS.CHALLENGES_TODAY);
 
     if (!response.ok) {
       throw new Error('Failed to fetch today challenges');
@@ -154,9 +130,7 @@ class CampaignService {
   }
 
   async getChallenge(id: number): Promise<Challenge> {
-    const response = await fetch(`${API_URL}/challenges/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(API_ENDPOINTS.CHALLENGES_BY_ID(id));
 
     if (!response.ok) {
       throw new Error('Failed to fetch challenge');
@@ -166,9 +140,9 @@ class CampaignService {
   }
 
   async getChallengeWithActions(id: number): Promise<ChallengeWithActions> {
-    const response = await fetch(`${API_URL}/challenges/${id}/actions`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.get(
+      API_ENDPOINTS.CHALLENGES_WITH_ACTIONS(id),
+    );
 
     if (!response.ok) {
       throw new Error('Failed to fetch challenge with actions');
@@ -180,11 +154,7 @@ class CampaignService {
   async createChallenge(
     challenge: Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<Challenge> {
-    const response = await fetch(`${API_URL}/challenges`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(challenge),
-    });
+    const response = await ApiClient.post(API_ENDPOINTS.CHALLENGES, challenge);
 
     if (!response.ok) {
       throw new Error('Failed to create challenge');
@@ -197,11 +167,10 @@ class CampaignService {
     id: number,
     challenge: Partial<Challenge>,
   ): Promise<Challenge> {
-    const response = await fetch(`${API_URL}/challenges/${id}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(challenge),
-    });
+    const response = await ApiClient.patch(
+      API_ENDPOINTS.CHALLENGES_BY_ID(id),
+      challenge,
+    );
 
     if (!response.ok) {
       throw new Error('Failed to update challenge');
@@ -211,10 +180,7 @@ class CampaignService {
   }
 
   async deleteChallenge(id: number): Promise<void> {
-    const response = await fetch(`${API_URL}/challenges/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.delete(API_ENDPOINTS.CHALLENGES_BY_ID(id));
 
     if (!response.ok) {
       throw new Error('Failed to delete challenge');
@@ -223,22 +189,10 @@ class CampaignService {
 
   // Actions
   async getChallengeActions(challengeId: number): Promise<Action[]> {
-    const url = `${API_URL}/actions?challengeId=${challengeId}`;
-    console.log('🔍 DEBUG: getChallengeActions URL:', url);
-    console.log('🔍 DEBUG: API_URL:', API_URL);
-    console.log('🔍 DEBUG: challengeId:', challengeId);
-
-    const response = await fetch(url, {
-      headers: this.getAuthHeaders(),
-    });
+    const endpoint = `${API_ENDPOINTS.ACTIONS}?challengeId=${challengeId}`;
+    const response = await ApiClient.get(endpoint);
 
     if (!response.ok) {
-      console.error(
-        '🚨 DEBUG: Response not OK:',
-        response.status,
-        response.statusText,
-      );
-      console.error('🚨 DEBUG: Response URL:', response.url);
       throw new Error('Failed to fetch challenge actions');
     }
 
@@ -248,17 +202,10 @@ class CampaignService {
   async createAction(
     action: Omit<Action, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<Action> {
-    console.log('Sending action data:', action);
-
-    const response = await fetch(`${API_URL}/actions`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(action),
-    });
+    const response = await ApiClient.post(API_ENDPOINTS.ACTIONS, action);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error creating action:', response.status, errorText);
       throw new Error(
         `Failed to create action: ${response.status} - ${errorText}`,
       );
@@ -268,11 +215,7 @@ class CampaignService {
   }
 
   async updateAction(id: number, action: Partial<Action>): Promise<Action> {
-    const response = await fetch(`${API_URL}/actions/${id}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(action),
-    });
+    const response = await ApiClient.patch(`/actions/${id}`, action);
 
     if (!response.ok) {
       throw new Error('Failed to update action');
@@ -282,10 +225,7 @@ class CampaignService {
   }
 
   async deleteAction(id: number): Promise<void> {
-    const response = await fetch(`${API_URL}/actions/${id}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-    });
+    const response = await ApiClient.delete(`/actions/${id}`);
 
     if (!response.ok) {
       throw new Error('Failed to delete action');
