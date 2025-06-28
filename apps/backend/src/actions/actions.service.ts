@@ -772,6 +772,13 @@ export class ActionsService {
           ? (completedChallenges / campaignChallenges.length) * 100
           : 0;
 
+      // Get detailed daily challenges for this member (reusing getUserCampaignDetails logic)
+      const dailyChallenges = await this.getMemberDailyChallenges(
+        member.id,
+        campaignId,
+        campaignChallenges,
+      );
+
       progressData.push({
         userId: member.id,
         userName: member.name,
@@ -786,11 +793,86 @@ export class ActionsService {
           completedChallenges,
           totalChallenges: campaignChallenges.length,
           progressPercentage: Math.round(progressPercentage),
+          dailyChallenges, // Add detailed daily challenges
         },
       });
     }
 
     return progressData;
+  }
+
+  private async getMemberDailyChallenges(
+    userId: number,
+    campaignId: number,
+    campaignChallenges: any[],
+  ) {
+    const today = new Date().toISOString().split('T')[0];
+    const dailyChallenges = [];
+
+    for (let i = 0; i < campaignChallenges.length; i++) {
+      const challenge = campaignChallenges[i];
+      const dayNumber = i + 1;
+      const isToday = challenge.date === today;
+
+      // Get user actions for this challenge
+      const userChallengeActions = await this.db.db
+        .select({
+          id: userActions.id,
+          actionId: userActions.actionId,
+          completed: userActions.completed,
+          completedAt: userActions.completedAt,
+          proofUrl: userActions.proofUrl,
+          action: {
+            id: actions.id,
+            title: actions.title,
+            description: actions.description,
+            type: actions.type,
+            order: actions.order,
+            pointsValue: actions.pointsValue,
+          },
+        })
+        .from(userActions)
+        .innerJoin(actions, eq(userActions.actionId, actions.id))
+        .where(
+          and(
+            eq(userActions.userId, userId),
+            eq(actions.challengeId, challenge.id),
+          ),
+        )
+        .orderBy(actions.order);
+
+      // Transform actions data
+      const challengeActionsWithStatus = userChallengeActions.map((ua) => ({
+        id: ua.action.id,
+        title: ua.action.title,
+        description: ua.action.description,
+        type: ua.action.type,
+        order: ua.action.order,
+        pointsValue: ua.action.pointsValue,
+        completed: ua.completed,
+        completedAt: ua.completedAt,
+        proofUrl: ua.proofUrl,
+        userActionId: ua.id,
+      }));
+
+      // Check if challenge is completed (at least one action completed)
+      const challengeCompleted = challengeActionsWithStatus.some(
+        (action) => action.completed,
+      );
+
+      dailyChallenges.push({
+        challengeId: challenge.id,
+        date: challenge.date,
+        dayNumber,
+        title: challenge.title,
+        description: challenge.description,
+        isToday,
+        completed: challengeCompleted,
+        actions: challengeActionsWithStatus,
+      });
+    }
+
+    return dailyChallenges;
   }
 
   async getUserCampaignDetails(userId: number, campaignId: number) {

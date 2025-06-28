@@ -71,6 +71,17 @@ interface TeamProgress {
   campaignProgress?: CampaignProgress;
 }
 
+interface DailyChallenge {
+  challengeId: number;
+  date: string;
+  dayNumber: number;
+  title: string;
+  description: string;
+  isToday: boolean;
+  completed: boolean;
+  actions: Action[];
+}
+
 interface CampaignProgress {
   campaignId: number;
   campaignName: string;
@@ -79,6 +90,7 @@ interface CampaignProgress {
   completedChallenges: number;
   totalChallenges: number;
   progressPercentage: number;
+  dailyChallenges?: DailyChallenge[];
 }
 
 const actionTypes = [
@@ -512,15 +524,14 @@ export default function ManagerDashboard() {
                                       (_, index) => {
                                         const challengeNumber = index + 1;
 
-                                        // Logique simple : pour l'instant on assume que les jours complétés
-                                        // sont distribués selon la logique métier réelle
-                                        // TODO: Récupérer les vraies données détaillées par jour
-
-                                        // Si on est au jour 3 avec 1 complété, c'est le jour actuel (3) qui est complété
-                                        const currentDay = currentDayProgress;
+                                        // Utiliser les vraies données détaillées jour par jour
+                                        const dayData =
+                                          campaignProgress?.dailyChallenges?.find(
+                                            (day) =>
+                                              day.dayNumber === challengeNumber,
+                                          );
                                         const isCompleted =
-                                          challengeNumber === currentDay &&
-                                          completedChallenges > 0;
+                                          dayData?.completed || false;
 
                                         const isExpected =
                                           challengeNumber <=
