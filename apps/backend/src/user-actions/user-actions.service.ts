@@ -137,4 +137,29 @@ export class UserActionsService {
 
     return updatedUserAction;
   }
+
+  async getProofUrl(id: number): Promise<{ url: string }> {
+    const userAction = await this.findOne(id);
+
+    if (!userAction.proofUrl) {
+      throw new NotFoundException('Aucune preuve trouvée pour cette action');
+    }
+
+    try {
+      // Extract the key from the stored URL
+      const key = this.storageService.extractKeyFromUrl(userAction.proofUrl);
+
+      if (!key) {
+        throw new BadRequestException('URL de preuve invalide');
+      }
+
+      // Generate a signed URL (valid for 1 hour)
+      const signedUrl = await this.storageService.getSignedUrl(key, 3600);
+
+      return { url: signedUrl };
+    } catch (error) {
+      console.error('Error generating proof URL:', error);
+      throw new BadRequestException("Impossible de générer l'URL de preuve");
+    }
+  }
 }

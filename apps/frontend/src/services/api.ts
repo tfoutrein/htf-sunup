@@ -112,6 +112,7 @@ export const API_ENDPOINTS = {
   USER_ACTIONS: '/user-actions',
   USER_ACTIONS_BY_ID: (id: number) => `/user-actions/${id}`,
   USER_ACTIONS_PROOF: (id: number) => `/user-actions/${id}/proof`,
+  USER_ACTIONS_PROOF_URL: (id: number) => `/user-actions/${id}/proof`,
 
   // Campaigns
   CAMPAIGNS: '/campaigns',

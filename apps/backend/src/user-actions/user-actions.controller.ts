@@ -78,4 +78,14 @@ export class UserActionsController {
   ) {
     return this.userActionsService.uploadProof(id, file);
   }
+
+  @Get(':id/proof')
+  @ApiOperation({
+    summary: 'Récupérer le lien de preuve sécurisé pour une action utilisateur',
+  })
+  @ApiResponse({ status: 200, description: 'URL de preuve générée' })
+  @ApiResponse({ status: 404, description: 'Preuve non trouvée' })
+  getProofUrl(@Param('id', ParseIntPipe) id: number) {
+    return this.userActionsService.getProofUrl(id);
+  }
 }

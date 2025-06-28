@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -31,5 +36,31 @@ export class StorageService {
     await this.s3.send(command);
 
     return `${this.configService.get<string>('S3_ENDPOINT')}/${this.bucketName}/${key}`;
+  }
+
+  async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+
+    try {
+      const signedUrl = await getSignedUrl(this.s3, command, { expiresIn });
+      return signedUrl;
+    } catch (error) {
+      console.error('Error generating signed URL:', error);
+      throw new Error('Failed to generate signed URL');
+    }
+  }
+
+  // Extract key from S3 URL
+  extractKeyFromUrl(url: string): string | null {
+    try {
+      const urlParts = url.split(`/${this.bucketName}/`);
+      return urlParts.length > 1 ? urlParts[1] : null;
+    } catch (error) {
+      console.error('Error extracting key from URL:', error);
+      return null;
+    }
   }
 }
