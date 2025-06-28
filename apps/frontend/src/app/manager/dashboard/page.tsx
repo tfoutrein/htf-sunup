@@ -511,16 +511,22 @@ export default function ManagerDashboard() {
                                       { length: totalChallenges },
                                       (_, index) => {
                                         const challengeNumber = index + 1;
+
+                                        // Logique corrigée : les défis complétés sont les plus récents
+                                        // Si on a 1 défi complété sur 3 attendus, c'est le jour 3 qui est complété
                                         const isCompleted =
+                                          challengeNumber >
+                                            challengesExpectedAtCurrentDay -
+                                              completedChallenges &&
                                           challengeNumber <=
-                                          completedChallenges;
+                                            challengesExpectedAtCurrentDay;
                                         const isExpected =
                                           challengeNumber <=
                                           challengesExpectedAtCurrentDay;
                                         const isMissed =
                                           challengeNumber <=
                                             challengesExpectedAtCurrentDay &&
-                                          challengeNumber > completedChallenges;
+                                          !isCompleted;
                                         const isFuture =
                                           challengeNumber >
                                           challengesExpectedAtCurrentDay;
