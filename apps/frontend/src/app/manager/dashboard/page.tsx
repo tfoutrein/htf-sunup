@@ -472,11 +472,9 @@ export default function ManagerDashboard() {
                           : 100;
 
                         // Le curseur représente le nombre de défis qui devraient être disponibles à ce jour
-                        // Proportion = jours écoulés / jours totaux * total défis possibles
+                        // On considère qu'on est au jour 4 sur 4, donc 4 défis devraient être disponibles
                         const challengesExpectedAtCurrentDay = Math.min(
-                          Math.floor(
-                            (currentDayProgress / totalDays) * totalChallenges,
-                          ),
+                          currentDayProgress,
                           totalChallenges,
                         );
                         const currentChallengePercentage =
