@@ -94,7 +94,7 @@ export default function MemberDetailsPage() {
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
   const [selectedActionTitle, setSelectedActionTitle] = useState<string>('');
   const [isLoadingProof, setIsLoadingProof] = useState(false);
-  const [showMissedDays, setShowMissedDays] = useState(false);
+  const [showPreviousDays, setShowPreviousDays] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   useEffect(() => {
@@ -301,28 +301,45 @@ export default function MemberDetailsPage() {
                 return dayDate > today;
               });
 
-              const completedDays = sortedDays.filter((day) => {
+              // Tous les jours précédents (complétés + manqués)
+              const previousDays = sortedDays.filter((day) => {
                 const dayDate = new Date(day.date);
                 dayDate.setHours(0, 0, 0, 0);
-                return dayDate < today && day.completed;
+                return dayDate < today;
               });
 
-              const missedDays = sortedDays.filter((day) => {
-                const dayDate = new Date(day.date);
-                dayDate.setHours(0, 0, 0, 0);
-                return dayDate < today && !day.completed;
-              });
-
-              // Organiser l'affichage : Aujourd'hui > À venir > Complétés > (Manqués si déployé)
+              // Organiser l'affichage : (Jours précédents si déployés) > Aujourd'hui > À venir
               const displayDays = [
+                ...(showPreviousDays ? previousDays : []),
                 ...(todayDay ? [todayDay] : []),
                 ...futureDays,
-                ...completedDays,
-                ...(showMissedDays ? missedDays : []),
               ];
 
               return (
                 <>
+                  {/* Bouton pour afficher/masquer les jours précédents */}
+                  {previousDays.length > 0 && (
+                    <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
+                      <Button
+                        variant="ghost"
+                        className="w-full p-4 justify-center text-gray-600 hover:text-gray-800"
+                        onPress={() => setShowPreviousDays(!showPreviousDays)}
+                        startContent={
+                          showPreviousDays ? (
+                            <ChevronDownIcon className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )
+                        }
+                      >
+                        {showPreviousDays ? 'Masquer' : 'Afficher'} les{' '}
+                        {previousDays.length} jour
+                        {previousDays.length > 1 ? 's' : ''} précédent
+                        {previousDays.length > 1 ? 's' : ''}
+                      </Button>
+                    </Card>
+                  )}
+
                   {displayDays.map((day, index) => {
                     // Déterminer le statut temporel du jour
                     const dayDate = new Date(day.date);
@@ -589,29 +606,6 @@ export default function MemberDetailsPage() {
                       </Card>
                     );
                   })}
-
-                  {/* Bouton pour afficher/masquer les jours manqués */}
-                  {missedDays.length > 0 && (
-                    <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
-                      <Button
-                        variant="ghost"
-                        className="w-full p-4 justify-center text-gray-600 hover:text-gray-800"
-                        onPress={() => setShowMissedDays(!showMissedDays)}
-                        startContent={
-                          showMissedDays ? (
-                            <ChevronDownIcon className="w-4 h-4" />
-                          ) : (
-                            <ChevronRightIcon className="w-4 h-4" />
-                          )
-                        }
-                      >
-                        {showMissedDays ? 'Masquer' : 'Afficher'} les{' '}
-                        {missedDays.length} jour
-                        {missedDays.length > 1 ? 's' : ''} manqué
-                        {missedDays.length > 1 ? 's' : ''}
-                      </Button>
-                    </Card>
-                  )}
                 </>
               );
             })()}
