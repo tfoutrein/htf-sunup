@@ -1,0 +1,171 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Domaine Métier et Logique Applicative
+
+## Vue d'ensemble du Domaine
+
+HTF Sunup est une plateforme de **gamification d'équipe** permettant de créer et gérer des **campagnes de défis quotidiens** pour motiver les collaborateurs.
+
+## Entités Métier Principales
+
+### 👥 Acteurs du Système
+
+**Manager** 
+- Crée et gère les campagnes
+- Supervise plusieurs FBOs
+- Accède au dashboard de progression d'équipe
+
+**FBO (Field Business Officer)**
+- Participe aux défis quotidiens
+- Soumet des preuves de réalisation
+- Consulte sa progression personnelle
+
+**Marraine**
+- Rôle de support et accompagnement
+- Dashboard spécialisé (en développement)
+
+### 🎯 Objets Métier
+
+**Campaign (Campagne)**
+```typescript
+// Période définie avec défis quotidiens
+{
+  name: string;           // "Les défis de l'été de la Happy Team"
+  startDate: Date;        // Date de début
+  endDate: Date;          // Date de fin
+  managerId: number;      // Manager responsable
+}
+```
+
+**Challenge (Défi)**
+```typescript
+// Défi quotidien dans une campagne
+{
+  campaignId: number;     // Référence campagne
+  name: string;           // "Défi du 22 juin"
+  description: string;    // Description du défi
+  date: Date;             // Date spécifique du défi
+  isActive: boolean;      // Activé/désactivé
+}
+```
+
+**Action (Action)**
+```typescript
+// Action spécifique d'un défi
+{
+  challengeId: number;    // Référence défi
+  title: string;          // "Partager une photo d'équipe"
+  description: string;    // Description détaillée
+  points: number;         // Points attribués (0-100)
+  order: number;          // Ordre d'affichage
+}
+```
+
+**UserAction (Participation)**
+```typescript
+// Participation d'un utilisateur à une action
+{
+  userId: number;         // Participant
+  actionId: number;       // Action réalisée
+  completed: boolean;     // Statut de réalisation
+  proofUrl?: string;      // Preuve uploadée (optionnel)
+  completedAt?: Date;     // Date de réalisation
+}
+```
+
+## Règles Métier Principales
+
+### 📅 Gestion Temporelle
+1. **Un défi par jour** dans une campagne
+2. **Défis activés automatiquement** selon la date
+3. **Actions disponibles uniquement** pour le défi du jour actuel
+4. **Historique conservé** pour tous les défis passés
+
+### 🎯 Système de Points
+1. **Chaque action** a un nombre de points (0-100)
+2. **Progression calculée** : actions complétées / actions totales
+3. **Barres de progression** représentent l'avancement global
+4. **Indicateur de jour actuel** sur la timeline
+
+### 👥 Relations Hiérarchiques
+1. **Manager supervise plusieurs FBOs**
+2. **FBO appartient à un seul manager**
+3. **Campagne créée par un manager**
+4. **Progression visible au niveau équipe et individuel**
+
+### 📸 Gestion des Preuves
+1. **Upload optionnel** de preuves (photos/vidéos)
+2. **Stockage S3** ou local selon environnement
+3. **Formats acceptés** : jpg, png, gif, mp4, mov
+4. **Taille maximale** : 10MB
+
+## Flux Utilisateur Principaux
+
+### Manager - Création de Campagne
+1. Créer une campagne avec dates
+2. Ajouter des défis quotidiens
+3. Définir 3 actions par défi avec points
+4. Surveiller la progression de l'équipe
+
+### FBO - Participation Quotidienne
+1. Se connecter au dashboard
+2. Voir le défi du jour actuel
+3. Réaliser les actions
+4. Uploader des preuves (optionnel)
+5. Marquer les actions comme complétées
+
+### Visualisation des Données
+1. **Dashboard Manager** : progression équipe globale
+2. **Dashboard FBO** : progression personnelle
+3. **Modal détaillée** : actions par défi avec preuves
+4. **Indicateurs visuels** : barres de progression, curseur jour actuel
+
+## Composants UI Spécialisés
+
+### Composants Métier
+- [apps/frontend/src/components/campaigns/CampaignCalendar.tsx](mdc:apps/frontend/src/components/campaigns/CampaignCalendar.tsx) - Visualisation calendrier
+- [apps/frontend/src/components/campaigns/ActionForm.tsx](mdc:apps/frontend/src/components/campaigns/ActionForm.tsx) - Formulaire d'action
+- [apps/frontend/src/components/campaigns/ChallengeForm.tsx](mdc:apps/frontend/src/components/campaigns/ChallengeForm.tsx) - Formulaire de défi
+
+### APIs Métier Spécialisées
+- `/api/challenges/today/:campaignId` - Défi du jour
+- `/api/actions/team-campaign-progress/:managerId/:campaignId` - Progression équipe
+- `/api/user-actions/:actionId/upload-proof` - Upload preuve
+
+## États et Transitions
+
+### États d'une Action
+```
+Non commencée → En cours → Complétée (avec/sans preuve)
+```
+
+### États d'un Défi
+```
+À venir → Actif (jour J) → Terminé
+```
+
+### États d'une Campagne
+```
+Planifiée → En cours → Terminée
+```
+
+## Calculs Métier Importants
+
+### Progression Individuelle
+```typescript
+const progressPercentage = (completedActions / totalActions) * 100;
+```
+
+### Progression d'Équipe
+```typescript
+const teamProgress = fboProgressions.reduce((sum, fbo) => 
+  sum + fbo.progressPercentage, 0) / fboProgressions.length;
+```
+
+### Positionnement Jour Actuel
+```typescript
+const dayPosition = ((currentDay - startDay) / (endDay - startDay)) * 100;
+```

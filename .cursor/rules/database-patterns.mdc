@@ -1,0 +1,124 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Patterns Base de Données
+
+## Configuration Drizzle ORM
+
+### Fichiers Principaux
+- [apps/backend/src/db/schema.ts](mdc:apps/backend/src/db/schema.ts) - Définition des tables
+- [apps/backend/drizzle.config.ts](mdc:apps/backend/drizzle.config.ts) - Configuration Drizzle
+- [apps/backend/src/db/database.module.ts](mdc:apps/backend/src/db/database.module.ts) - Module NestJS
+
+## Schéma de Base de Données
+
+### Tables Principales
+
+**Users (Utilisateurs)**
+```sql
+users: id, email, password, firstName, lastName, role, managerId
+```
+
+**Campaigns (Campagnes)**
+```sql
+campaigns: id, name, description, startDate, endDate, managerId
+```
+
+**Challenges (Défis)**
+```sql
+challenges: id, campaignId, name, description, date, isActive
+```
+
+**Actions (Actions)**
+```sql
+actions: id, challengeId, title, description, points, order
+```
+
+**UserActions (Actions Utilisateur)**
+```sql
+userActions: id, userId, actionId, completed, proofUrl, completedAt
+```
+
+## Relations
+
+```typescript
+// Relations définies dans schema.ts
+campaigns -> challenges (1:N)
+challenges -> actions (1:N)
+users -> userActions (1:N)
+actions -> userActions (1:N)
+users -> users (manager:fbo) (1:N)
+```
+
+## Patterns de Requêtes
+
+### Requêtes Simples
+```typescript
+// Sélection avec condition
+const user = await db.select().from(users).where(eq(users.id, userId));
+
+// Insertion
+const newUser = await db.insert(users).values({...data}).returning();
+```
+
+### Requêtes Complexes
+```typescript
+// Jointures multiples avec agrégation
+const result = await db
+  .select({
+    challengeId: challenges.id,
+    challengeName: challenges.name,
+    totalActions: sql<number>`count(${actions.id})`,
+    completedActions: sql<number>`count(case when ${userActions.completed} then 1 end)`
+  })
+  .from(challenges)
+  .leftJoin(actions, eq(challenges.id, actions.challengeId))
+  .leftJoin(userActions, and(
+    eq(actions.id, userActions.actionId),
+    eq(userActions.userId, userId)
+  ))
+  .where(eq(challenges.campaignId, campaignId))
+  .groupBy(challenges.id, challenges.name);
+```
+
+## Migrations
+
+### Commandes
+```bash
+# Générer une migration
+pnpm db:generate
+
+# Exécuter les migrations
+pnpm db:migrate
+
+# Reset de la base (dev uniquement)
+pnpm db:reset
+```
+
+### Fichiers de Migration
+- [apps/backend/drizzle/](mdc:apps/backend/drizzle/) - Dossier des migrations
+- Migrations automatiquement générées par Drizzle
+
+## Seeding des Données
+
+- [apps/backend/src/db/seed.ts](mdc:apps/backend/src/db/seed.ts) - Script de peuplement
+- Données de test pour développement
+- Utilisateurs par défaut avec rôles (manager, fbo, marraine)
+
+## Bonnes Pratiques
+
+1. **Toujours utiliser les opérateurs Drizzle** (`eq`, `and`, `or`, etc.)
+2. **Typer les requêtes** avec les types générés
+3. **Utiliser les transactions** pour les opérations complexes
+4. **Valider les données** avant insertion
+5. **Gérer les erreurs** de contraintes de base de données
+
+## Variables d'Environnement
+
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/database
+```
+
+Configuration dans [apps/backend/src/db/database.module.ts](mdc:apps/backend/src/db/database.module.ts)

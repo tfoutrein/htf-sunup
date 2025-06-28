@@ -1,0 +1,67 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Patterns Backend NestJS
+
+## Structure des Modules
+
+Chaque fonctionnalité suit la structure NestJS standard :
+
+```
+src/[feature]/
+├── [feature].controller.ts    # Endpoints REST
+├── [feature].service.ts       # Logique métier
+├── [feature].module.ts        # Configuration du module
+└── dto/                       # Data Transfer Objects
+    ├── create-[feature].dto.ts
+    └── update-[feature].dto.ts
+```
+
+## Exemples de Modules
+
+- [apps/backend/src/users/users.module.ts](mdc:apps/backend/src/users/users.module.ts) - Gestion des utilisateurs
+- [apps/backend/src/campaigns/campaigns.module.ts](mdc:apps/backend/src/campaigns/campaigns.module.ts) - Gestion des campagnes
+- [apps/backend/src/actions/actions.module.ts](mdc:apps/backend/src/actions/actions.module.ts) - Gestion des actions
+
+## Base de Données avec Drizzle ORM
+
+- **Schema :** [apps/backend/src/db/schema.ts](mdc:apps/backend/src/db/schema.ts)
+- **Configuration :** [apps/backend/drizzle.config.ts](mdc:apps/backend/drizzle.config.ts)
+- **Migrations :** [apps/backend/drizzle/](mdc:apps/backend/drizzle/)
+
+### Conventions Drizzle
+
+```typescript
+// Import des opérateurs
+import { eq, and, desc } from 'drizzle-orm';
+
+// Requêtes typées
+const result = await db.select().from(users).where(eq(users.id, userId));
+
+// Jointures
+const result = await db
+  .select()
+  .from(campaigns)
+  .leftJoin(challenges, eq(campaigns.id, challenges.campaignId));
+```
+
+## Authentification
+
+- **Stratégies :** [apps/backend/src/auth/strategies/](mdc:apps/backend/src/auth/strategies/)
+- **Guards :** [apps/backend/src/auth/guards/](mdc:apps/backend/src/auth/guards/)
+- **JWT + Local Strategy** pour l'authentification
+
+## API REST Conventions
+
+- **GET** `/api/[resource]` - Liste des ressources
+- **GET** `/api/[resource]/:id` - Ressource spécifique
+- **POST** `/api/[resource]` - Création
+- **PUT** `/api/[resource]/:id` - Mise à jour complète
+- **PATCH** `/api/[resource]/:id` - Mise à jour partielle
+- **DELETE** `/api/[resource]/:id` - Suppression
+
+## Gestion des Fichiers
+
+Le service de stockage [apps/backend/src/storage/storage.service.ts](mdc:apps/backend/src/storage/storage.service.ts) gère l'upload vers S3 ou le stockage local selon l'environnement.

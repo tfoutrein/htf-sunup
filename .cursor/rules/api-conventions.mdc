@@ -1,0 +1,143 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Conventions API
+
+## Architecture API
+
+Le projet utilise une architecture REST avec NestJS côté backend et un service API centralisé côté frontend.
+
+## Service API Frontend
+
+- [apps/frontend/src/services/api.ts](mdc:apps/frontend/src/services/api.ts) - Configuration centralisée
+- Base URL : `/api` (proxy vers le backend port 3001)
+- Gestion centralisée des erreurs et authentification
+
+## Endpoints Principaux
+
+### Authentification
+```
+POST /api/auth/login          # Connexion
+POST /api/auth/register       # Inscription
+GET  /api/auth/profile        # Profil utilisateur
+```
+
+### Utilisateurs
+```
+GET    /api/users                    # Liste des utilisateurs
+GET    /api/users/:id                # Utilisateur spécifique
+PUT    /api/users/:id                # Mise à jour utilisateur
+GET    /api/users/manager/:id/fbos   # FBOs d'un manager
+```
+
+### Campagnes
+```
+GET    /api/campaigns                 # Toutes les campagnes
+GET    /api/campaigns/:id             # Campagne spécifique
+POST   /api/campaigns                 # Créer une campagne
+PUT    /api/campaigns/:id             # Modifier une campagne
+DELETE /api/campaigns/:id             # Supprimer une campagne
+GET    /api/campaigns/manager/:id     # Campagnes d'un manager
+```
+
+### Défis
+```
+GET    /api/challenges/campaign/:id           # Défis d'une campagne
+GET    /api/challenges/:id                    # Défi spécifique
+POST   /api/challenges                        # Créer un défi
+PUT    /api/challenges/:id                    # Modifier un défi
+DELETE /api/challenges/:id                    # Supprimer un défi
+GET    /api/challenges/today/:campaignId      # Défi du jour
+```
+
+### Actions
+```
+GET    /api/actions/challenge/:id                           # Actions d'un défi
+POST   /api/actions                                         # Créer une action
+PUT    /api/actions/:id                                     # Modifier une action
+DELETE /api/actions/:id                                     # Supprimer une action
+GET    /api/actions/team-campaign-progress/:managerId/:campaignId  # Progrès équipe
+GET    /api/actions/user/:userId/campaign-details/:campaignId      # Détails utilisateur
+```
+
+### Actions Utilisateur
+```
+GET    /api/user-actions/user/:userId/campaign/:campaignId  # Actions d'un utilisateur
+POST   /api/user-actions/:actionId/complete                 # Marquer comme complété
+POST   /api/user-actions/:actionId/upload-proof             # Upload de preuve
+```
+
+## Conventions de Réponse
+
+### Succès
+```json
+{
+  "data": [...],
+  "message": "Success message",
+  "statusCode": 200
+}
+```
+
+### Erreur
+```json
+{
+  "error": "Error message",
+  "statusCode": 400,
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+## Authentification
+
+- **JWT Bearer Token** dans les headers
+- Token stocké dans localStorage côté frontend
+- Middleware d'authentification sur les routes protégées
+
+## Gestion des Erreurs
+
+### Frontend
+```typescript
+// Gestion centralisée dans api.ts
+const handleApiError = (error: any) => {
+  if (error.response?.status === 401) {
+    // Redirection vers login
+  }
+  throw error;
+};
+```
+
+### Backend
+```typescript
+// Intercepteurs NestJS pour la gestion globale des erreurs
+@UseInterceptors(ErrorInterceptor)
+@Controller('api/resource')
+```
+
+## Upload de Fichiers
+
+- **Endpoint :** `POST /api/user-actions/:actionId/upload-proof`
+- **Storage :** S3 ou local selon l'environnement
+- **Formats :** Images (jpg, png, gif) et vidéos (mp4, mov)
+- **Taille max :** 10MB
+
+## Pagination
+
+```typescript
+// Query parameters standards
+GET /api/resource?page=1&limit=10&sort=createdAt&order=desc
+```
+
+## Filtrage
+
+```typescript
+// Filtres via query parameters
+GET /api/campaigns?managerId=123&status=active&startDate=2024-01-01
+```
+
+## Validation
+
+- **DTOs** pour la validation des données d'entrée
+- **class-validator** pour les règles de validation
+- Validation automatique par NestJS avec ValidationPipe

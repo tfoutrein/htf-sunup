@@ -1,0 +1,184 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Workflow de Développement
+
+## Configuration de l'Environnement
+
+### Prérequis
+- Node.js 18+
+- pnpm (gestionnaire de packages)
+- Docker (pour PostgreSQL)
+- PostgreSQL (via Docker)
+
+### Installation Initiale
+```bash
+# Installation des dépendances
+pnpm install
+
+# Démarrage des services Docker
+docker-compose up -d
+
+# Migration de la base de données
+cd apps/backend && pnpm db:migrate
+
+# Seeding des données de test
+cd apps/backend && pnpm db:seed
+```
+
+## Commandes de Développement
+
+### Démarrage des Services
+```bash
+# Frontend (port 3000)
+pnpm front:dev
+
+# Backend (port 3001)
+pnpm back:dev
+
+# Base de données PostgreSQL (port 5432)
+docker-compose up postgres
+```
+
+### Base de Données
+```bash
+# Migration
+pnpm db:migrate
+
+# Génération de migration
+pnpm db:generate
+
+# Seeding
+pnpm db:seed
+
+# Reset complet (dev uniquement)
+pnpm db:reset
+```
+
+## Structure des Branches
+
+### Convention de Nommage
+- `feature/nom-de-la-fonctionnalite` - Nouvelles fonctionnalités
+- `bugfix/description-du-bug` - Corrections de bugs
+- `hotfix/correction-urgente` - Corrections urgentes
+- `refactor/description-refactoring` - Refactoring
+
+### Workflow Git
+1. Créer une branche depuis `main`
+2. Développer la fonctionnalité
+3. Commits avec messages descriptifs en anglais
+4. Push et création de Pull Request
+5. Review et merge vers `main`
+
+## Messages de Commit
+
+### Format Conventionnel
+```
+type(scope): description
+
+feat(auth): add JWT authentication system
+fix(api): resolve campaign filtering issue
+docs(readme): update installation instructions
+refactor(db): optimize query performance
+```
+
+### Types de Commits
+- `feat`: Nouvelle fonctionnalité
+- `fix`: Correction de bug
+- `docs`: Documentation
+- `style`: Formatage/style
+- `refactor`: Refactoring
+- `test`: Ajout/modification de tests
+- `chore`: Tâches de maintenance
+
+## Tests
+
+### Backend
+```bash
+# Tests unitaires
+cd apps/backend && pnpm test
+
+# Tests e2e
+cd apps/backend && pnpm test:e2e
+
+# Coverage
+cd apps/backend && pnpm test:cov
+```
+
+### Fichiers de Test
+- [apps/backend/test/](mdc:apps/backend/test/) - Tests e2e
+- Tests unitaires à côté des fichiers source (*.spec.ts)
+
+## Linting et Formatage
+
+### Configuration
+- **ESLint** - Linting JavaScript/TypeScript
+- **Prettier** - Formatage de code
+- **lint-staged** - Linting sur les fichiers stagés
+- **husky** - Git hooks
+
+### Commandes
+```bash
+# Linting
+pnpm lint
+
+# Formatage
+pnpm format
+
+# Fix automatique
+pnpm lint:fix
+```
+
+## Variables d'Environnement
+
+### Backend (.env)
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/htf_sunup_db
+JWT_SECRET=your-jwt-secret
+NODE_ENV=development
+PORT=3001
+```
+
+### Frontend (.env.local)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## Déploiement
+
+### Fichiers de Configuration
+- [docker-compose.yml](mdc:docker-compose.yml) - Services de production
+- [docker-compose.dev.yml](mdc:docker-compose.dev.yml) - Services de développement
+- [render.yaml](mdc:render.yaml) - Configuration Render.com
+- [DEPLOYMENT.md](mdc:DEPLOYMENT.md) - Guide de déploiement
+
+### Environnements
+- **Développement** - Local avec Docker
+- **Production** - Render.com ou serveur dédié
+
+## Debugging
+
+### Backend
+- Points d'arrêt dans NestJS
+- Logs détaillés avec Winston
+- Monitoring des requêtes SQL
+
+### Frontend
+- React DevTools
+- Network tab pour les appels API
+- Console pour les erreurs
+
+## Documentation
+
+### Fichiers Principaux
+- [README.md](mdc:README.md) - Guide d'installation
+- [QUICK_START.md](mdc:QUICK_START.md) - Démarrage rapide
+- [docs/API_DOCUMENTATION.md](mdc:docs/API_DOCUMENTATION.md) - Documentation API
+- [docs/MVP_PLAN.md](mdc:docs/MVP_PLAN.md) - Plan MVP
+
+### Mise à Jour
+- Documentation à jour après chaque fonctionnalité
+- README des composants pour les parties complexes
+- Commentaires JSDoc pour les fonctions importantes

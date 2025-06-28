@@ -1,0 +1,66 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Index des Règles Cursor
+
+Ce dossier contient toutes les règles Cursor pour le projet HTF Sunup. Ces règles aident l'IA à comprendre la structure, les patterns et les conventions du projet.
+
+## Organisation des Règles
+
+### 🏗️ Structure et Architecture
+- **[project-structure.mdc](mdc:.cursor/rules/project-structure.mdc)** - Structure générale du monorepo
+- **[development-workflow.mdc](mdc:.cursor/rules/development-workflow.mdc)** - Workflow de développement et outils
+
+### 🔧 Backend (NestJS)
+- **[backend-patterns.mdc](mdc:.cursor/rules/backend-patterns.mdc)** - Patterns NestJS et Drizzle ORM
+- **[database-patterns.mdc](mdc:.cursor/rules/database-patterns.mdc)** - Gestion base de données PostgreSQL
+
+### 🎨 Frontend (Next.js)
+- **[frontend-patterns.mdc](mdc:.cursor/rules/frontend-patterns.mdc)** - Patterns Next.js et React
+
+### 🌐 API et Intégrations
+- **[api-conventions.mdc](mdc:.cursor/rules/api-conventions.mdc)** - Conventions API REST et authentification
+
+### 🎯 Domaine Métier
+- **[business-domain.mdc](mdc:.cursor/rules/business-domain.mdc)** - Logique applicative et règles métier
+
+## Utilisation
+
+Ces règles sont automatiquement chargées par Cursor pour :
+- ✅ Comprendre la structure du projet
+- ✅ Appliquer les bonnes conventions de code
+- ✅ Suggérer les patterns appropriés
+- ✅ Naviguer efficacement dans le codebase
+- ✅ Respecter les standards établis
+
+## Fichiers Clés Référencés
+
+### Configuration
+- [package.json](mdc:package.json) - Configuration workspace
+- [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml) - Workspaces pnpm
+- [docker-compose.yml](mdc:docker-compose.yml) - Services Docker
+
+### Backend
+- [apps/backend/src/main.ts](mdc:apps/backend/src/main.ts) - Point d'entrée
+- [apps/backend/src/db/schema.ts](mdc:apps/backend/src/db/schema.ts) - Schéma base de données
+- [apps/backend/drizzle.config.ts](mdc:apps/backend/drizzle.config.ts) - Config Drizzle
+
+### Frontend
+- [apps/frontend/src/app/layout.tsx](mdc:apps/frontend/src/app/layout.tsx) - Layout principal
+- [apps/frontend/src/services/api.ts](mdc:apps/frontend/src/services/api.ts) - Service API centralisé
+- [apps/frontend/tailwind.config.ts](mdc:apps/frontend/tailwind.config.ts) - Config Tailwind
+
+### Documentation
+- [README.md](mdc:README.md) - Guide principal
+- [docs/API_DOCUMENTATION.md](mdc:docs/API_DOCUMENTATION.md) - Documentation API
+- [QUICK_START.md](mdc:QUICK_START.md) - Démarrage rapide
+
+## Mise à Jour
+
+Ces règles doivent être mises à jour lorsque :
+- 🔄 La structure du projet évolue
+- 🔄 De nouvelles conventions sont adoptées
+- 🔄 Des patterns sont modifiés ou ajoutés
+- 🔄 De nouveaux outils sont intégrés

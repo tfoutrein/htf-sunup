@@ -1,0 +1,73 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# HTF Sunup - Patterns Frontend Next.js
+
+## Structure App Router
+
+Le projet utilise Next.js 13+ avec App Router :
+
+```
+src/app/
+├── layout.tsx              # Layout racine
+├── page.tsx               # Page d'accueil
+├── login/page.tsx         # Authentification
+├── register/page.tsx      # Inscription
+├── manager/dashboard/     # Dashboard manager
+├── fbo/dashboard/         # Dashboard FBO
+├── marraine/dashboard/    # Dashboard marraine
+└── campaigns/             # Gestion des campagnes
+```
+
+## Composants UI
+
+### Composants de Base
+- [apps/frontend/src/components/ui/](mdc:apps/frontend/src/components/ui/) - Composants réutilisables
+- [apps/frontend/src/components/ui/Button.tsx](mdc:apps/frontend/src/components/ui/Button.tsx) - Bouton avec variants
+- [apps/frontend/src/components/ui/Card.tsx](mdc:apps/frontend/src/components/ui/Card.tsx) - Cards stylisées
+- [apps/frontend/src/components/ui/Modal.tsx](mdc:apps/frontend/src/components/ui/Modal.tsx) - Modales
+
+### Composants Métier
+- [apps/frontend/src/components/campaigns/](mdc:apps/frontend/src/components/campaigns/) - Composants spécifiques aux campagnes
+- [apps/frontend/src/components/Navigation.tsx](mdc:apps/frontend/src/components/Navigation.tsx) - Navigation principale
+
+## Services API
+
+### Service API Centralisé
+- [apps/frontend/src/services/api.ts](mdc:apps/frontend/src/services/api.ts) - Configuration API globale
+- [apps/frontend/src/services/campaigns.ts](mdc:apps/frontend/src/services/campaigns.ts) - Services campagnes
+
+### Hooks Personnalisés
+- [apps/frontend/src/hooks/](mdc:apps/frontend/src/hooks/) - Hooks réutilisables
+- [apps/frontend/src/hooks/useCampaigns.ts](mdc:apps/frontend/src/hooks/useCampaigns.ts) - Gestion des campagnes
+- [apps/frontend/src/hooks/useActions.ts](mdc:apps/frontend/src/hooks/useActions.ts) - Gestion des actions
+
+## Gestion d'État
+
+### Contextes React
+- [apps/frontend/src/contexts/AuroraContext.tsx](mdc:apps/frontend/src/contexts/AuroraContext.tsx) - Animation Aurora
+- [apps/frontend/src/contexts/LogoContext.tsx](mdc:apps/frontend/src/contexts/LogoContext.tsx) - Gestion des logos
+
+### Types TypeScript
+- [apps/frontend/src/types/campaigns.ts](mdc:apps/frontend/src/types/campaigns.ts) - Types campagnes
+
+## Styling avec TailwindCSS
+
+- [apps/frontend/tailwind.config.ts](mdc:apps/frontend/tailwind.config.ts) - Configuration Tailwind
+- [apps/frontend/src/app/globals.css](mdc:apps/frontend/src/app/globals.css) - Styles globaux
+
+## Conventions de Nommage
+
+- **Pages :** `kebab-case` dans les dossiers, `PascalCase` pour les composants
+- **Composants :** `PascalCase`
+- **Hooks :** `camelCase` avec préfixe `use`
+- **Services :** `camelCase`
+- **Types :** `PascalCase`
+
+## Navigation et Routing
+
+- Routes basées sur la structure des dossiers App Router
+- Navigation dynamique selon le rôle utilisateur (manager, fbo, marraine)
+- Protection des routes via middleware d'authentification

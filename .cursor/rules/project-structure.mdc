@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# HTF Sunup - Structure du Projet
+
+## Vue d'ensemble
+HTF Sunup est un monorepo utilisant **pnpm** comme gestionnaire de packages. Le projet implémente un système de défis gamifiés avec backend NestJS et frontend Next.js.
+
+## Structure du Monorepo
+
+```
+htf-sunup/
+├── apps/
+│   ├── backend/          # API NestJS + Drizzle ORM + PostgreSQL
+│   └── frontend/         # Application Next.js + React + TailwindCSS
+├── shared/               # (À créer) Librairies et types communs
+├── tools/                # (À créer) Outils de développement
+├── docs/                 # Documentation technique
+└── docker/               # Configuration Docker
+```
+
+## Commandes Principales
+
+- **Démarrage global :** `pnpm install`
+- **Frontend dev :** `pnpm front:dev`
+- **Backend dev :** `pnpm back:dev`
+- **Base de données :** `pnpm db:seed` (backend)
+
+## Fichiers Clés
+
+- [package.json](mdc:package.json) - Configuration workspace pnpm
+- [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml) - Définition des workspaces
+- [docker-compose.yml](mdc:docker-compose.yml) - Services Docker
+- [apps/backend/src/main.ts](mdc:apps/backend/src/main.ts) - Point d'entrée backend
+- [apps/frontend/src/app/layout.tsx](mdc:apps/frontend/src/app/layout.tsx) - Layout principal frontend
+
+## Gestion des Environnements
+
+Le projet utilise Docker pour PostgreSQL et les services sont configurés via docker-compose. Le backend expose l'API sur le port 3001 et le frontend sur le port 3000.
