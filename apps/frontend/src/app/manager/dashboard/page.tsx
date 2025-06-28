@@ -472,7 +472,7 @@ export default function ManagerDashboard() {
                           : 100;
 
                         // Le curseur représente le nombre de défis qui devraient être disponibles à ce jour
-                        // On considère qu'on est au jour 4 sur 4, donc 4 défis devraient être disponibles
+                        // Si on est au jour 3, alors 3 défis sont attendus (jours 1, 2, et 3)
                         const challengesExpectedAtCurrentDay = Math.min(
                           currentDayProgress,
                           totalChallenges,
