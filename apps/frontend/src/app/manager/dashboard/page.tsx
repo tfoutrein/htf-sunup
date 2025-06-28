@@ -519,15 +519,21 @@ export default function ManagerDashboard() {
                                         const isExpected =
                                           challengeNumber <=
                                           challengesExpectedAtCurrentDay;
+                                        const isMissed =
+                                          challengeNumber <=
+                                            challengesExpectedAtCurrentDay &&
+                                          challengeNumber > completedChallenges;
                                         const isFuture =
                                           challengeNumber >
                                           challengesExpectedAtCurrentDay;
 
-                                        let segmentColor = 'bg-gray-300'; // Par défaut
+                                        let segmentColor = 'bg-gray-300'; // Par défaut (à venir)
                                         if (isCompleted) {
                                           segmentColor = 'bg-green-500'; // Complété
+                                        } else if (isMissed) {
+                                          segmentColor = 'bg-red-500'; // Manqué (passé et non fait)
                                         } else if (isExpected) {
-                                          segmentColor = 'bg-blue-400'; // Attendu mais pas fait
+                                          segmentColor = 'bg-blue-400'; // Attendu mais pas encore fait
                                         }
 
                                         return (
@@ -544,9 +550,11 @@ export default function ManagerDashboard() {
                                             title={`Défi ${challengeNumber} - ${
                                               isCompleted
                                                 ? 'Complété'
-                                                : isExpected
-                                                  ? 'Attendu'
-                                                  : 'À venir'
+                                                : isMissed
+                                                  ? 'Manqué'
+                                                  : isExpected
+                                                    ? 'Attendu'
+                                                    : 'À venir'
                                             }`}
                                           />
                                         );
@@ -564,6 +572,10 @@ export default function ManagerDashboard() {
                                     <div className="flex items-center gap-1">
                                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                       <span>Fait</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                      <span>Manqué</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
