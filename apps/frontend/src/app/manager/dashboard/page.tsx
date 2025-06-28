@@ -512,21 +512,21 @@ export default function ManagerDashboard() {
                                       (_, index) => {
                                         const challengeNumber = index + 1;
 
-                                        // Logique corrigée : les défis complétés sont les plus récents
-                                        // Si on a 1 défi complété sur 3 attendus, c'est le jour 3 qui est complété
+                                        // Logique simple : pour l'instant on assume que les jours complétés
+                                        // sont distribués selon la logique métier réelle
+                                        // TODO: Récupérer les vraies données détaillées par jour
+
+                                        // Si on est au jour 3 avec 1 complété, c'est le jour actuel (3) qui est complété
+                                        const currentDay = currentDayProgress;
                                         const isCompleted =
-                                          challengeNumber >
-                                            challengesExpectedAtCurrentDay -
-                                              completedChallenges &&
-                                          challengeNumber <=
-                                            challengesExpectedAtCurrentDay;
+                                          challengeNumber === currentDay &&
+                                          completedChallenges > 0;
+
                                         const isExpected =
                                           challengeNumber <=
                                           challengesExpectedAtCurrentDay;
                                         const isMissed =
-                                          challengeNumber <=
-                                            challengesExpectedAtCurrentDay &&
-                                          !isCompleted;
+                                          isExpected && !isCompleted;
                                         const isFuture =
                                           challengeNumber >
                                           challengesExpectedAtCurrentDay;
