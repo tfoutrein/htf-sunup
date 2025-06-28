@@ -547,9 +547,8 @@ export default function ManagerDashboard() {
                                           segmentColor = 'bg-green-500'; // Complété
                                         } else if (isMissed) {
                                           segmentColor = 'bg-red-500'; // Manqué (passé et non fait)
-                                        } else if (isExpected) {
-                                          segmentColor = 'bg-blue-400'; // Attendu mais pas encore fait
                                         }
+                                        // Les jours futurs restent gris par défaut
 
                                         return (
                                           <div
@@ -567,9 +566,7 @@ export default function ManagerDashboard() {
                                                 ? 'Complété'
                                                 : isMissed
                                                   ? 'Manqué'
-                                                  : isExpected
-                                                    ? 'Attendu'
-                                                    : 'À venir'
+                                                  : 'À venir'
                                             }`}
                                           />
                                         );
@@ -591,10 +588,6 @@ export default function ManagerDashboard() {
                                     <div className="flex items-center gap-1">
                                       <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                       <span>Manqué</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                                      <span>Attendu</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
