@@ -93,8 +93,7 @@ export default function ManagerDashboard() {
   const [actions, setActions] = useState<Action[]>([]);
   const [teamProgress, setTeamProgress] = useState<TeamProgress[]>([]);
   const [currentCampaign, setCurrentCampaign] = useState<Campaign | null>(null);
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [memberDetails, setMemberDetails] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('team');
 
@@ -108,11 +107,6 @@ export default function ManagerDashboard() {
     isOpen: isAddActionOpen,
     onOpen: onAddActionOpen,
     onClose: onAddActionClose,
-  } = useDisclosure();
-  const {
-    isOpen: isMemberDetailsOpen,
-    onOpen: onMemberDetailsOpen,
-    onClose: onMemberDetailsClose,
   } = useDisclosure();
 
   // Forms
@@ -228,21 +222,6 @@ export default function ManagerDashboard() {
     }
   };
 
-  const fetchMemberDetails = async (memberId: number, campaignId: number) => {
-    try {
-      const response = await ApiClient.get(
-        API_ENDPOINTS.ACTIONS_USER_CAMPAIGN_DETAILS(memberId, campaignId),
-      );
-
-      if (response.ok) {
-        const details = await response.json();
-        setMemberDetails(details);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des détails du membre:', error);
-    }
-  };
-
   const calculateCurrentDay = (startDate: string, endDate: string): number => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -318,11 +297,7 @@ export default function ManagerDashboard() {
   };
 
   const handleMemberClick = (member: TeamMember) => {
-    if (currentCampaign) {
-      setSelectedMember(member);
-      fetchMemberDetails(member.id, currentCampaign.id);
-      onMemberDetailsOpen();
-    }
+    router.push(`/manager/team/${member.id}`);
   };
 
   const handleLogout = () => {
@@ -470,6 +445,19 @@ export default function ManagerDashboard() {
                     <div className="space-y-3 sm:space-y-4">
                       {teamProgress.map((progress) => {
                         const campaignProgress = progress.campaignProgress;
+
+                        // Calcul basé sur les défis, pas sur les jours
+                        const totalChallenges =
+                          campaignProgress?.totalChallenges ||
+                          progress.totalActions ||
+                          1;
+                        const completedChallenges =
+                          campaignProgress?.completedChallenges ||
+                          progress.completedActions ||
+                          0;
+
+                        // Calcul de la position du curseur basé sur les défis actuellement disponibles
+                        // Si on a 4 défis créés sur 10 jours, le curseur doit être à 40%
                         const currentDayProgress = currentCampaign
                           ? calculateCurrentDay(
                               currentCampaign.startDate,
@@ -482,8 +470,24 @@ export default function ManagerDashboard() {
                               currentCampaign.endDate,
                             )
                           : 100;
-                        const currentDayPercentage =
-                          (currentDayProgress / totalDays) * 100;
+
+                        // Le curseur représente le nombre de défis qui devraient être disponibles à ce jour
+                        // Proportion = jours écoulés / jours totaux * total défis possibles
+                        const challengesExpectedAtCurrentDay = Math.min(
+                          Math.floor(
+                            (currentDayProgress / totalDays) * totalChallenges,
+                          ),
+                          totalChallenges,
+                        );
+                        const currentChallengePercentage =
+                          totalChallenges > 0
+                            ? Math.min(
+                                (challengesExpectedAtCurrentDay /
+                                  totalChallenges) *
+                                  100,
+                                100,
+                              )
+                            : 0;
 
                         return (
                           <div
@@ -503,54 +507,85 @@ export default function ManagerDashboard() {
                               </h4>
                               <div className="relative">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <Progress
-                                    value={
-                                      campaignProgress?.progressPercentage ||
-                                      progress.percentage
-                                    }
-                                    className="flex-1"
-                                    classNames={{
-                                      indicator:
-                                        (campaignProgress?.progressPercentage ||
-                                          progress.percentage) >=
-                                        currentDayPercentage
-                                          ? 'bg-green-500'
-                                          : (campaignProgress?.progressPercentage ||
-                                                progress.percentage) >= 60
-                                            ? 'bg-orange-500'
-                                            : 'bg-red-500',
-                                      track: 'bg-gray-200',
-                                    }}
-                                  />
+                                  {/* Jauge segmentée par défis */}
+                                  <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                                    {Array.from(
+                                      { length: totalChallenges },
+                                      (_, index) => {
+                                        const challengeNumber = index + 1;
+                                        const isCompleted =
+                                          challengeNumber <=
+                                          completedChallenges;
+                                        const isExpected =
+                                          challengeNumber <=
+                                          challengesExpectedAtCurrentDay;
+                                        const isFuture =
+                                          challengeNumber >
+                                          challengesExpectedAtCurrentDay;
+
+                                        let segmentColor = 'bg-gray-300'; // Par défaut
+                                        if (isCompleted) {
+                                          segmentColor = 'bg-green-500'; // Complété
+                                        } else if (isExpected) {
+                                          segmentColor = 'bg-blue-400'; // Attendu mais pas fait
+                                        }
+
+                                        return (
+                                          <div
+                                            key={index}
+                                            className={`flex-1 h-full ${segmentColor} transition-colors duration-300 ${
+                                              index < totalChallenges - 1
+                                                ? 'border-r border-white'
+                                                : ''
+                                            }`}
+                                            style={{
+                                              minWidth: `${100 / totalChallenges}%`,
+                                            }}
+                                            title={`Défi ${challengeNumber} - ${
+                                              isCompleted
+                                                ? 'Complété'
+                                                : isExpected
+                                                  ? 'Attendu'
+                                                  : 'À venir'
+                                            }`}
+                                          />
+                                        );
+                                      },
+                                    )}
+                                  </div>
                                   <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[60px]">
-                                    {campaignProgress?.completedChallenges ||
-                                      progress.completedActions}
-                                    /
-                                    {campaignProgress?.totalChallenges ||
-                                      progress.totalActions}
+                                    {completedChallenges}/{totalChallenges}
                                   </span>
                                 </div>
-                                {/* Curseur indicateur du jour actuel */}
-                                <div
-                                  className="absolute top-0 h-6 w-0.5 bg-blue-600 rounded-full"
-                                  style={{
-                                    left: `${Math.min(currentDayPercentage, 100)}%`,
-                                    transform: 'translateX(-50%)',
-                                  }}
-                                >
-                                  <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-600 rounded-full"></div>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {campaignProgress
-                                    ? `Jour ${campaignProgress.currentDay}/${campaignProgress.totalDays}`
-                                    : `Jour ${currentDayProgress}/${totalDays}`}
+
+                                {/* Légende des couleurs */}
+                                <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <span>Fait</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                      <span>Attendu</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                      <span>À venir</span>
+                                    </div>
+                                  </div>
+                                  <span>
+                                    {challengesExpectedAtCurrentDay}/
+                                    {totalChallenges} défis attendus
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             <Badge
                               color={
                                 (campaignProgress?.progressPercentage ||
-                                  progress.percentage) >= currentDayPercentage
+                                  progress.percentage) >=
+                                currentChallengePercentage
                                   ? 'success'
                                   : (campaignProgress?.progressPercentage ||
                                         progress.percentage) >= 60
@@ -774,198 +809,6 @@ export default function ManagerDashboard() {
               disabled={!actionForm.title || !actionForm.date}
             >
               Créer
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Member Details Modal */}
-      <Modal
-        isOpen={isMemberDetailsOpen}
-        onClose={onMemberDetailsClose}
-        size="5xl"
-        scrollBehavior="inside"
-      >
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-3">
-            <UsersIcon className="w-6 h-6 text-blue-500" />
-            <div>
-              <h3 className="text-xl font-bold">
-                Détails de {selectedMember?.name}
-              </h3>
-              {currentCampaign && (
-                <p className="text-sm text-gray-500">
-                  Campagne: {currentCampaign.name}
-                </p>
-              )}
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            {memberDetails ? (
-              <div className="space-y-6">
-                {/* Campaign Overview */}
-                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <CardBody className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-lg">
-                        Progression globale
-                      </h4>
-                      <Badge
-                        color={
-                          memberDetails.overallProgress >= 80
-                            ? 'success'
-                            : memberDetails.overallProgress >= 60
-                              ? 'warning'
-                              : 'danger'
-                        }
-                        size="lg"
-                      >
-                        {Math.round(memberDetails.overallProgress || 0)}%
-                      </Badge>
-                    </div>
-                    <Progress
-                      value={memberDetails.overallProgress || 0}
-                      classNames={{
-                        indicator:
-                          memberDetails.overallProgress >= 80
-                            ? 'bg-green-500'
-                            : memberDetails.overallProgress >= 60
-                              ? 'bg-orange-500'
-                              : 'bg-red-500',
-                      }}
-                    />
-                    <div className="flex justify-between text-sm text-gray-600 mt-2">
-                      <span>
-                        {memberDetails.completedChallenges || 0} défis complétés
-                      </span>
-                      <span>
-                        {memberDetails.totalChallenges || 0} défis au total
-                      </span>
-                    </div>
-                  </CardBody>
-                </Card>
-
-                {/* Daily Challenges */}
-                <div>
-                  <h4 className="font-semibold text-lg mb-4">
-                    Actions par jour
-                  </h4>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {memberDetails.dailyChallenges?.map(
-                      (day: any, index: number) => (
-                        <Card
-                          key={day.date || index}
-                          className={day.isToday ? 'ring-2 ring-blue-500' : ''}
-                        >
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-3">
-                                <CalendarIcon className="w-5 h-5 text-gray-500" />
-                                <div>
-                                  <h5 className="font-medium">
-                                    Jour {day.dayNumber} - {day.date}
-                                  </h5>
-                                  {day.isToday && (
-                                    <Chip
-                                      color="primary"
-                                      size="sm"
-                                      variant="flat"
-                                    >
-                                      Aujourd'hui
-                                    </Chip>
-                                  )}
-                                </div>
-                              </div>
-                              <Badge
-                                color={
-                                  day.completed
-                                    ? 'success'
-                                    : day.isToday
-                                      ? 'warning'
-                                      : 'default'
-                                }
-                                variant="flat"
-                              >
-                                {day.completed
-                                  ? 'Complété'
-                                  : day.isToday
-                                    ? 'En cours'
-                                    : 'À venir'}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardBody className="pt-0">
-                            {day.actions?.map((action: any) => (
-                              <div
-                                key={action.id}
-                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2 last:mb-0"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">
-                                      {actionTypes.find(
-                                        (t) => t.key === action.type,
-                                      )?.icon || '📋'}
-                                    </span>
-                                    <h6 className="font-medium text-sm">
-                                      {action.title}
-                                    </h6>
-                                  </div>
-                                  <p className="text-xs text-gray-600">
-                                    {action.description}
-                                  </p>
-                                  {action.completed && action.completedAt && (
-                                    <p className="text-xs text-green-600 mt-1">
-                                      Complété le{' '}
-                                      {new Date(
-                                        action.completedAt,
-                                      ).toLocaleDateString('fr-FR')}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {action.proofUrl && (
-                                    <Button
-                                      size="sm"
-                                      variant="flat"
-                                      color="primary"
-                                      onPress={() =>
-                                        window.open(action.proofUrl, '_blank')
-                                      }
-                                    >
-                                      Voir preuve
-                                    </Button>
-                                  )}
-                                  <Badge
-                                    color={
-                                      action.completed ? 'success' : 'default'
-                                    }
-                                    variant="dot"
-                                  >
-                                    {action.completed ? 'Fait' : 'À faire'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
-                          </CardBody>
-                        </Card>
-                      ),
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <ChartBarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4 animate-pulse" />
-                  <p className="text-gray-500">Chargement des détails...</p>
-                </div>
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onMemberDetailsClose}>
-              Fermer
             </Button>
           </ModalFooter>
         </ModalContent>

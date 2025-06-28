@@ -94,6 +94,7 @@ export default function MemberDetailsPage() {
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
   const [selectedActionTitle, setSelectedActionTitle] = useState<string>('');
   const [isLoadingProof, setIsLoadingProof] = useState(false);
+  const [showMissedDays, setShowMissedDays] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   useEffect(() => {
@@ -273,263 +274,347 @@ export default function MemberDetailsPage() {
 
         {/* Daily Challenges Cards */}
         <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 p-6">
-          <h3 className="text-xl font-semibold mb-4">Défis par jour</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Défis par jour</h3>
+          </div>
           <div className="space-y-4">
-            {memberDetails.dailyChallenges?.map((day, index) => {
-              // Déterminer le statut temporel du jour
-              const dayDate = new Date(day.date);
+            {(() => {
+              if (!memberDetails.dailyChallenges) return null;
+
+              // Séparer et trier les jours
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              dayDate.setHours(0, 0, 0, 0);
 
-              const isPast = dayDate < today;
-              const isToday = dayDate.getTime() === today.getTime();
+              const sortedDays = memberDetails.dailyChallenges.sort((a, b) => {
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+              });
 
-              // Déterminer le statut du jour
-              let dayStatus, dayStatusColor, dayIcon;
-              if (day.completed) {
-                dayStatus = 'Complété';
-                dayStatusColor = 'success';
-                dayIcon = <CheckCircleIcon className="w-5 h-5" />;
-              } else if (isToday) {
-                dayStatus = 'En cours';
-                dayStatusColor = 'warning';
-                dayIcon = <ClockIcon className="w-5 h-5" />;
-              } else if (isPast) {
-                dayStatus = 'Manqué';
-                dayStatusColor = 'danger';
-                dayIcon = <ExclamationTriangleIcon className="w-5 h-5" />;
-              } else {
-                dayStatus = 'À venir';
-                dayStatusColor = 'default';
-                dayIcon = <CalendarIcon className="w-5 h-5" />;
-              }
+              const todayDay = sortedDays.find((day) => {
+                const dayDate = new Date(day.date);
+                dayDate.setHours(0, 0, 0, 0);
+                return dayDate.getTime() === today.getTime();
+              });
 
-              const dayKey = day.date || `day-${index}`;
-              const isExpanded = expandedDays.has(dayKey);
+              const futureDays = sortedDays.filter((day) => {
+                const dayDate = new Date(day.date);
+                dayDate.setHours(0, 0, 0, 0);
+                return dayDate > today;
+              });
+
+              const completedDays = sortedDays.filter((day) => {
+                const dayDate = new Date(day.date);
+                dayDate.setHours(0, 0, 0, 0);
+                return dayDate < today && day.completed;
+              });
+
+              const missedDays = sortedDays.filter((day) => {
+                const dayDate = new Date(day.date);
+                dayDate.setHours(0, 0, 0, 0);
+                return dayDate < today && !day.completed;
+              });
+
+              // Organiser l'affichage : Aujourd'hui > À venir > Complétés > (Manqués si déployé)
+              const displayDays = [
+                ...(todayDay ? [todayDay] : []),
+                ...futureDays,
+                ...completedDays,
+                ...(showMissedDays ? missedDays : []),
+              ];
 
               return (
-                <Card
-                  key={day.date || index}
-                  className={`border transition-all duration-200 ${
-                    isToday
-                      ? 'ring-2 ring-blue-500 border-blue-300'
-                      : isPast && !day.completed
-                        ? 'ring-1 ring-red-200 bg-red-50/30 border-red-200'
-                        : 'border-gray-200'
-                  }`}
-                >
-                  <div
-                    className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => toggleDayExpansion(dayKey)}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        {dayIcon}
-                        <div>
-                          <h4 className="font-medium text-left">
-                            Jour {day.dayNumber} - {day.date}
-                          </h4>
-                          {isToday && (
-                            <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                              Aujourd'hui
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          color={
-                            dayStatusColor === 'success'
-                              ? 'success'
-                              : dayStatusColor === 'warning'
-                                ? 'warning'
-                                : dayStatusColor === 'danger'
-                                  ? 'danger'
-                                  : 'default'
-                          }
-                          variant="flat"
+                <>
+                  {displayDays.map((day, index) => {
+                    // Déterminer le statut temporel du jour
+                    const dayDate = new Date(day.date);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    dayDate.setHours(0, 0, 0, 0);
+
+                    const isPast = dayDate < today;
+                    const isToday = dayDate.getTime() === today.getTime();
+
+                    // Déterminer le statut du jour
+                    let dayStatus, dayStatusColor, dayIcon;
+                    if (day.completed) {
+                      dayStatus = 'Complété';
+                      dayStatusColor = 'success';
+                      dayIcon = <CheckCircleIcon className="w-5 h-5" />;
+                    } else if (isToday) {
+                      dayStatus = 'En cours';
+                      dayStatusColor = 'warning';
+                      dayIcon = <ClockIcon className="w-5 h-5" />;
+                    } else if (isPast) {
+                      dayStatus = 'Manqué';
+                      dayStatusColor = 'danger';
+                      dayIcon = <ExclamationTriangleIcon className="w-5 h-5" />;
+                    } else {
+                      dayStatus = 'À venir';
+                      dayStatusColor = 'default';
+                      dayIcon = <CalendarIcon className="w-5 h-5" />;
+                    }
+
+                    const dayKey = day.date || `day-${index}`;
+                    const isExpanded = expandedDays.has(dayKey);
+
+                    return (
+                      <Card
+                        key={day.date || index}
+                        className={`border transition-all duration-200 ${
+                          isToday
+                            ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30'
+                            : isPast && !day.completed
+                              ? 'ring-1 ring-red-200 bg-red-50/30 border-red-200'
+                              : 'border-gray-200'
+                        }`}
+                      >
+                        <div
+                          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => toggleDayExpansion(dayKey)}
                         >
-                          {dayStatus}
-                        </Badge>
-                        {isExpanded ? (
-                          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="space-y-3 p-4 pt-0 border-t border-gray-100">
-                      {day.actions?.map((action) => {
-                        // Déterminer le statut de l'action
-                        let actionStatus, actionStatusColor;
-                        if (action.completed) {
-                          actionStatus = 'Fait';
-                          actionStatusColor = 'success';
-                        } else if (isPast) {
-                          actionStatus = 'Manqué';
-                          actionStatusColor = 'danger';
-                        } else if (isToday) {
-                          actionStatus = 'À faire';
-                          actionStatusColor = 'warning';
-                        } else {
-                          actionStatus = 'À venir';
-                          actionStatusColor = 'default';
-                        }
-
-                        return (
-                          <div
-                            key={action.id}
-                            className={`p-4 rounded-lg border ${
-                              isPast && !action.completed
-                                ? 'bg-red-50 border-red-200'
-                                : 'bg-gray-50 border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-xl">
-                                    {actionTypes.find(
-                                      (t) => t.key === action.type,
-                                    )?.icon || '📋'}
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              {dayIcon}
+                              <div>
+                                <h4 className="font-medium text-left">
+                                  Jour {day.dayNumber} - {day.date}
+                                </h4>
+                                {isToday && (
+                                  <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                    Aujourd'hui
                                   </span>
-                                  <h5
-                                    className={`font-medium ${
-                                      isPast && !action.completed
-                                        ? 'text-red-700'
-                                        : ''
-                                    }`}
-                                  >
-                                    {action.title}
-                                  </h5>
-                                </div>
-                                <p
-                                  className={`text-sm mb-2 ${
-                                    isPast && !action.completed
-                                      ? 'text-red-600'
-                                      : 'text-gray-600'
-                                  }`}
-                                >
-                                  {action.description}
-                                </p>
-                                {action.completed && action.completedAt && (
-                                  <p className="text-sm text-green-600">
-                                    ✅ Complété le{' '}
-                                    {new Date(
-                                      action.completedAt,
-                                    ).toLocaleDateString('fr-FR')}
-                                  </p>
                                 )}
-                                {isPast && !action.completed && (
-                                  <p className="text-sm text-red-600">
-                                    ⚠️ Cette action ne peut plus être réalisée
-                                    (date passée)
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 ml-4">
-                                {action.proofUrl && action.userActionId && (
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="primary"
-                                    isLoading={isLoadingProof}
-                                    startContent={
-                                      !isLoadingProof ? (
-                                        <EyeIcon className="w-4 h-4" />
-                                      ) : null
-                                    }
-                                    onPress={async () => {
-                                      try {
-                                        setIsLoadingProof(true);
-                                        if (!action.userActionId) {
-                                          alert(
-                                            "Identifiant d'action utilisateur manquant.",
-                                          );
-                                          return;
-                                        }
-                                        const response = await ApiClient.get(
-                                          API_ENDPOINTS.USER_ACTIONS_PROOF_URL(
-                                            action.userActionId,
-                                          ),
-                                        );
-                                        if (response.ok) {
-                                          const { url } = await response.json();
-                                          console.log(
-                                            '🖼️ URL de preuve récupérée:',
-                                            url,
-                                          );
-                                          setSelectedProofUrl(url);
-                                          setSelectedActionTitle(action.title);
-                                          onOpen();
-                                        } else if (response.status === 404) {
-                                          alert(
-                                            "Cette action n'existe plus ou n'a pas encore été créée.",
-                                          );
-                                        } else if (response.status === 403) {
-                                          alert(
-                                            "Vous n'avez pas les permissions pour voir cette preuve.",
-                                          );
-                                        } else {
-                                          const errorData = await response
-                                            .json()
-                                            .catch(() => ({}));
-                                          alert(
-                                            `Erreur lors de la récupération de la preuve: ${errorData.message || 'Erreur inconnue'}`,
-                                          );
-                                        }
-                                      } catch (error) {
-                                        console.error(
-                                          'Erreur lors de la récupération de la preuve:',
-                                          error,
-                                        );
-                                        alert(
-                                          'Erreur de connexion. Veuillez réessayer plus tard.',
-                                        );
-                                      } finally {
-                                        setIsLoadingProof(false);
-                                      }
-                                    }}
-                                  >
-                                    Voir preuve
-                                  </Button>
-                                )}
-                                <Badge
-                                  color={
-                                    actionStatusColor === 'success'
-                                      ? 'success'
-                                      : actionStatusColor === 'warning'
-                                        ? 'warning'
-                                        : actionStatusColor === 'danger'
-                                          ? 'danger'
-                                          : 'default'
-                                  }
-                                  variant="flat"
-                                >
-                                  {actionStatus}
-                                </Badge>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                color={
+                                  dayStatusColor === 'success'
+                                    ? 'success'
+                                    : dayStatusColor === 'warning'
+                                      ? 'warning'
+                                      : dayStatusColor === 'danger'
+                                        ? 'danger'
+                                        : 'default'
+                                }
+                                variant="flat"
+                              >
+                                {dayStatus}
+                              </Badge>
+                              {isExpanded ? (
+                                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                              )}
+                            </div>
                           </div>
-                        );
-                      })}
+                        </div>
 
-                      {!day.actions ||
-                        (day.actions.length === 0 && (
-                          <div className="text-center py-4 text-gray-500">
-                            <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p>Aucune action programmée pour ce jour</p>
+                        {isExpanded && (
+                          <div className="space-y-3 p-4 pt-0 border-t border-gray-100">
+                            {day.actions?.map((action) => {
+                              // Déterminer le statut de l'action
+                              let actionStatus, actionStatusColor;
+                              if (action.completed) {
+                                actionStatus = 'Fait';
+                                actionStatusColor = 'success';
+                              } else if (isPast) {
+                                actionStatus = 'Manqué';
+                                actionStatusColor = 'danger';
+                              } else if (isToday) {
+                                actionStatus = 'À faire';
+                                actionStatusColor = 'warning';
+                              } else {
+                                actionStatus = 'À venir';
+                                actionStatusColor = 'default';
+                              }
+
+                              return (
+                                <div
+                                  key={action.id}
+                                  className={`p-4 rounded-lg border ${
+                                    isPast && !action.completed
+                                      ? 'bg-red-50 border-red-200'
+                                      : 'bg-gray-50 border-gray-200'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-xl">
+                                          {actionTypes.find(
+                                            (t) => t.key === action.type,
+                                          )?.icon || '📋'}
+                                        </span>
+                                        <h5
+                                          className={`font-medium ${
+                                            isPast && !action.completed
+                                              ? 'text-red-700'
+                                              : ''
+                                          }`}
+                                        >
+                                          {action.title}
+                                        </h5>
+                                      </div>
+                                      <p
+                                        className={`text-sm mb-2 ${
+                                          isPast && !action.completed
+                                            ? 'text-red-600'
+                                            : 'text-gray-600'
+                                        }`}
+                                      >
+                                        {action.description}
+                                      </p>
+                                      {action.completed &&
+                                        action.completedAt && (
+                                          <p className="text-sm text-green-600">
+                                            ✅ Complété le{' '}
+                                            {new Date(
+                                              action.completedAt,
+                                            ).toLocaleDateString('fr-FR')}
+                                          </p>
+                                        )}
+                                      {isPast && !action.completed && (
+                                        <p className="text-sm text-red-600">
+                                          ⚠️ Cette action ne peut plus être
+                                          réalisée (date passée)
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-4">
+                                      {action.proofUrl &&
+                                        action.userActionId && (
+                                          <Button
+                                            size="sm"
+                                            variant="flat"
+                                            color="primary"
+                                            isLoading={isLoadingProof}
+                                            startContent={
+                                              !isLoadingProof ? (
+                                                <EyeIcon className="w-4 h-4" />
+                                              ) : null
+                                            }
+                                            onPress={async () => {
+                                              try {
+                                                setIsLoadingProof(true);
+                                                if (!action.userActionId) {
+                                                  alert(
+                                                    "Identifiant d'action utilisateur manquant.",
+                                                  );
+                                                  return;
+                                                }
+                                                const response =
+                                                  await ApiClient.get(
+                                                    API_ENDPOINTS.USER_ACTIONS_PROOF_URL(
+                                                      action.userActionId,
+                                                    ),
+                                                  );
+                                                if (response.ok) {
+                                                  const { url } =
+                                                    await response.json();
+                                                  console.log(
+                                                    '🖼️ URL de preuve récupérée:',
+                                                    url,
+                                                  );
+                                                  setSelectedProofUrl(url);
+                                                  setSelectedActionTitle(
+                                                    action.title,
+                                                  );
+                                                  onOpen();
+                                                } else if (
+                                                  response.status === 404
+                                                ) {
+                                                  alert(
+                                                    "Cette action n'existe plus ou n'a pas encore été créée.",
+                                                  );
+                                                } else if (
+                                                  response.status === 403
+                                                ) {
+                                                  alert(
+                                                    "Vous n'avez pas les permissions pour voir cette preuve.",
+                                                  );
+                                                } else {
+                                                  const errorData =
+                                                    await response
+                                                      .json()
+                                                      .catch(() => ({}));
+                                                  alert(
+                                                    `Erreur lors de la récupération de la preuve: ${errorData.message || 'Erreur inconnue'}`,
+                                                  );
+                                                }
+                                              } catch (error) {
+                                                console.error(
+                                                  'Erreur lors de la récupération de la preuve:',
+                                                  error,
+                                                );
+                                                alert(
+                                                  'Erreur de connexion. Veuillez réessayer plus tard.',
+                                                );
+                                              } finally {
+                                                setIsLoadingProof(false);
+                                              }
+                                            }}
+                                          >
+                                            Voir preuve
+                                          </Button>
+                                        )}
+                                      <Badge
+                                        color={
+                                          actionStatusColor === 'success'
+                                            ? 'success'
+                                            : actionStatusColor === 'warning'
+                                              ? 'warning'
+                                              : actionStatusColor === 'danger'
+                                                ? 'danger'
+                                                : 'default'
+                                        }
+                                        variant="flat"
+                                      >
+                                        {actionStatus}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {!day.actions ||
+                              (day.actions.length === 0 && (
+                                <div className="text-center py-4 text-gray-500">
+                                  <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                  <p>Aucune action programmée pour ce jour</p>
+                                </div>
+                              ))}
                           </div>
-                        ))}
-                    </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+
+                  {/* Bouton pour afficher/masquer les jours manqués */}
+                  {missedDays.length > 0 && (
+                    <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
+                      <Button
+                        variant="ghost"
+                        className="w-full p-4 justify-center text-gray-600 hover:text-gray-800"
+                        onPress={() => setShowMissedDays(!showMissedDays)}
+                        startContent={
+                          showMissedDays ? (
+                            <ChevronDownIcon className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )
+                        }
+                      >
+                        {showMissedDays ? 'Masquer' : 'Afficher'} les{' '}
+                        {missedDays.length} jour
+                        {missedDays.length > 1 ? 's' : ''} manqué
+                        {missedDays.length > 1 ? 's' : ''}
+                      </Button>
+                    </Card>
                   )}
-                </Card>
+                </>
               );
-            })}
+            })()}
           </div>
         </Card>
       </div>
