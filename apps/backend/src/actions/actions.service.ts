@@ -363,34 +363,40 @@ export class ActionsService {
         ),
       );
 
+    const activeCampaign = await this.db.db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.status, 'active'))
+      .limit(1);
+
+    if (activeCampaign.length === 0) {
+      return [];
+    }
+    const campaignId = activeCampaign[0].id;
+
     const teamProgress = await Promise.all(
       teamMembers.map(async (member) => {
-        const totalUserActions = await this.db.db
-          .select()
-          .from(userActions)
-          .where(eq(userActions.userId, member.id));
+        const stats = await this.getUserCampaignDetails(member.id, campaignId);
 
-        const completedUserActions = await this.db.db
-          .select()
-          .from(userActions)
-          .where(
-            and(
-              eq(userActions.userId, member.id),
-              eq(userActions.completed, true),
-            ),
-          );
-
-        const percentage =
-          totalUserActions.length > 0
-            ? (completedUserActions.length / totalUserActions.length) * 100
-            : 0;
+        const totalActions = stats.dailyChallenges.reduce(
+          (sum, day) => sum + day.actions.length,
+          0,
+        );
+        const completedActions = stats.dailyChallenges.reduce(
+          (sum, day) =>
+            sum + day.actions.filter((a: any) => a.completed).length,
+          0,
+        );
 
         return {
           userId: member.id,
           userName: member.name,
-          totalActions: totalUserActions.length,
-          completedActions: completedUserActions.length,
-          percentage,
+          totalActions: totalActions,
+          completedActions: completedActions,
+          percentage:
+            totalActions > 0
+              ? Math.round((completedActions / totalActions) * 100)
+              : 0,
         };
       }),
     );
@@ -415,7 +421,8 @@ export class ActionsService {
     const campaignChallenges = await this.db.db
       .select()
       .from(challenges)
-      .where(eq(challenges.campaignId, campaignId));
+      .where(eq(challenges.campaignId, campaignId))
+      .orderBy(challenges.date);
 
     // Récupérer toutes les actions de ces défis
     const challengeIds = campaignChallenges.map((c) => c.id);
@@ -448,30 +455,33 @@ export class ActionsService {
     }, 0);
 
     // Calculer le nombre de défis complétés (100% des actions)
-    const challengeCompletionStats = campaignChallenges.map((challenge) => {
-      const challengeActions = campaignActions.filter(
-        (a) => a.challengeId === challenge.id,
-      );
-      const challengeUserActions = userCampaignActions.filter(
-        (ua) => ua.challengeId === challenge.id && ua.completed,
-      );
-      const isCompleted =
-        challengeActions.length > 0 &&
-        challengeUserActions.length === challengeActions.length;
+    const challengeCompletionStats = campaignChallenges.map(
+      (challenge, index) => {
+        const challengeActions = campaignActions.filter(
+          (a) => a.challengeId === challenge.id,
+        );
+        const challengeUserActions = userCampaignActions.filter(
+          (ua) => ua.challengeId === challenge.id && ua.completed,
+        );
+        const isCompleted =
+          challengeActions.length > 0 &&
+          challengeUserActions.length === challengeActions.length;
 
-      return {
-        challengeId: challenge.id,
-        challengeTitle: challenge.title,
-        challengeDate: challenge.date,
-        totalActions: challengeActions.length,
-        completedActions: challengeUserActions.length,
-        isCompleted,
-        percentage:
-          challengeActions.length > 0
-            ? (challengeUserActions.length / challengeActions.length) * 100
-            : 0,
-      };
-    });
+        return {
+          challengeId: challenge.id,
+          challengeTitle: challenge.title,
+          challengeDate: challenge.date,
+          totalActions: challengeActions.length,
+          completedActions: challengeUserActions.length,
+          isCompleted,
+          percentage:
+            challengeActions.length > 0
+              ? (challengeUserActions.length / challengeActions.length) * 100
+              : 0,
+          dayNumber: index + 1,
+        };
+      },
+    );
 
     const completedChallenges = challengeCompletionStats.filter(
       (c) => c.isCompleted,
@@ -691,7 +701,6 @@ export class ActionsService {
   }
 
   async getTeamCampaignProgress(managerId: number, campaignId: number) {
-    // Get campaign details
     const [campaign] = await this.db.db
       .select()
       .from(campaigns)
@@ -703,17 +712,22 @@ export class ActionsService {
       );
     }
 
-    // Get team members
     const teamMembers = await this.db.db
       .select()
       .from(users)
-      .where(and(eq(users.managerId, managerId), eq(users.role, 'fbo')));
+      .where(
+        and(
+          eq(users.role, 'fbo'),
+          eq(users.managerId, managerId),
+          isNotNull(users.managerId),
+        ),
+      );
 
-    // Get all challenges for this campaign
     const campaignChallenges = await this.db.db
       .select()
       .from(challenges)
-      .where(eq(challenges.campaignId, campaignId));
+      .where(eq(challenges.campaignId, campaignId))
+      .orderBy(challenges.date);
 
     const totalDays = this.getTotalCampaignDays(
       campaign.startDate,
@@ -721,84 +735,62 @@ export class ActionsService {
     );
     const currentDay = this.getCurrentDay(campaign.startDate, campaign.endDate);
 
-    const progressData = [];
+    const teamProgress = await Promise.all(
+      teamMembers.map(async (member) => {
+        try {
+          const dailyChallenges = await this.getMemberDailyChallenges(
+            member.id,
+            campaignId,
+            campaignChallenges,
+          );
 
-    for (const member of teamMembers) {
-      // Get member's completed actions for this campaign
-      const completedUserActions = await this.db.db
-        .select({
-          userActionId: userActions.id,
-          challengeId: userActions.challengeId,
-          completed: userActions.completed,
-          actionId: userActions.actionId,
-        })
-        .from(userActions)
-        .innerJoin(actions, eq(userActions.actionId, actions.id))
-        .innerJoin(challenges, eq(actions.challengeId, challenges.id))
-        .where(
-          and(
-            eq(userActions.userId, member.id),
-            eq(challenges.campaignId, campaignId),
-            eq(userActions.completed, true),
-          ),
-        );
+          const totalActionsInCampaign = dailyChallenges.reduce(
+            (sum, challenge) => sum + challenge.totalActions,
+            0,
+          );
+          const completedActionsInCampaign = dailyChallenges.reduce(
+            (sum, challenge) => sum + challenge.completedActions,
+            0,
+          );
 
-      // Get all assigned actions for this campaign
-      const allUserActions = await this.db.db
-        .select({
-          userActionId: userActions.id,
-          challengeId: userActions.challengeId,
-          completed: userActions.completed,
-          actionId: userActions.actionId,
-        })
-        .from(userActions)
-        .innerJoin(actions, eq(userActions.actionId, actions.id))
-        .innerJoin(challenges, eq(actions.challengeId, challenges.id))
-        .where(
-          and(
-            eq(userActions.userId, member.id),
-            eq(challenges.campaignId, campaignId),
-          ),
-        );
+          const progressPercentage =
+            totalActionsInCampaign > 0
+              ? Math.round(
+                  (completedActionsInCampaign / totalActionsInCampaign) * 100,
+                )
+              : 0;
 
-      // Count completed challenges (at least one action completed per challenge)
-      const completedChallengeIds = new Set(
-        completedUserActions.map((ua) => ua.challengeId),
-      );
-      const completedChallenges = completedChallengeIds.size;
-
-      const progressPercentage =
-        campaignChallenges.length > 0
-          ? (completedChallenges / campaignChallenges.length) * 100
-          : 0;
-
-      // Get detailed daily challenges for this member (reusing getUserCampaignDetails logic)
-      const dailyChallenges = await this.getMemberDailyChallenges(
-        member.id,
-        campaignId,
-        campaignChallenges,
-      );
-
-      progressData.push({
-        userId: member.id,
-        userName: member.name,
-        totalActions: allUserActions.length,
-        completedActions: completedUserActions.length,
-        percentage: Math.round(progressPercentage),
-        campaignProgress: {
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-          totalDays,
-          currentDay,
-          completedChallenges,
-          totalChallenges: campaignChallenges.length,
-          progressPercentage: Math.round(progressPercentage),
-          dailyChallenges, // Add detailed daily challenges
-        },
-      });
-    }
-
-    return progressData;
+          return {
+            userId: member.id,
+            userName: member.name,
+            campaignProgress: {
+              campaignId,
+              campaignName: campaign.name,
+              totalDays,
+              currentDay,
+              completedChallenges: dailyChallenges.filter((d) => d.completed)
+                .length,
+              totalChallenges: campaignChallenges.length,
+              progressPercentage,
+              dailyChallenges,
+            },
+          };
+        } catch (error) {
+          console.error(
+            `--- [BACKEND LOG] Erreur lors de la récupération de la progression pour l'utilisateur ${member.id} (${member.name}) ---`,
+            error,
+          );
+          // Retourner une structure de base en cas d'erreur pour ne pas tout planter
+          return {
+            userId: member.id,
+            userName: member.name,
+            campaignProgress: null, // Indique une erreur pour cet utilisateur
+            error: `Erreur: ${error.message}`,
+          };
+        }
+      }),
+    );
+    return teamProgress;
   }
 
   private async getMemberDailyChallenges(
@@ -806,73 +798,72 @@ export class ActionsService {
     campaignId: number,
     campaignChallenges: any[],
   ) {
-    const today = new Date().toISOString().split('T')[0];
-    const dailyChallenges = [];
+    if (campaignChallenges.length === 0) return [];
 
-    for (let i = 0; i < campaignChallenges.length; i++) {
-      const challenge = campaignChallenges[i];
-      const dayNumber = i + 1;
-      const isToday = challenge.date === today;
+    const challengeIds = campaignChallenges.map((c) => c.id);
 
-      // Get user actions for this challenge
-      const userChallengeActions = await this.db.db
-        .select({
-          id: userActions.id,
-          actionId: userActions.actionId,
-          completed: userActions.completed,
-          completedAt: userActions.completedAt,
-          proofUrl: userActions.proofUrl,
-          action: {
-            id: actions.id,
-            title: actions.title,
-            description: actions.description,
-            type: actions.type,
-            order: actions.order,
-            pointsValue: actions.pointsValue,
-          },
-        })
-        .from(userActions)
-        .innerJoin(actions, eq(userActions.actionId, actions.id))
-        .where(
-          and(
-            eq(userActions.userId, userId),
-            eq(actions.challengeId, challenge.id),
-          ),
-        )
-        .orderBy(actions.order);
+    // 1. Récupérer TOUTES les actions possibles pour les défis de la campagne
+    const allCampaignActions = await this.db.db
+      .select()
+      .from(actions)
+      .where(inArray(actions.challengeId, challengeIds));
 
-      // Transform actions data
-      const challengeActionsWithStatus = userChallengeActions.map((ua) => ({
-        id: ua.action.id,
-        title: ua.action.title,
-        description: ua.action.description,
-        type: ua.action.type,
-        order: ua.action.order,
-        pointsValue: ua.action.pointsValue,
-        completed: ua.completed,
-        completedAt: ua.completedAt,
-        proofUrl: ua.proofUrl,
-        userActionId: ua.id,
-      }));
-
-      // Check if challenge is completed (at least one action completed)
-      const challengeCompleted = challengeActionsWithStatus.some(
-        (action) => action.completed,
+    // 2. Récupérer les actions spécifiquement assignées à l'utilisateur
+    const userSpecificActions = await this.db.db
+      .select()
+      .from(userActions)
+      .where(
+        and(
+          eq(userActions.userId, userId),
+          inArray(userActions.challengeId, challengeIds),
+        ),
       );
 
-      dailyChallenges.push({
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    return campaignChallenges.map((challenge, index) => {
+      // 3. Fusionner les deux listes pour chaque défi
+      const challengeActions = allCampaignActions.filter(
+        (a) => a.challengeId === challenge.id,
+      );
+
+      const enrichedActions = challengeActions.map((action) => {
+        const userAction = userSpecificActions.find(
+          (ua) => ua.actionId === action.id,
+        );
+        return {
+          id: action.id,
+          title: action.title,
+          description: action.description,
+          type: action.type,
+          completed: userAction?.completed || false,
+          userActionId: userAction?.id,
+        };
+      });
+
+      const dayDate = new Date(challenge.date);
+      dayDate.setUTCHours(0, 0, 0, 0);
+
+      const totalActionsCount = enrichedActions.length;
+      const completedActionsCount = enrichedActions.filter(
+        (a) => a.completed,
+      ).length;
+
+      const isCompleted =
+        totalActionsCount > 0 && completedActionsCount === totalActionsCount;
+
+      return {
         challengeId: challenge.id,
         date: challenge.date,
-        dayNumber,
-        title: challenge.title,
-        description: challenge.description,
-        isToday,
-        completed: challengeCompleted,
-        actions: challengeActionsWithStatus,
-      });
-    }
-
-    return dailyChallenges;
+        dayNumber: index + 1,
+        isToday: dayDate.getTime() === today.getTime(),
+        completed: isCompleted,
+        totalActions: totalActionsCount,
+        completedActions: completedActionsCount,
+        actions: enrichedActions,
+      };
+    });
   }
 
   async getUserCampaignDetails(userId: number, campaignId: number) {
@@ -960,9 +951,9 @@ export class ActionsService {
         };
       });
 
-      const challengeCompleted = actionsWithStatus.some(
-        (action) => action.completed,
-      );
+      const challengeCompleted =
+        actionsWithStatus.length > 0 &&
+        actionsWithStatus.every((action) => action.completed);
       if (challengeCompleted) {
         completedChallenges++;
       }

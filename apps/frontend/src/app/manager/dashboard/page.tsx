@@ -79,6 +79,8 @@ interface DailyChallenge {
   description: string;
   isToday: boolean;
   completed: boolean;
+  totalActions: number;
+  completedActions: number;
   actions: Action[];
 }
 
@@ -136,6 +138,15 @@ export default function ManagerDashboard() {
 
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+
+  const teamAverageProgress =
+    teamProgress.length > 0
+      ? teamProgress.reduce(
+          (acc, member) =>
+            acc + (member.campaignProgress?.progressPercentage || 0),
+          0,
+        ) / teamProgress.length
+      : 0;
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -232,6 +243,35 @@ export default function ManagerDashboard() {
         error,
       );
     }
+  };
+
+  const getChallengeStatus = (challenge: DailyChallenge) => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const challengeDate = new Date(challenge.date);
+    challengeDate.setUTCHours(0, 0, 0, 0);
+
+    let status, color, label;
+
+    if (challenge.completed) {
+      status = 'completed';
+      color = 'bg-green-500';
+      label = 'Complété';
+    } else if (challenge.completedActions > 0) {
+      status = 'partial';
+      color = 'bg-yellow-500';
+      label = 'Partiel';
+    } else if (challengeDate < today) {
+      status = 'missed';
+      color = 'bg-red-500';
+      label = 'Manqué';
+    } else {
+      status = 'future';
+      color = 'bg-gray-300';
+      label = 'À venir';
+    }
+
+    return { status, color, label };
   };
 
   const calculateCurrentDay = (startDate: string, endDate: string): number => {
@@ -381,16 +421,12 @@ export default function ManagerDashboard() {
           <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 sm:col-span-2 lg:col-span-1">
             <CardBody className="p-4 sm:p-6 text-center">
               <ChartBarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 mx-auto mb-2" />
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                {Math.round(
-                  teamProgress.reduce((acc, p) => acc + p.percentage, 0) /
-                    (teamProgress.length || 1),
-                )}
-                %
-              </h3>
-              <p className="text-sm sm:text-base text-gray-600">
-                Progression moyenne
-              </p>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Progression moyenne</p>
+                <p className="text-2xl font-bold">
+                  {`${Math.round(teamAverageProgress)}%`}
+                </p>
+              </div>
             </CardBody>
           </Card>
         </div>
@@ -401,234 +437,103 @@ export default function ManagerDashboard() {
           onSelectionChange={(key) => setSelectedTab(key as string)}
           className="mb-6"
         >
-          <Tab key="team" title="Mon Équipe">
-            <div className="space-y-4 sm:space-y-6">
-              {/* Team Progress */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 p-4 sm:p-6">
-                  <div className="flex-1">
-                    <h3 className="text-lg sm:text-xl font-semibold">
-                      Progression de l'équipe
-                    </h3>
-                    {currentCampaign && (
-                      <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
-                        <Chip
-                          color="primary"
-                          variant="flat"
-                          size="sm"
-                          className="w-fit"
-                        >
-                          {currentCampaign.name}
-                        </Chip>
-                        <span className="text-sm text-gray-500">
-                          Jour{' '}
-                          {calculateCurrentDay(
-                            currentCampaign.startDate,
-                            currentCampaign.endDate,
-                          )}{' '}
-                          /{' '}
-                          {getTotalCampaignDays(
-                            currentCampaign.startDate,
-                            currentCampaign.endDate,
-                          )}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    color="primary"
-                    startContent={<PlusIcon className="w-4 h-4" />}
-                    onPress={onAddMemberOpen}
-                    size="sm"
-                    className="w-full sm:w-auto"
-                  >
-                    Ajouter un membre
-                  </Button>
-                </CardHeader>
-                <CardBody className="p-4 sm:p-6 pt-0">
-                  {teamProgress.length === 0 ? (
-                    <div className="text-center py-6 sm:py-8">
-                      <UsersIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 text-sm sm:text-base">
-                        Aucun membre dans votre équipe
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                      {teamProgress.map((progress) => {
-                        const campaignProgress = progress.campaignProgress;
-
-                        // Calcul basé sur les défis, pas sur les jours
-                        const totalChallenges =
-                          campaignProgress?.totalChallenges ||
-                          progress.totalActions ||
-                          1;
-                        const completedChallenges =
-                          campaignProgress?.completedChallenges ||
-                          progress.completedActions ||
-                          0;
-
-                        // Calcul de la position du curseur basé sur les défis actuellement disponibles
-                        // Si on a 4 défis créés sur 10 jours, le curseur doit être à 40%
-                        const currentDayProgress = currentCampaign
-                          ? calculateCurrentDay(
-                              currentCampaign.startDate,
-                              currentCampaign.endDate,
-                            )
-                          : 0;
-                        const totalDays = currentCampaign
-                          ? getTotalCampaignDays(
-                              currentCampaign.startDate,
-                              currentCampaign.endDate,
-                            )
-                          : 100;
-
-                        // Le curseur représente le nombre de défis qui devraient être disponibles à ce jour
-                        // Si on est au jour 3, alors 3 défis sont attendus (jours 1, 2, et 3)
-                        const challengesExpectedAtCurrentDay = Math.min(
-                          currentDayProgress,
-                          totalChallenges,
-                        );
-                        const currentChallengePercentage =
-                          totalChallenges > 0
-                            ? Math.min(
-                                (challengesExpectedAtCurrentDay /
-                                  totalChallenges) *
-                                  100,
-                                100,
-                              )
-                            : 0;
-
-                        return (
-                          <div
-                            key={progress.userId}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                            onClick={() => {
-                              const member = teamMembers.find(
-                                (m) => m.id === progress.userId,
-                              );
-                              if (member) handleMemberClick(member);
-                            }}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-800 text-sm sm:text-base mb-2 flex items-center gap-2">
-                                {progress.userName}
-                                <EyeIcon className="w-4 h-4 text-gray-400" />
-                              </h4>
-                              <div className="relative">
-                                <div className="flex items-center gap-2 mb-1">
-                                  {/* Jauge segmentée par défis */}
-                                  <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden flex">
-                                    {Array.from(
-                                      { length: totalChallenges },
-                                      (_, index) => {
-                                        const challengeNumber = index + 1;
-
-                                        // Utiliser les vraies données détaillées jour par jour
-                                        const dayData =
-                                          campaignProgress?.dailyChallenges?.find(
-                                            (day) =>
-                                              day.dayNumber === challengeNumber,
-                                          );
-                                        const isCompleted =
-                                          dayData?.completed || false;
-
-                                        const isExpected =
-                                          challengeNumber <=
-                                          challengesExpectedAtCurrentDay;
-                                        const isMissed =
-                                          isExpected && !isCompleted;
-                                        const isFuture =
-                                          challengeNumber >
-                                          challengesExpectedAtCurrentDay;
-
-                                        let segmentColor = 'bg-gray-300'; // Par défaut (à venir)
-                                        if (isCompleted) {
-                                          segmentColor = 'bg-green-500'; // Complété
-                                        } else if (isMissed) {
-                                          segmentColor = 'bg-red-500'; // Manqué (passé et non fait)
-                                        }
-                                        // Les jours futurs restent gris par défaut
-
-                                        return (
-                                          <div
-                                            key={index}
-                                            className={`flex-1 h-full ${segmentColor} transition-colors duration-300 ${
-                                              index < totalChallenges - 1
-                                                ? 'border-r border-white'
-                                                : ''
-                                            }`}
-                                            style={{
-                                              minWidth: `${100 / totalChallenges}%`,
-                                            }}
-                                            title={`Défi ${challengeNumber} - ${
-                                              isCompleted
-                                                ? 'Complété'
-                                                : isMissed
-                                                  ? 'Manqué'
-                                                  : 'À venir'
-                                            }`}
-                                          />
-                                        );
-                                      },
-                                    )}
-                                  </div>
-                                  <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[60px]">
-                                    {completedChallenges}/{totalChallenges}
-                                  </span>
-                                </div>
-
-                                {/* Légende des couleurs */}
-                                <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                      <span>Fait</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                      <span>Manqué</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                      <span>À venir</span>
-                                    </div>
-                                  </div>
-                                  <span>
-                                    {challengesExpectedAtCurrentDay}/
-                                    {totalChallenges} défis attendus
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <Badge
-                              color={
-                                (campaignProgress?.progressPercentage ||
-                                  progress.percentage) >=
-                                currentChallengePercentage
-                                  ? 'success'
-                                  : (campaignProgress?.progressPercentage ||
-                                        progress.percentage) >= 60
-                                    ? 'warning'
-                                    : 'danger'
-                              }
-                              variant="flat"
-                              className="text-xs sm:text-sm w-fit"
-                            >
-                              {Math.round(
-                                campaignProgress?.progressPercentage ||
-                                  progress.percentage,
-                              )}
-                              %
-                            </Badge>
-                          </div>
-                        );
-                      })}
+          <Tab key="team" title="Progression de l'équipe">
+            <Card>
+              <CardHeader className="flex flex-col sm:flex-row justify-between items-start p-4 border-b dark:border-gray-700">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Aperçu de la campagne
+                  </h3>
+                  {currentCampaign && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <Chip color="primary" variant="flat" size="sm">
+                        {currentCampaign.name}
+                      </Chip>
+                      <span className="text-sm text-gray-500">
+                        Jour{' '}
+                        {calculateCurrentDay(
+                          currentCampaign.startDate,
+                          currentCampaign.endDate,
+                        )}{' '}
+                        /{' '}
+                        {getTotalCampaignDays(
+                          currentCampaign.startDate,
+                          currentCampaign.endDate,
+                        )}
+                      </span>
                     </div>
                   )}
-                </CardBody>
-              </Card>
-            </div>
+                </div>
+              </CardHeader>
+              <CardBody>
+                {teamProgress.length > 0 ? (
+                  <div className="space-y-4 p-4">
+                    {teamProgress.map((member) => {
+                      const memberInfo = teamMembers.find(
+                        (m) => m.id === member.userId,
+                      );
+                      return (
+                        <div
+                          key={member.userId}
+                          className="p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          onClick={() => {
+                            if (memberInfo) handleMemberClick(memberInfo);
+                          }}
+                        >
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-semibold text-lg text-gray-800 dark:text-gray-200">
+                              {member.userName}
+                            </span>
+                            <Badge color="primary" variant="flat">
+                              {`${Math.round(
+                                member.campaignProgress?.progressPercentage ||
+                                  0,
+                              )}%`}
+                            </Badge>
+                          </div>
+                          {member.campaignProgress &&
+                          member.campaignProgress.dailyChallenges ? (
+                            <div className="relative mt-2">
+                              <div className="flex w-full h-3 space-x-1">
+                                {member.campaignProgress.dailyChallenges.map(
+                                  (challenge) => {
+                                    const { color, label } =
+                                      getChallengeStatus(challenge);
+                                    return (
+                                      <div
+                                        key={challenge.challengeId}
+                                        className={`relative flex-1 rounded-full transition-all duration-300 ${color}`}
+                                        title={`Jour ${challenge.dayNumber} - ${label}: ${challenge.completedActions}/${challenge.totalActions} actions`}
+                                      >
+                                        {challenge.isToday && (
+                                          <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 bg-white rounded-full ring-1 ring-black/20"></div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-500 py-4">
+                              Aucune donnée de campagne pour ce membre.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">
+                      Aucun membre dans l'équipe pour le moment.
+                    </p>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
           </Tab>
 
           <Tab key="actions" title="Actions">

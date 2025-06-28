@@ -350,15 +350,28 @@ export default function MemberDetailsPage() {
                     const isPast = dayDate < today;
                     const isToday = dayDate.getTime() === today.getTime();
 
+                    // Calcul de la complétion partielle
+                    const totalActions = day.actions?.length || 0;
+                    const completedActions =
+                      day.actions?.filter((a) => a.completed).length || 0;
+                    const isFullyCompleted =
+                      totalActions > 0 && completedActions === totalActions;
+                    const isPartiallyCompleted =
+                      completedActions > 0 && completedActions < totalActions;
+
                     // Déterminer le statut du jour
                     let dayStatus, dayStatusColor, dayIcon;
-                    if (day.completed) {
+                    if (isFullyCompleted) {
                       dayStatus = 'Complété';
                       dayStatusColor = 'success';
                       dayIcon = <CheckCircleIcon className="w-5 h-5" />;
+                    } else if (isPartiallyCompleted) {
+                      dayStatus = `${completedActions}/${totalActions} actions`;
+                      dayStatusColor = 'warning'; // Orange pour partiel
+                      dayIcon = <ClockIcon className="w-5 h-5" />;
                     } else if (isToday) {
-                      dayStatus = 'En cours';
-                      dayStatusColor = 'warning';
+                      dayStatus = "Aujourd'hui";
+                      dayStatusColor = 'primary'; // Bleu pour aujourd'hui non commencé
                       dayIcon = <ClockIcon className="w-5 h-5" />;
                     } else if (isPast) {
                       dayStatus = 'Manqué';
@@ -379,7 +392,7 @@ export default function MemberDetailsPage() {
                         className={`border transition-all duration-200 ${
                           isToday
                             ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30'
-                            : isPast && !day.completed
+                            : isPast && !isFullyCompleted
                               ? 'ring-1 ring-red-200 bg-red-50/30 border-red-200'
                               : 'border-gray-200'
                         }`}
@@ -411,7 +424,9 @@ export default function MemberDetailsPage() {
                                       ? 'warning'
                                       : dayStatusColor === 'danger'
                                         ? 'danger'
-                                        : 'default'
+                                        : dayStatusColor === 'primary'
+                                          ? 'primary'
+                                          : 'default'
                                 }
                                 variant="flat"
                               >

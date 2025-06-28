@@ -1,0 +1,3 @@
+Endpoint: b2y8.par5.idrivee2-11.com
+Access Key ID: PBL16uf72p6Ohufxizs5
+Secret Access Key: CZ4kHYSS2HWIyKMf0VvRXDmJPdYAl47QJf4tGkze
