@@ -342,35 +342,59 @@ async function runMigrations() {
       userActionsExists[0].exists &&
       accessRequestsExists[0].exists;
 
-    // Si toutes les tables existent, skip complètement les migrations Drizzle
-    if (allTablesExist) {
-      console.log(
-        '✅ All main tables exist - skipping Drizzle migrations completely',
-      );
+    // Toujours vérifier si on doit lancer les migrations Drizzle
+    console.log('🔍 Checking Drizzle migration status...');
 
-      // Juste s'assurer que la table de migration existe et insérer un enregistrement si nécessaire
-      try {
-        // Vérifier si une migration existe déjà
+    let shouldRunDrizzleMigrations = false;
+
+    try {
+      // Vérifier si la table de migration Drizzle existe
+      const drizzleTableExists = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'drizzle' 
+          AND table_name = '__drizzle_migrations'
+        );
+      `;
+
+      if (drizzleTableExists[0].exists) {
+        // Vérifier s'il y a des migrations enregistrées
         const existingMigrations = await sql`
           SELECT COUNT(*) as count FROM drizzle.__drizzle_migrations;
         `;
 
-        if (existingMigrations[0].count === 0) {
+        // Si pas de migrations enregistrées mais tables existent, marquer comme fait
+        if (existingMigrations[0].count === 0 && allTablesExist) {
           console.log(
-            '📝 Adding migration record to prevent future conflicts...',
+            '📝 Tables exist but no migrations recorded. Marking as migrated...',
           );
           await sql`
             INSERT INTO drizzle.__drizzle_migrations (hash, created_at) 
-            VALUES ('manual_skip_existing_schema', ${Date.now()})
+            VALUES ('manual_existing_schema_${Date.now()}', ${Date.now()})
             ON CONFLICT DO NOTHING;
           `;
+          shouldRunDrizzleMigrations = false;
+        } else if (existingMigrations[0].count === 0) {
+          shouldRunDrizzleMigrations = true;
+        } else {
+          shouldRunDrizzleMigrations = false;
         }
-      } catch (error) {
-        // Si on ne peut pas accéder à la table de migration, ce n'est pas grave
-        console.log('⚠️ Could not update migration history, but continuing...');
+      } else {
+        // Table de migration n'existe pas, on doit lancer les migrations
+        shouldRunDrizzleMigrations = true;
       }
+    } catch (error) {
+      console.log(
+        '⚠️ Could not check migration status, will attempt migrations...',
+      );
+      shouldRunDrizzleMigrations = !allTablesExist;
+    }
+
+    if (!shouldRunDrizzleMigrations) {
+      console.log(
+        '✅ All main tables exist - skipping Drizzle migrations completely',
+      );
     } else {
-      // Certaines tables manquent, lancer les migrations normalement
       console.log('🔄 Some tables are missing, running Drizzle migrations...');
       try {
         await migrate(db, { migrationsFolder });
@@ -384,6 +408,7 @@ async function runMigrations() {
         ) {
           console.log('✅ Database schema is already up to date');
         } else {
+          console.error('❌ Migration error details:', error.message);
           throw error;
         }
       }
