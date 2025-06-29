@@ -15,8 +15,8 @@ Le fichier `render.yaml` est configuré pour déployer automatiquement :
 
 - `NODE_ENV` : production
 - `PORT` : 10000
-- `FRONTEND_URL` : https://htf-sunup.vercel.app
-- `CORS_ORIGIN` : https://htf-sunup.vercel.app
+- `FRONTEND_URL` : https://htf-sunup-frontend.vercel.app
+- `CORS_ORIGIN` : https://htf-sunup-frontend.vercel.app
 - `JWT_SECRET` : généré automatiquement par Render
 - `PASSWORD_SALT_ROUNDS` : 12
 - `DATABASE_URL` : lié automatiquement à la base PostgreSQL
@@ -222,6 +222,7 @@ LOG_LEVEL=info
 
 Après déploiement :
 
+- **Frontend** : `https://htf-sunup-frontend.vercel.app`
 - **API Backend** : `https://htf-sunup-backend.onrender.com`
 - **API Documentation** : `https://htf-sunup-backend.onrender.com/api`
 - **Health Check** : `https://htf-sunup-backend.onrender.com/health`
