@@ -22,13 +22,16 @@ export class AccessRequestsController {
   ) {}
 
   @Post()
-  async create(@Body() createAccessRequestDto: {
-    name: string;
-    email: string;
-    requestedRole?: string;
-    requestedManagerId?: number;
-    message?: string;
-  }) {
+  async create(
+    @Body()
+    createAccessRequestDto: {
+      name: string;
+      email: string;
+      requestedRole?: string;
+      requestedManagerId?: number;
+      message?: string;
+    },
+  ) {
     return await this.accessRequestsService.create(createAccessRequestDto);
   }
 
@@ -36,13 +39,15 @@ export class AccessRequestsController {
   @Get()
   async findAll(@Request() req) {
     const user = req.user;
-    
-    if (user.role === 'marraine') {
-      return await this.accessRequestsService.findPending();
-    } else if (user.role === 'manager') {
-      return await this.accessRequestsService.findByManagerId(user.sub);
+
+    if (user.role === 'marraine' || user.role === 'manager') {
+      // Les marraines et managers voient les demandes pour eux et leur équipe
+      return await this.accessRequestsService.findByManagerAndTeam(user.id);
     } else {
-      return [];
+      return {
+        direct: [],
+        team: [],
+      };
     }
   }
 
@@ -57,24 +62,29 @@ export class AccessRequestsController {
   async approve(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: { reviewComment?: string }
+    @Body() body: { reviewComment?: string },
   ) {
     const user = req.user;
-    
+
     if (user.role !== 'marraine' && user.role !== 'manager') {
       throw new Error('Accès non autorisé');
     }
 
     const accessRequest = await this.accessRequestsService.findById(+id);
-    
-    if (user.role === 'manager' && accessRequest.requestedManagerId !== user.sub) {
-      throw new Error('Vous ne pouvez approuver que les demandes qui vous concernent');
+
+    if (
+      user.role === 'manager' &&
+      accessRequest.requestedManagerId !== user.id
+    ) {
+      throw new Error(
+        'Vous ne pouvez approuver que les demandes qui vous concernent',
+      );
     }
 
     const approvedRequest = await this.accessRequestsService.approve(
       +id,
-      user.sub,
-      body.reviewComment
+      user.id,
+      body.reviewComment,
     );
 
     await this.usersService.create({
@@ -93,24 +103,55 @@ export class AccessRequestsController {
   async reject(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: { reviewComment?: string }
+    @Body() body: { reviewComment?: string },
   ) {
     const user = req.user;
-    
+
     if (user.role !== 'marraine' && user.role !== 'manager') {
       throw new Error('Accès non autorisé');
     }
 
     const accessRequest = await this.accessRequestsService.findById(+id);
-    
-    if (user.role === 'manager' && accessRequest.requestedManagerId !== user.sub) {
-      throw new Error('Vous ne pouvez rejeter que les demandes qui vous concernent');
+
+    if (
+      user.role === 'manager' &&
+      accessRequest.requestedManagerId !== user.id
+    ) {
+      throw new Error(
+        'Vous ne pouvez rejeter que les demandes qui vous concernent',
+      );
     }
 
     return await this.accessRequestsService.reject(
       +id,
-      user.sub,
-      body.reviewComment
+      user.id,
+      body.reviewComment,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/reassign')
+  async reassign(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() body: { newManagerId: number; reviewComment?: string },
+  ) {
+    const user = req.user;
+
+    if (user.role !== 'marraine') {
+      throw new Error('Seules les marraines peuvent réassigner des demandes');
+    }
+
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      throw new Error(`ID invalide: ${id}`);
+    }
+
+    return await this.accessRequestsService.reassign(
+      parsedId,
+      body.newManagerId,
+      user.id,
+      body.reviewComment,
     );
   }
 
@@ -118,10 +159,10 @@ export class AccessRequestsController {
   async getManagers() {
     const managers = await this.usersService.getUsersByRole('manager');
     const marraines = await this.usersService.getUsersByRole('marraine');
-    
+
     // Combiner managers et marraines pour la sélection, avec marraines en premier
     const allManagers = [...marraines, ...managers];
-    
+
     // Trier par rôle (marraine en premier) puis par nom
     return allManagers.sort((a, b) => {
       if (a.role === 'marraine' && b.role !== 'marraine') return -1;

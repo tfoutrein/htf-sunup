@@ -18,7 +18,7 @@ import {
   SelectItem,
   useDisclosure,
 } from '@heroui/react';
-import { toast } from 'react-hot-toast';
+import { addToast } from '@heroui/toast';
 import { useAuth } from '@/app/providers';
 
 interface AccessRequest {
@@ -110,11 +110,19 @@ export default function ManageAccessRequestsPage() {
         setDirectRequests(transformData(data.direct || []));
         setTeamRequests(transformData(data.team || []));
       } else {
-        toast.error('Erreur lors du chargement des demandes');
+        addToast({
+          title: 'Erreur',
+          description: 'Erreur lors du chargement des demandes',
+          color: 'danger',
+        });
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des demandes');
+      addToast({
+        title: 'Erreur',
+        description: 'Erreur lors du chargement des demandes',
+        color: 'danger',
+      });
     }
   };
 
@@ -147,11 +155,19 @@ export default function ManageAccessRequestsPage() {
         const data = await response.json();
         setSelectedRequest(data);
       } else {
-        toast.error('Erreur lors du chargement des détails');
+        addToast({
+          title: 'Erreur',
+          description: 'Erreur lors du chargement des détails',
+          color: 'danger',
+        });
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des détails');
+      addToast({
+        title: 'Erreur',
+        description: 'Erreur lors du chargement des détails',
+        color: 'danger',
+      });
     }
   };
 
@@ -165,7 +181,11 @@ export default function ManageAccessRequestsPage() {
 
       if (action === 'reassign') {
         if (!selectedManagerId) {
-          toast.error('Veuillez sélectionner un manager');
+          addToast({
+            title: 'Erreur',
+            description: 'Veuillez sélectionner un manager',
+            color: 'danger',
+          });
           setIsLoading(false);
           return;
         }
@@ -205,18 +225,30 @@ export default function ManageAccessRequestsPage() {
             : action === 'reject'
               ? 'rejetée'
               : 'réassignée';
-        toast.success(`Demande ${actionText} avec succès`);
+        addToast({
+          title: 'Succès',
+          description: `Demande ${actionText} avec succès`,
+          color: 'success',
+        });
         fetchAccessRequests();
         onClose();
         setReviewComment('');
         setSelectedManagerId('');
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Erreur lors du traitement');
+        addToast({
+          title: 'Erreur',
+          description: errorData.message || 'Erreur lors du traitement',
+          color: 'danger',
+        });
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error('Erreur lors du traitement');
+      addToast({
+        title: 'Erreur',
+        description: 'Erreur lors du traitement',
+        color: 'danger',
+      });
     } finally {
       setIsLoading(false);
     }

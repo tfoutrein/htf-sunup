@@ -13,12 +13,26 @@ export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const router = useRouter();
   const { logoChoice } = useLogo();
+
+  useEffect(() => {
+    // Check for success message in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get('message');
+    if (message === 'request-sent') {
+      setSuccessMessage(
+        "Demande d'accès envoyée avec succès ! Vous recevrez une réponse par email.",
+      );
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
@@ -200,6 +214,12 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {successMessage && (
+                <div className="text-green-600 text-sm text-center bg-green-50 p-3 rounded-lg">
+                  {successMessage}
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold w-full"
@@ -220,7 +240,7 @@ export default function LoginPage() {
                   onClick={() => router.push('/register')}
                   className="text-orange-500 hover:text-orange-600 font-medium underline"
                 >
-                  Inscris-toi
+                  Rejoindre l'équipe
                 </button>
               </p>
             </div>

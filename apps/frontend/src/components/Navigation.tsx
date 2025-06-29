@@ -101,16 +101,36 @@ export function Navigation() {
                   </Link>
 
                   {(user.role === 'marraine' || user.role === 'manager') && (
-                    <Link href="/campaigns">
-                      <Button
-                        variant={isActive('/campaigns') ? 'flat' : 'light'}
-                        color={isActive('/campaigns') ? 'warning' : 'default'}
-                        size="sm"
-                        className="font-medium"
-                      >
-                        Campagnes
-                      </Button>
-                    </Link>
+                    <>
+                      <Link href="/campaigns">
+                        <Button
+                          variant={isActive('/campaigns') ? 'flat' : 'light'}
+                          color={isActive('/campaigns') ? 'warning' : 'default'}
+                          size="sm"
+                          className="font-medium"
+                        >
+                          Campagnes
+                        </Button>
+                      </Link>
+                      <Link href="/manage-access-requests">
+                        <Button
+                          variant={
+                            isActive('/manage-access-requests')
+                              ? 'flat'
+                              : 'light'
+                          }
+                          color={
+                            isActive('/manage-access-requests')
+                              ? 'warning'
+                              : 'default'
+                          }
+                          size="sm"
+                          className="font-medium"
+                        >
+                          Demandes d'accès
+                        </Button>
+                      </Link>
+                    </>
                   )}
 
                   {/* Aurora Toggle - Only on Aurora pages */}
@@ -270,16 +290,41 @@ export function Navigation() {
                     </Link>
 
                     {(user.role === 'marraine' || user.role === 'manager') && (
-                      <Link href="/campaigns" onClick={closeMenu}>
-                        <Button
-                          variant={isActive('/campaigns') ? 'flat' : 'light'}
-                          color={isActive('/campaigns') ? 'warning' : 'default'}
-                          size="sm"
-                          className="w-full justify-start font-medium"
+                      <>
+                        <Link href="/campaigns" onClick={closeMenu}>
+                          <Button
+                            variant={isActive('/campaigns') ? 'flat' : 'light'}
+                            color={
+                              isActive('/campaigns') ? 'warning' : 'default'
+                            }
+                            size="sm"
+                            className="w-full justify-start font-medium"
+                          >
+                            Campagnes
+                          </Button>
+                        </Link>
+                        <Link
+                          href="/manage-access-requests"
+                          onClick={closeMenu}
                         >
-                          Campagnes
-                        </Button>
-                      </Link>
+                          <Button
+                            variant={
+                              isActive('/manage-access-requests')
+                                ? 'flat'
+                                : 'light'
+                            }
+                            color={
+                              isActive('/manage-access-requests')
+                                ? 'warning'
+                                : 'default'
+                            }
+                            size="sm"
+                            className="w-full justify-start font-medium"
+                          >
+                            Demandes d'accès
+                          </Button>
+                        </Link>
+                      </>
                     )}
 
                     <Button
