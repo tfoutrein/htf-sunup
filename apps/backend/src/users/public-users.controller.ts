@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 import { UserDto } from './dto/user.dto';
 
 @ApiTags('public-users')
-@Controller('api/public/users')
+@Controller('public/users')
 export class PublicUsersController {
   constructor(private readonly usersService: UsersService) {}
 

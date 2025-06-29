@@ -224,7 +224,7 @@ Après déploiement :
 
 - **Frontend** : `https://htf-sunup-frontend.vercel.app`
 - **API Backend** : `https://htf-sunup-backend.onrender.com`
-- **API Documentation** : `https://htf-sunup-backend.onrender.com/api`
+- **API Documentation** : `https://htf-sunup-backend.onrender.com/docs`
 - **Health Check** : `https://htf-sunup-backend.onrender.com/api/health`
 
 ## ✅ Validation Post-Déploiement
@@ -232,7 +232,7 @@ Après déploiement :
 ### Tests à effectuer :
 
 1. **Health Check** : `GET /api/health`
-2. **API Documentation** : Accès à `/api`
+2. **API Documentation** : Accès à `/docs`
 3. **Authentification** : `POST /auth/login`
 4. **Endpoints principaux** :
    - `GET /campaigns`
@@ -246,7 +246,7 @@ Après déploiement :
 curl https://htf-sunup-backend.onrender.com/api/health
 
 # API documentation
-curl https://htf-sunup-backend.onrender.com/api
+curl https://htf-sunup-backend.onrender.com/docs
 
 # Test endpoint
 curl https://htf-sunup-backend.onrender.com/campaigns
