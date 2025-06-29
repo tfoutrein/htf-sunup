@@ -85,6 +85,22 @@ export const userActions = pgTable('user_actions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Access Requests table - User requests to join the platform
+export const accessRequests = pgTable('access_requests', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  requestedRole: varchar('requested_role', { length: 50 }).notNull().default('fbo'), // Role requested by user
+  requestedManagerId: integer('requested_manager_id').references(() => users.id), // Manager selected by user
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'approved' | 'rejected'
+  message: text('message'), // Optional message from requester
+  reviewedBy: integer('reviewed_by').references(() => users.id), // Who reviewed the request
+  reviewedAt: timestamp('reviewed_at'),
+  reviewComment: text('review_comment'), // Comment from reviewer
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -94,6 +110,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   teamMembers: many(users),
   createdCampaigns: many(campaigns),
   userActions: many(userActions),
+  accessRequests: many(accessRequests),
+  reviewedAccessRequests: many(accessRequests),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -136,6 +154,17 @@ export const userActionsRelations = relations(userActions, ({ one }) => ({
   }),
 }));
 
+export const accessRequestsRelations = relations(accessRequests, ({ one }) => ({
+  requestedManager: one(users, {
+    fields: [accessRequests.requestedManagerId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [accessRequests.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -147,3 +176,5 @@ export type Action = typeof actions.$inferSelect;
 export type NewAction = typeof actions.$inferInsert;
 export type UserAction = typeof userActions.$inferSelect;
 export type NewUserAction = typeof userActions.$inferInsert;
+export type AccessRequest = typeof accessRequests.$inferSelect;
+export type NewAccessRequest = typeof accessRequests.$inferInsert;

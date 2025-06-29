@@ -10,6 +10,7 @@ import { UserActionsModule } from './user-actions/user-actions.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { StorageModule } from './storage/storage.module';
+import { AccessRequestsModule } from './access-requests/access-requests.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { StorageModule } from './storage/storage.module';
     CampaignsModule,
     ChallengesModule,
     StorageModule,
+    AccessRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
