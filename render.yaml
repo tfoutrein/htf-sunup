@@ -23,6 +23,16 @@ services:
         fromDatabase:
           name: htf-sunup-postgres
           property: connectionString
+      - key: S3_ENDPOINT
+        value: https://b2y8.par5.idrivee2-11.com
+      - key: S3_REGION
+        value: eu-west-1
+      - key: S3_ACCESS_KEY_ID
+        value: PBL16uf72p6Ohufxizs5
+      - key: S3_SECRET_ACCESS_KEY
+        value: CZ4kHYSS2HWIyKMf0VvRXDmJPdYAl47QJf4tGkze
+      - key: S3_BUCKET_NAME
+        value: htf-sunup-storage
     healthCheckPath: /health
 
 databases:

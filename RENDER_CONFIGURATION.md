@@ -21,6 +21,14 @@ Le fichier `render.yaml` est configuré pour déployer automatiquement :
 - `PASSWORD_SALT_ROUNDS` : 12
 - `DATABASE_URL` : lié automatiquement à la base PostgreSQL
 
+#### Variables de stockage S3 (iDrive e2) :
+
+- `S3_ENDPOINT` : https://b2y8.par5.idrivee2-11.com
+- `S3_REGION` : eu-west-1
+- `S3_ACCESS_KEY_ID` : PBL16uf72p6Ohufxizs5
+- `S3_SECRET_ACCESS_KEY` : CZ4kHYSS2HWIyKMf0VvRXDmJPdYAl47QJf4tGkze
+- `S3_BUCKET_NAME` : htf-sunup-storage
+
 ### 3. Configuration Base de Données
 
 #### PostgreSQL Configuration :
@@ -30,7 +38,23 @@ Le fichier `render.yaml` est configuré pour déployer automatiquement :
 - **Utilisateur** : htf_sunup_user
 - **Plan** : Free (développement)
 
-### 4. Migration de Base de Données
+### 4. Configuration Stockage de Fichiers
+
+#### Service de stockage S3 (iDrive e2) :
+
+- **Endpoint** : b2y8.par5.idrivee2-11.com
+- **Bucket** : htf-sunup-storage
+- **Usage** : Stockage des preuves d'actions des utilisateurs
+
+#### ⚠️ IMPORTANT - Configuration du Bucket :
+
+Avant le déploiement, s'assurer que le bucket `htf-sunup-storage` existe sur iDrive e2 :
+
+1. Se connecter au dashboard iDrive e2
+2. Créer le bucket `htf-sunup-storage` si nécessaire
+3. Configurer les permissions publiques en lecture
+
+### 5. Migration de Base de Données
 
 #### Processus de Migration :
 
@@ -59,6 +83,8 @@ Le fichier `render.yaml` est configuré pour déployer automatiquement :
 - [ ] Tester les scripts de build et start localement
 - [ ] Vérifier la configuration des variables d'environnement
 - [ ] S'assurer que le health check fonctionne
+- [ ] ⚠️ Créer le bucket S3 `htf-sunup-storage` sur iDrive e2
+- [ ] Configurer les permissions du bucket S3
 
 ### Commandes de Test Local :
 
@@ -78,6 +104,7 @@ pnpm start:prod
 
 - [ ] Vérifier que le service backend démarre correctement
 - [ ] Vérifier que la base de données est accessible
+- [ ] Vérifier la connectivité au stockage S3 (iDrive e2)
 - [ ] Tester les endpoints principaux
 - [ ] Vérifier les logs pour des erreurs
 
@@ -152,6 +179,16 @@ LOG_LEVEL=info
 1. Vérifier `CORS_ORIGIN` dans les variables d'environnement
 2. S'assurer que l'URL du frontend est correcte
 3. Redéployer si nécessaire
+
+### Erreur de Stockage S3
+
+**Problème** : Impossible d'uploader des fichiers
+**Solution** :
+
+1. Vérifier que le bucket `htf-sunup-storage` existe sur iDrive e2
+2. Vérifier les variables S3 : `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
+3. Vérifier les permissions du bucket
+4. Tester la connectivité depuis les logs Render
 
 ## 📊 Monitoring et Logs
 
