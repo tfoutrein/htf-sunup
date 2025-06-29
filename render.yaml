@@ -33,7 +33,7 @@ services:
         value: CZ4kHYSS2HWIyKMf0VvRXDmJPdYAl47QJf4tGkze
       - key: S3_BUCKET_NAME
         value: htf-sunup-storage
-    healthCheckPath: /health
+    healthCheckPath: /api/health
 
 databases:
   - name: htf-sunup-postgres

@@ -70,9 +70,9 @@ Avant le déploiement, s'assurer que le bucket `htf-sunup-storage` existe sur iD
 - `actions` : Actions à réaliser
 - `user_actions` : Actions complétées par les utilisateurs
 
-### 5. Health Check
+### 6. Health Check
 
-- **Endpoint** : `/health`
+- **Endpoint** : `/api/health`
 - **Vérification** : Disponibilité de l'API
 
 ## 📋 Checklist de Déploiement
@@ -225,13 +225,13 @@ Après déploiement :
 - **Frontend** : `https://htf-sunup-frontend.vercel.app`
 - **API Backend** : `https://htf-sunup-backend.onrender.com`
 - **API Documentation** : `https://htf-sunup-backend.onrender.com/api`
-- **Health Check** : `https://htf-sunup-backend.onrender.com/health`
+- **Health Check** : `https://htf-sunup-backend.onrender.com/api/health`
 
 ## ✅ Validation Post-Déploiement
 
 ### Tests à effectuer :
 
-1. **Health Check** : `GET /health`
+1. **Health Check** : `GET /api/health`
 2. **API Documentation** : Accès à `/api`
 3. **Authentification** : `POST /auth/login`
 4. **Endpoints principaux** :
@@ -243,7 +243,7 @@ Après déploiement :
 
 ```bash
 # Health check
-curl https://htf-sunup-backend.onrender.com/health
+curl https://htf-sunup-backend.onrender.com/api/health
 
 # API documentation
 curl https://htf-sunup-backend.onrender.com/api
