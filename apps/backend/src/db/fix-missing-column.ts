@@ -1,5 +1,5 @@
-const { drizzle: drizzleClient } = require('drizzle-orm/postgres-js');
-const postgresClient = require('postgres');
+const { drizzle: drizzleFixClient } = require('drizzle-orm/postgres-js');
+const postgresFixClient = require('postgres');
 
 async function addMissingTemporaryPasswordColumn() {
   const connectionString = process.env.DATABASE_URL;
@@ -12,7 +12,7 @@ async function addMissingTemporaryPasswordColumn() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = postgresClient(connectionString, {
+  const sql = postgresFixClient(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
