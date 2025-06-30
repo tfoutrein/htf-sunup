@@ -15,6 +15,13 @@
       "when": 1751216522250,
       "tag": "0001_vengeful_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751284014530,
+      "tag": "0002_swift_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

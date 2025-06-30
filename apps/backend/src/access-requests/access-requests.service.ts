@@ -116,6 +116,7 @@ export class AccessRequestsService {
   async approve(
     id: number,
     reviewerId: number,
+    temporaryPassword: string,
     reviewComment?: string,
   ): Promise<AccessRequest> {
     const accessRequest = await this.findById(id);
@@ -131,6 +132,7 @@ export class AccessRequestsService {
         reviewedBy: reviewerId,
         reviewedAt: new Date(),
         reviewComment,
+        temporaryPassword,
         updatedAt: new Date(),
       })
       .where(eq(accessRequests.id, id))
@@ -172,7 +174,10 @@ export class AccessRequestsService {
       .where(
         and(
           eq(accessRequests.requestedManagerId, managerId),
-          eq(accessRequests.status, 'pending'),
+          or(
+            eq(accessRequests.status, 'pending'),
+            eq(accessRequests.status, 'approved'),
+          ),
         ),
       )
       .orderBy(desc(accessRequests.createdAt));
@@ -190,7 +195,10 @@ export class AccessRequestsService {
             eq(accessRequests.requestedManagerId, managerId),
             isNull(accessRequests.requestedManagerId),
           ),
-          eq(accessRequests.status, 'pending'),
+          or(
+            eq(accessRequests.status, 'pending'),
+            eq(accessRequests.status, 'approved'),
+          ),
         ),
       )
       .orderBy(desc(accessRequests.createdAt));
@@ -213,7 +221,10 @@ export class AccessRequestsService {
       .where(
         and(
           eq(accessRequests.requestedManagerId, managerId),
-          eq(accessRequests.status, 'pending'),
+          or(
+            eq(accessRequests.status, 'pending'),
+            eq(accessRequests.status, 'approved'),
+          ),
         ),
       )
       .orderBy(desc(accessRequests.createdAt));
@@ -248,7 +259,10 @@ export class AccessRequestsService {
                 eq(accessRequests.requestedManagerId, id),
               ),
             ),
-            eq(accessRequests.status, 'pending'),
+            or(
+              eq(accessRequests.status, 'pending'),
+              eq(accessRequests.status, 'approved'),
+            ),
           ),
         )
         .orderBy(desc(accessRequests.createdAt));

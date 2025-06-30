@@ -1,0 +1,1 @@
+ALTER TABLE "access_requests" ADD COLUMN "temporary_password" varchar(255);

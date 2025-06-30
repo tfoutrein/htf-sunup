@@ -90,13 +90,18 @@ export const accessRequests = pgTable('access_requests', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  requestedRole: varchar('requested_role', { length: 50 }).notNull().default('fbo'), // Role requested by user
-  requestedManagerId: integer('requested_manager_id').references(() => users.id), // Manager selected by user
+  requestedRole: varchar('requested_role', { length: 50 })
+    .notNull()
+    .default('fbo'), // Role requested by user
+  requestedManagerId: integer('requested_manager_id').references(
+    () => users.id,
+  ), // Manager selected by user
   status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'approved' | 'rejected'
   message: text('message'), // Optional message from requester
   reviewedBy: integer('reviewed_by').references(() => users.id), // Who reviewed the request
   reviewedAt: timestamp('reviewed_at'),
   reviewComment: text('review_comment'), // Comment from reviewer
+  temporaryPassword: varchar('temporary_password', { length: 255 }), // Temporary password for approved users
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

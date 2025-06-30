@@ -81,21 +81,35 @@ export class AccessRequestsController {
       );
     }
 
+    // Générer un mot de passe temporaire aléatoire
+    const temporaryPassword = this.generateTemporaryPassword();
+
     const approvedRequest = await this.accessRequestsService.approve(
       +id,
       user.id,
+      temporaryPassword,
       body.reviewComment,
     );
 
     await this.usersService.create({
       name: approvedRequest.name,
       email: approvedRequest.email,
-      password: await this.authService.hashPassword('TemporaryPassword123!'),
+      password: await this.authService.hashPassword(temporaryPassword),
       role: approvedRequest.requestedRole!,
       managerId: approvedRequest.requestedManagerId,
     });
 
     return approvedRequest;
+  }
+
+  private generateTemporaryPassword(): string {
+    const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
   }
 
   @UseGuards(JwtAuthGuard)

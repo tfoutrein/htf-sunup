@@ -17,6 +17,7 @@ import {
   Select,
   SelectItem,
   useDisclosure,
+  Input,
 } from '@heroui/react';
 import { addToast } from '@heroui/toast';
 import { useAuth } from '@/app/providers';
@@ -32,6 +33,7 @@ interface AccessRequest {
   reviewedBy?: number;
   reviewedAt?: string;
   reviewComment?: string;
+  temporaryPassword?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +70,12 @@ export default function ManageAccessRequestsPage() {
   >('approve');
   const [currentRequestName, setCurrentRequestName] = useState<string>('');
   const [currentRequestId, setCurrentRequestId] = useState<number | null>(null);
+  const [passwordVisibility, setPasswordVisibility] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'pending' | 'approved' | 'rejected'
+  >('all');
 
   useEffect(() => {
     // Récupérer le token côté client uniquement
@@ -305,6 +313,87 @@ export default function ManageAccessRequestsPage() {
     }
   };
 
+  const togglePasswordVisibility = (requestId: number) => {
+    setPasswordVisibility((prev) => ({
+      ...prev,
+      [requestId]: !prev[requestId],
+    }));
+  };
+
+  const copyPasswordToClipboard = (password: string, requestName: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(password)
+        .then(() => {
+          addToast({
+            title: 'Copié',
+            description: `Mot de passe de ${requestName} copié dans le presse-papiers`,
+            color: 'success',
+          });
+        })
+        .catch(() => {
+          addToast({
+            title: 'Erreur',
+            description: 'Impossible de copier le mot de passe',
+            color: 'danger',
+          });
+        });
+    } else {
+      // Fallback pour les navigateurs qui ne supportent pas l'API Clipboard
+      const textArea = document.createElement('textarea');
+      textArea.value = password;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        addToast({
+          title: 'Copié',
+          description: `Mot de passe de ${requestName} copié dans le presse-papiers`,
+          color: 'success',
+        });
+      } catch (err) {
+        addToast({
+          title: 'Erreur',
+          description: 'Impossible de copier le mot de passe',
+          color: 'danger',
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const filterAndSortRequests = (requests: AccessRequestWithManager[]) => {
+    let filtered = requests;
+
+    // Filtrer par statut
+    if (statusFilter !== 'all') {
+      filtered = requests.filter((request) => request.status === statusFilter);
+    }
+
+    // Trier avec les demandes en attente en premier
+    return filtered.sort((a, b) => {
+      // Priorité: pending > approved > rejected
+      const statusOrder = { pending: 0, approved: 1, rejected: 2 };
+      const statusA = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
+      const statusB = statusOrder[b.status as keyof typeof statusOrder] ?? 3;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // Si même statut, trier par date de création (plus récent en premier)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  };
+
+  const getFilteredDirectRequests = () => filterAndSortRequests(directRequests);
+  const getFilteredTeamRequests = () => filterAndSortRequests(teamRequests);
+
+  const getStatusCount = (status: string) => {
+    const allRequests = [...directRequests, ...teamRequests];
+    return allRequests.filter((request) => request.status === status).length;
+  };
+
   // Afficher un spinner pendant le chargement de l'authentification
   if (authLoading) {
     return (
@@ -348,29 +437,68 @@ export default function ManageAccessRequestsPage() {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             Gestion des demandes d'accès
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             {user.role === 'marraine'
               ? "Gérez les demandes d'accès pour vous et votre équipe"
               : "Gérez les demandes d'accès pour vous et votre équipe"}
           </p>
+
+          {/* Boutons de filtre */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={statusFilter === 'all' ? 'solid' : 'bordered'}
+              color={statusFilter === 'all' ? 'primary' : 'default'}
+              onPress={() => setStatusFilter('all')}
+            >
+              Toutes ({directRequests.length + teamRequests.length})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === 'pending' ? 'solid' : 'bordered'}
+              color={statusFilter === 'pending' ? 'warning' : 'default'}
+              onPress={() => setStatusFilter('pending')}
+            >
+              En attente ({getStatusCount('pending')})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === 'approved' ? 'solid' : 'bordered'}
+              color={statusFilter === 'approved' ? 'success' : 'default'}
+              onPress={() => setStatusFilter('approved')}
+            >
+              Approuvées ({getStatusCount('approved')})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === 'rejected' ? 'solid' : 'bordered'}
+              color={statusFilter === 'rejected' ? 'danger' : 'default'}
+              onPress={() => setStatusFilter('rejected')}
+            >
+              Rejetées ({getStatusCount('rejected')})
+            </Button>
+          </div>
         </div>
 
         {/* Demandes directes */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-800">
-            Demandes qui me sont adressées ({directRequests.length})
+            Demandes qui me sont adressées ({getFilteredDirectRequests().length}
+            )
           </h2>
 
-          {directRequests.length === 0 ? (
+          {getFilteredDirectRequests().length === 0 ? (
             <Card>
               <CardBody className="text-center p-6">
                 <p className="text-gray-600">
-                  Aucune demande d'accès directe en attente
+                  {statusFilter === 'all'
+                    ? "Aucune demande d'accès directe"
+                    : `Aucune demande d'accès directe ${statusFilter === 'pending' ? 'en attente' : statusFilter === 'approved' ? 'approuvée' : 'rejetée'}`}
                 </p>
               </CardBody>
             </Card>
           ) : (
-            directRequests.map((request) => (
+            getFilteredDirectRequests().map((request) => (
               <Card
                 key={`direct-${request.id}`}
                 className="w-full border-l-4 border-l-blue-500"
@@ -416,6 +544,54 @@ export default function ManageAccessRequestsPage() {
                       </div>
                     )}
 
+                    {request.status === 'approved' &&
+                      request.temporaryPassword && (
+                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                          <span className="font-medium text-sm text-green-800">
+                            Mot de passe temporaire:
+                          </span>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type={
+                                passwordVisibility[request.id]
+                                  ? 'text'
+                                  : 'password'
+                              }
+                              value={request.temporaryPassword}
+                              readOnly
+                              size="sm"
+                              className="flex-1"
+                              classNames={{
+                                input: 'text-sm font-mono',
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              variant="light"
+                              color="primary"
+                              onPress={() =>
+                                togglePasswordVisibility(request.id)
+                              }
+                            >
+                              {passwordVisibility[request.id] ? '👁️' : '👁️‍🗨️'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              color="success"
+                              variant="flat"
+                              onPress={() =>
+                                copyPasswordToClipboard(
+                                  request.temporaryPassword!,
+                                  request.name,
+                                )
+                              }
+                            >
+                              📋 Copier
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                     {request.status === 'pending' && (
                       <>
                         <Divider />
@@ -453,102 +629,167 @@ export default function ManageAccessRequestsPage() {
         </div>
 
         {/* Demandes pour l'équipe */}
-        {teamRequests.length > 0 && (
+        {(teamRequests.length > 0 || statusFilter !== 'all') && (
           <div className="space-y-4 mt-8">
             <h2 className="text-xl font-semibold text-gray-800">
-              Demandes pour mon équipe ({teamRequests.length})
+              Demandes pour mon équipe ({getFilteredTeamRequests().length})
             </h2>
 
-            {teamRequests.map((request) => (
-              <Card
-                key={`team-${request.id}`}
-                className="w-full border-l-4 border-l-green-500"
-              >
-                <CardHeader className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <h3 className="font-semibold">{request.name}</h3>
-                      <p className="text-sm text-gray-600">{request.email}</p>
-                      {request.requestedManager && (
-                        <p className="text-xs text-green-600 font-medium">
-                          → Demande pour: {request.requestedManager.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Chip color={getStatusColor(request.status)} variant="flat">
-                    {getStatusText(request.status)}
-                  </Chip>
-                </CardHeader>
-
-                <CardBody className="pt-0">
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {getFilteredTeamRequests().length === 0 ? (
+              <Card>
+                <CardBody className="text-center p-6">
+                  <p className="text-gray-600">
+                    {statusFilter === 'all'
+                      ? "Aucune demande d'accès pour l'équipe"
+                      : `Aucune demande d'accès pour l'équipe ${statusFilter === 'pending' ? 'en attente' : statusFilter === 'approved' ? 'approuvée' : 'rejetée'}`}
+                  </p>
+                </CardBody>
+              </Card>
+            ) : (
+              getFilteredTeamRequests().map((request) => (
+                <Card
+                  key={`team-${request.id}`}
+                  className="w-full border-l-4 border-l-green-500"
+                >
+                  <CardHeader className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                       <div>
-                        <span className="font-medium">Rôle demandé:</span>{' '}
-                        {getRoleText(request.requestedRole)}
-                      </div>
-                      <div>
-                        <span className="font-medium">Date de demande:</span>{' '}
-                        {new Date(request.createdAt).toLocaleDateString(
-                          'fr-FR',
+                        <h3 className="font-semibold">{request.name}</h3>
+                        <p className="text-sm text-gray-600">{request.email}</p>
+                        {request.requestedManager && (
+                          <p className="text-xs text-green-600 font-medium">
+                            → Demande pour: {request.requestedManager.name}
+                          </p>
                         )}
                       </div>
                     </div>
+                    <Chip color={getStatusColor(request.status)} variant="flat">
+                      {getStatusText(request.status)}
+                    </Chip>
+                  </CardHeader>
 
-                    {request.message && (
-                      <div>
-                        <span className="font-medium text-sm">Message:</span>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {request.message}
-                        </p>
-                      </div>
-                    )}
-
-                    {request.status === 'pending' && (
-                      <>
-                        <Divider />
-                        <div className="flex gap-3 justify-end">
-                          <Button
-                            color="danger"
-                            variant="light"
-                            onPress={() => openModal(request, 'reject')}
-                          >
-                            Rejeter
-                          </Button>
-                          {user?.role === 'marraine' && (
-                            <Button
-                              color="warning"
-                              variant="light"
-                              onPress={() => openModal(request, 'reassign')}
-                            >
-                              Réassigner
-                            </Button>
-                          )}
-                          <Button
-                            color="success"
-                            onPress={() => openModal(request, 'approve')}
-                          >
-                            Approuver
-                          </Button>
+                  <CardBody className="pt-0">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Rôle demandé:</span>{' '}
+                          {getRoleText(request.requestedRole)}
                         </div>
-                      </>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+                        <div>
+                          <span className="font-medium">Date de demande:</span>{' '}
+                          {new Date(request.createdAt).toLocaleDateString(
+                            'fr-FR',
+                          )}
+                        </div>
+                      </div>
+
+                      {request.message && (
+                        <div>
+                          <span className="font-medium text-sm">Message:</span>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {request.message}
+                          </p>
+                        </div>
+                      )}
+
+                      {request.status === 'approved' &&
+                        request.temporaryPassword && (
+                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                            <span className="font-medium text-sm text-green-800">
+                              Mot de passe temporaire:
+                            </span>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Input
+                                type={
+                                  passwordVisibility[request.id]
+                                    ? 'text'
+                                    : 'password'
+                                }
+                                value={request.temporaryPassword}
+                                readOnly
+                                size="sm"
+                                className="flex-1"
+                                classNames={{
+                                  input: 'text-sm font-mono',
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="light"
+                                color="primary"
+                                onPress={() =>
+                                  togglePasswordVisibility(request.id)
+                                }
+                              >
+                                {passwordVisibility[request.id] ? '👁️' : '👁️‍🗨️'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                color="success"
+                                variant="flat"
+                                onPress={() =>
+                                  copyPasswordToClipboard(
+                                    request.temporaryPassword!,
+                                    request.name,
+                                  )
+                                }
+                              >
+                                📋 Copier
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                      {request.status === 'pending' && (
+                        <>
+                          <Divider />
+                          <div className="flex gap-3 justify-end">
+                            <Button
+                              color="danger"
+                              variant="light"
+                              onPress={() => openModal(request, 'reject')}
+                            >
+                              Rejeter
+                            </Button>
+                            {user?.role === 'marraine' && (
+                              <Button
+                                color="warning"
+                                variant="light"
+                                onPress={() => openModal(request, 'reassign')}
+                              >
+                                Réassigner
+                              </Button>
+                            )}
+                            <Button
+                              color="success"
+                              onPress={() => openModal(request, 'approve')}
+                            >
+                              Approuver
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              ))
+            )}
           </div>
         )}
 
         {/* Message si aucune demande */}
-        {directRequests.length === 0 && teamRequests.length === 0 && (
-          <Card className="mt-6">
-            <CardBody className="text-center p-8">
-              <p className="text-gray-600">Aucune demande d'accès en attente</p>
-            </CardBody>
-          </Card>
-        )}
+        {getFilteredDirectRequests().length === 0 &&
+          getFilteredTeamRequests().length === 0 && (
+            <Card className="mt-6">
+              <CardBody className="text-center p-8">
+                <p className="text-gray-600">
+                  {statusFilter === 'all'
+                    ? "Aucune demande d'accès"
+                    : `Aucune demande d'accès ${statusFilter === 'pending' ? 'en attente' : statusFilter === 'approved' ? 'approuvée' : 'rejetée'}`}
+                </p>
+              </CardBody>
+            </Card>
+          )}
       </div>
 
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
