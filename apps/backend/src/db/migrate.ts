@@ -186,11 +186,28 @@ async function runMigrations() {
           "reviewed_by" integer,
           "reviewed_at" timestamp,
           "review_comment" text,
+          "temporary_password" varchar(255),
           "created_at" timestamp DEFAULT now() NOT NULL,
           "updated_at" timestamp DEFAULT now() NOT NULL,
           CONSTRAINT "access_requests_email_unique" UNIQUE("email")
         );
       `;
+    }
+
+    // Vérifier et ajouter la colonne temporary_password si elle n'existe pas
+    console.log('🔍 Checking for temporary_password column...');
+    const temporaryPasswordExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'access_requests' AND column_name = 'temporary_password'
+    `;
+
+    if (temporaryPasswordExists.length === 0) {
+      console.log('📝 Adding missing temporary_password column...');
+      await sql`ALTER TABLE access_requests ADD COLUMN temporary_password varchar(255);`;
+      console.log('✅ Added temporary_password column successfully');
+    } else {
+      console.log('✅ temporary_password column already exists');
     }
 
     // Vérifier et ajouter les colonnes manquantes dans la table actions
