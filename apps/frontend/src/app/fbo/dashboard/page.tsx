@@ -396,55 +396,119 @@ export default function FBODashboard() {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Gains de campagne */}
-          {campaignStats && (
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 w-full sm:w-auto">
-              <div className="flex items-center gap-2">
+      {/* Gains de campagne - Sticky sur mobile */}
+      {campaignStats && (
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-orange-400 to-amber-400 border-t border-orange-300/30 sm:hidden">
+          <div className="max-w-4xl mx-auto p-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 justify-center">
                 <span className="text-yellow-200 text-lg">💰</span>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center -space-x-1">
                       <Counter
                         value={Math.floor(campaignStats.stats.totalEarnedEuros)}
                         places={[10, 1]}
-                        fontSize={24}
-                        padding={4}
+                        fontSize={20}
+                        padding={3}
                         gap={0}
                         textColor="white"
                         fontWeight={800}
-                        gradientHeight={6}
+                        gradientHeight={5}
                         gradientFrom="transparent"
                         gradientTo="transparent"
                       />
-                      <span className="text-white font-bold text-2xl">.</span>
+                      <span className="text-white font-bold text-xl">.</span>
                       <Counter
                         value={Math.floor(
                           (campaignStats.stats.totalEarnedEuros * 100) % 100,
                         )}
                         places={[10, 1]}
-                        fontSize={24}
-                        padding={4}
+                        fontSize={20}
+                        padding={3}
                         gap={0}
                         textColor="white"
                         fontWeight={800}
-                        gradientHeight={6}
+                        gradientHeight={5}
                         gradientFrom="transparent"
                         gradientTo="transparent"
                       />
                     </div>
-                    <span className="text-white font-bold text-2xl">€</span>
+                    <span className="text-white font-bold text-xl">€</span>
                   </div>
-                  <span className="text-orange-100 text-xs">
+                  <span className="text-orange-100 text-xs text-center">
                     sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
                     possible
                   </span>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Gains de campagne - Desktop dans le header */}
+      {campaignStats && (
+        <div className="hidden sm:block">
+          <div className="bg-gradient-to-r from-orange-400 to-amber-400 text-white border-t border-orange-300/30">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-4">
+              <div className="flex justify-end">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-yellow-200 text-lg">💰</span>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center -space-x-1">
+                          <Counter
+                            value={Math.floor(
+                              campaignStats.stats.totalEarnedEuros,
+                            )}
+                            places={[10, 1]}
+                            fontSize={24}
+                            padding={4}
+                            gap={0}
+                            textColor="white"
+                            fontWeight={800}
+                            gradientHeight={6}
+                            gradientFrom="transparent"
+                            gradientTo="transparent"
+                          />
+                          <span className="text-white font-bold text-2xl">
+                            .
+                          </span>
+                          <Counter
+                            value={Math.floor(
+                              (campaignStats.stats.totalEarnedEuros * 100) %
+                                100,
+                            )}
+                            places={[10, 1]}
+                            fontSize={24}
+                            padding={4}
+                            gap={0}
+                            textColor="white"
+                            fontWeight={800}
+                            gradientHeight={6}
+                            gradientFrom="transparent"
+                            gradientTo="transparent"
+                          />
+                        </div>
+                        <span className="text-white font-bold text-2xl">€</span>
+                      </div>
+                      <span className="text-orange-100 text-xs">
+                        sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
+                        possible
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         {/* Progress Section - Mobile First */}
