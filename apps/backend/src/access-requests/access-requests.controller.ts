@@ -94,7 +94,7 @@ export class AccessRequestsController {
     await this.usersService.create({
       name: approvedRequest.name,
       email: approvedRequest.email,
-      password: await this.authService.hashPassword(temporaryPassword),
+      password: temporaryPassword,
       role: approvedRequest.requestedRole!,
       managerId: approvedRequest.requestedManagerId,
     });
