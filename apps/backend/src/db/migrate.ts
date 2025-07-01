@@ -78,6 +78,7 @@ async function runMigrations() {
           "date" date NOT NULL,
           "title" varchar(255) NOT NULL,
           "description" text,
+          "value_in_euro" decimal(10,2) DEFAULT 0.50 NOT NULL,
           "created_at" timestamp DEFAULT now() NOT NULL,
           "updated_at" timestamp DEFAULT now() NOT NULL
         );
@@ -130,7 +131,6 @@ async function runMigrations() {
           "type" varchar(50) NOT NULL,
           "created_at" timestamp DEFAULT now() NOT NULL,
           "updated_at" timestamp DEFAULT now() NOT NULL,
-          "points_value" integer DEFAULT 10 NOT NULL,
           "challenge_id" integer NOT NULL,
           "order" integer DEFAULT 1 NOT NULL
         );
@@ -226,17 +226,33 @@ async function runMigrations() {
       console.log('✅ Added challenge_id column successfully');
     }
 
-    // Vérifier si points_value existe
+    // Supprimer la colonne points_value si elle existe (migration vers euro-based system)
     const pointsValueExists = await sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'actions' AND column_name = 'points_value'
     `;
 
-    if (pointsValueExists.length === 0) {
-      console.log('📝 Adding points_value column to actions table...');
-      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10 NOT NULL;`;
-      console.log('✅ Added points_value column successfully');
+    if (pointsValueExists.length > 0) {
+      console.log(
+        '📝 Removing obsolete points_value column from actions table...',
+      );
+      await sql`ALTER TABLE actions DROP COLUMN IF EXISTS points_value CASCADE;`;
+      console.log('✅ Removed points_value column successfully');
+    }
+
+    // Vérifier et ajouter la colonne value_in_euro dans la table challenges
+    console.log('🔍 Checking for value_in_euro column in challenges table...');
+    const valueInEuroExists = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'challenges' AND column_name = 'value_in_euro'
+    `;
+
+    if (valueInEuroExists.length === 0) {
+      console.log('📝 Adding value_in_euro column to challenges table...');
+      await sql`ALTER TABLE challenges ADD COLUMN value_in_euro DECIMAL(10,2) NOT NULL DEFAULT 0.50;`;
+      console.log('✅ Added value_in_euro column successfully');
     }
 
     // Vérifier si order existe
@@ -440,10 +456,10 @@ async function runMigrations() {
       WHERE table_name = 'actions' AND column_name = 'challenge_id';
     `;
 
-    const finalCheckPointsValue = await sql`
+    const finalCheckValueInEuro = await sql`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'actions' AND column_name = 'points_value';
+      WHERE table_name = 'challenges' AND column_name = 'value_in_euro';
     `;
 
     const finalCheckOrder = await sql`
@@ -460,12 +476,12 @@ async function runMigrations() {
       console.log('✅ Added challenge_id column successfully');
     }
 
-    if (finalCheckPointsValue.length === 0) {
+    if (finalCheckValueInEuro.length === 0) {
       console.log(
-        '📝 Final attempt: Adding points_value column to actions table...',
+        '📝 Final attempt: Adding value_in_euro column to challenges table...',
       );
-      await sql`ALTER TABLE actions ADD COLUMN points_value INTEGER DEFAULT 10 NOT NULL;`;
-      console.log('✅ Added points_value column successfully');
+      await sql`ALTER TABLE challenges ADD COLUMN value_in_euro DECIMAL(10,2) NOT NULL DEFAULT 0.50;`;
+      console.log('✅ Added value_in_euro column successfully');
     }
 
     if (finalCheckOrder.length === 0) {
@@ -476,10 +492,10 @@ async function runMigrations() {
 
     if (
       finalCheckChallengeId.length > 0 &&
-      finalCheckPointsValue.length > 0 &&
+      finalCheckValueInEuro.length > 0 &&
       finalCheckOrder.length > 0
     ) {
-      console.log('✅ Legacy schema is up to date');
+      console.log('✅ Schema is up to date');
     }
 
     console.log('🎉 All migrations completed successfully');
