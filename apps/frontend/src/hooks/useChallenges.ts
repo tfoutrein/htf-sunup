@@ -35,6 +35,14 @@ export function useTodayChallenges() {
   });
 }
 
+export function useNextChallenge(campaignId?: number) {
+  return useQuery({
+    queryKey: ['challenges', 'next', { campaignId }],
+    queryFn: () => campaignService.getNextChallenge(campaignId),
+    staleTime: 2 * 60 * 1000, // 2 minutes for next challenge
+  });
+}
+
 export function useChallenge(id: number) {
   return useQuery({
     queryKey: challengeKeys.detail(id),

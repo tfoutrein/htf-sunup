@@ -123,6 +123,7 @@ export const API_ENDPOINTS = {
   // Challenges
   CHALLENGES: '/challenges',
   CHALLENGES_TODAY: '/challenges/today',
+  CHALLENGES_NEXT: '/challenges/next',
   CHALLENGES_BY_ID: (id: number) => `/challenges/${id}`,
   CHALLENGES_WITH_ACTIONS: (id: number) => `/challenges/${id}/actions`,
 } as const;

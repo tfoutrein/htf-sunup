@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 
-const AURORA_PAGES = ['/', '/login'];
+const AURORA_PAGES = ['/', '/login', '/fbo/dashboard'];
 
 export function useAuroraPages() {
   const pathname = usePathname();

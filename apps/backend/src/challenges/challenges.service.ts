@@ -179,4 +179,70 @@ export class ChallengesService {
     const today = new Date().toISOString().split('T')[0];
     return this.findByDate(today);
   }
+
+  async getNextChallenge(campaignId?: number): Promise<Challenge | null> {
+    const today = new Date().toISOString().split('T')[0];
+
+    console.log('🐛 getNextChallenge DEBUG:', {
+      today,
+      campaignId,
+      query: 'challenges from active campaigns, date >= today',
+    });
+
+    // Construire les conditions WHERE
+    const whereConditions = [
+      eq(campaigns.archived, false),
+      eq(campaigns.status, 'active'),
+    ];
+
+    if (campaignId) {
+      whereConditions.push(eq(challenges.campaignId, campaignId));
+    }
+
+    try {
+      // Récupérer tous les défis des campagnes actives, triés par date
+      const allChallenges = await this.db.db
+        .select({
+          id: challenges.id,
+          campaignId: challenges.campaignId,
+          date: challenges.date,
+          title: challenges.title,
+          description: challenges.description,
+          valueInEuro: challenges.valueInEuro,
+          createdAt: challenges.createdAt,
+          updatedAt: challenges.updatedAt,
+        })
+        .from(challenges)
+        .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+        .where(and(...whereConditions))
+        .orderBy(challenges.date);
+
+      console.log('🐛 getNextChallenge ALL CHALLENGES:', {
+        count: allChallenges.length,
+        challenges: allChallenges.map((c) => ({
+          id: c.id,
+          date: c.date,
+          campaignId: c.campaignId,
+          title: c.title,
+        })),
+      });
+
+      // Filtrer pour obtenir le prochain défi (date > aujourd'hui, pas >=)
+      const nextChallenges = allChallenges.filter(
+        (challenge) => challenge.date > today,
+      );
+
+      console.log('🐛 getNextChallenge FILTERED:', {
+        today,
+        totalChallenges: allChallenges.length,
+        futureChallenges: nextChallenges.length,
+        next: nextChallenges.length > 0 ? nextChallenges[0] : null,
+      });
+
+      return nextChallenges.length > 0 ? nextChallenges[0] : null;
+    } catch (error) {
+      console.error('🐛 getNextChallenge ERROR:', error);
+      throw error;
+    }
+  }
 }

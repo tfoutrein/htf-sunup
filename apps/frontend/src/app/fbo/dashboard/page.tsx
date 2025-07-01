@@ -17,7 +17,7 @@ import {
   Input,
   Counter,
 } from '@/components/ui';
-import { Chip, useDisclosure } from '@heroui/react';
+import { Chip, useDisclosure, Accordion, AccordionItem } from '@heroui/react';
 import {
   SunIcon,
   CheckCircleIcon,
@@ -30,10 +30,11 @@ import {
 import { getUser, getToken, logout } from '@/utils/auth';
 import { useActiveCampaigns } from '@/hooks/useCampaigns';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
-import { useTodayChallenges } from '@/hooks/useChallenges';
+import { useTodayChallenges, useNextChallenge } from '@/hooks/useChallenges';
 import { useChallengeActions } from '@/hooks/useActions';
 import { Challenge, Action, Campaign } from '@/types/campaigns';
 import ConfettiExplosion from 'react-confetti-explosion';
+import AuroraBackground from '@/components/ui/AuroraBackground';
 
 interface User {
   id: number;
@@ -136,7 +137,13 @@ export default function FBODashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const [isMoneyUpdated, setIsMoneyUpdated] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [nextChallengeAnimated, setNextChallengeAnimated] = useState(false);
+  const [showNextChallengeEmphasis, setShowNextChallengeEmphasis] =
+    useState(false);
+  const [completedActionsCollapsed, setCompletedActionsCollapsed] =
+    useState(true);
   const previousEarnedAmountRef = useRef<number | null>(null);
+  const previousShouldShowNextRef = useRef<boolean>(false);
 
   // TanStack Query hooks
   const { data: activeCampaigns = [], isLoading: campaignsLoading } =
@@ -148,8 +155,47 @@ export default function FBODashboard() {
   const activeCampaign = activeCampaigns[0] || null;
   const todayChallenge = todayChallenges[0] || null;
 
+  // Next challenge hook - only fetch if we have an active campaign
+  const { data: nextChallenge, isLoading: nextChallengeLoading } =
+    useNextChallenge(activeCampaign?.id);
+
+  // Get today's date string
+  const today = new Date().toISOString().split('T')[0];
+
   const { data: challengeActions = [], isLoading: actionsLoading } =
     useChallengeActions(todayChallenge?.id || 0);
+
+  // Helper functions moved here to be accessible
+  const isActionCompleted = (action: Action) => {
+    return userActions.some(
+      (userAction) => userAction.actionId === action.id && userAction.completed,
+    );
+  };
+
+  const getUserAction = (action: Action) => {
+    return userActions.find((userAction) => userAction.actionId === action.id);
+  };
+
+  // Check if all today's actions are completed
+  const allTodayActionsCompleted = () => {
+    if (!challengeActions.length) return false;
+    return challengeActions.every((action) => isActionCompleted(action));
+  };
+
+  const shouldShowNextChallenges = allTodayActionsCompleted() && nextChallenge;
+  // Show next challenges only when today's challenge is 100% complete
+
+  // DEBUG: Simplified logging
+  if (nextChallenge || activeCampaign) {
+    console.log('🐛 DEBUG Next Challenges:', {
+      activeCampaign: activeCampaign?.id,
+      nextChallenge: nextChallenge?.id,
+      shouldShow: shouldShowNextChallenges,
+    });
+  }
+
+  const { data: nextChallengeActions = [], isLoading: nextActionsLoading } =
+    useChallengeActions(nextChallenge?.id || 0);
 
   const loading = campaignsLoading || challengesLoading || actionsLoading;
   const [selectedAction, setSelectedAction] = useState<{
@@ -161,8 +207,6 @@ export default function FBODashboard() {
   const [submitting, setSubmitting] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const router = useRouter();
-
-  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const userData = getUser();
@@ -277,10 +321,20 @@ export default function FBODashboard() {
     }
   };
 
-  const handleCompleteAction = (action: Action, userAction?: UserAction) => {
+  const handleCompleteAction = (
+    action: Action,
+    userAction?: UserAction,
+    isNextChallenge: boolean = false,
+  ) => {
     setSelectedAction({ action, userAction });
     setProofUrl(userAction?.proofUrl || '');
     setProofFile(null);
+
+    // Si c'est une action du prochain défi, on affiche un message différent
+    if (isNextChallenge) {
+      // TODO: Peut-être ajouter un état pour différencier les modals
+    }
+
     onOpen();
   };
 
@@ -373,16 +427,6 @@ export default function FBODashboard() {
     router.push('/login');
   };
 
-  // Fonction pour vérifier si une action est complétée
-  const isActionCompleted = (action: Action) => {
-    return userActions.some((ua) => ua.actionId === action.id && ua.completed);
-  };
-
-  // Fonction pour récupérer l'action utilisateur d'une action
-  const getUserAction = (action: Action) => {
-    return userActions.find((ua) => ua.actionId === action.id);
-  };
-
   const completedCount = challengeActions.filter((action) =>
     isActionCompleted(action),
   ).length;
@@ -432,6 +476,38 @@ export default function FBODashboard() {
     }
   }, [campaignStats?.stats.totalEarnedEuros]);
 
+  // Effet pour animer l'apparition du bloc "prochains défis"
+  useEffect(() => {
+    const currentShouldShow = !!shouldShowNextChallenges;
+    const previousShouldShow = previousShouldShowNextRef.current;
+
+    // Si le bloc prochains défis vient d'apparaître (transition false -> true)
+    if (currentShouldShow && !previousShouldShow && !nextChallengeAnimated) {
+      console.log('🌟 Animation prochains défis déclenchée!');
+
+      // Déclencher l'animation d'emphase
+      setShowNextChallengeEmphasis(true);
+      setNextChallengeAnimated(true);
+
+      // Revenir à la taille normale après 2 secondes
+      setTimeout(() => {
+        setShowNextChallengeEmphasis(false);
+      }, 2000);
+    }
+
+    // Si toutes les actions sont terminées, fermer l'accordéon des actions
+    if (currentShouldShow && challengeActions.length > 0) {
+      setCompletedActionsCollapsed(true);
+    }
+
+    // Mettre à jour la valeur précédente
+    previousShouldShowNextRef.current = currentShouldShow;
+  }, [
+    shouldShowNextChallenges,
+    nextChallengeAnimated,
+    challengeActions.length,
+  ]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
@@ -444,9 +520,18 @@ export default function FBODashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100 relative">
+      {/* Aurora Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <AuroraBackground
+          colorStops={['#FFA500', '#FFD700', '#FF6347', '#FF4500']}
+          amplitude={0.3}
+          blend={0.8}
+          speed={0.5}
+        />
+      </div>
       {/* Header - Mobile First */}
-      <div className="bg-gradient-to-r from-orange-400 to-amber-400 text-white p-4 sm:p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-orange-400 to-amber-400 text-white p-4 sm:p-6 shadow-lg relative z-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -679,7 +764,7 @@ export default function FBODashboard() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 relative z-10">
         {/* Progress Section - Mobile First */}
         <Card className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
           <CardBody className="p-4 sm:p-6">
@@ -730,6 +815,137 @@ export default function FBODashboard() {
           </CardBody>
         </Card>
 
+        {/* Next Challenges Section - Only when all today's actions are completed */}
+        {shouldShowNextChallenges && (
+          <div
+            className={`mb-4 sm:mb-6 transition-all duration-1000 ${
+              showNextChallengeEmphasis
+                ? 'scale-105 shadow-2xl shadow-indigo-300/50 ring-4 ring-indigo-200 animate-pulse'
+                : ''
+            }`}
+          >
+            <Accordion variant="splitted" className="px-0">
+              <AccordionItem
+                key="next-challenge"
+                aria-label="Prochain défi"
+                title={
+                  <div className="flex items-center gap-3">
+                    <CalendarDaysIcon
+                      className={`w-5 h-5 text-indigo-600 ${showNextChallengeEmphasis ? 'animate-bounce' : ''}`}
+                    />
+                    <span
+                      className={`text-lg font-semibold text-indigo-900 ${showNextChallengeEmphasis ? 'text-xl' : ''} transition-all duration-500`}
+                    >
+                      🌟 Prochain défi -{' '}
+                      {new Date(nextChallenge.date).toLocaleDateString('fr-FR')}
+                    </span>
+                    {showNextChallengeEmphasis && (
+                      <span className="text-2xl animate-spin">✨</span>
+                    )}
+                  </div>
+                }
+                className={`bg-gradient-to-br from-indigo-50 to-purple-100 border-0 shadow-lg rounded-lg ${
+                  showNextChallengeEmphasis
+                    ? 'bg-gradient-to-br from-indigo-100 to-purple-200 border-2 border-indigo-300'
+                    : ''
+                } transition-all duration-1000`}
+                classNames={{
+                  trigger: 'py-4 px-6',
+                  content: 'px-6 pb-6',
+                  title: 'text-left',
+                }}
+              >
+                <div className="bg-white/60 rounded-xl p-4 mb-4">
+                  <h3 className="font-semibold text-indigo-800 mb-2 text-sm sm:text-base">
+                    {nextChallenge.title}
+                  </h3>
+                  <p className="text-indigo-700 text-xs sm:text-sm">
+                    {nextChallenge.description}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
+                      💰 {nextChallenge.valueInEuro} €
+                    </span>
+                    <span className="text-xs text-indigo-600">
+                      • Cliquez sur les actions pour les valider à l'avance !
+                    </span>
+                  </div>
+                </div>
+
+                {nextChallengeActions.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-indigo-800 mb-3 text-sm">
+                      Actions à préparer ({nextChallengeActions.length}) :
+                    </h4>
+                    <div className="grid gap-3">
+                      {nextChallengeActions
+                        .sort((a, b) => a.order - b.order)
+                        .map((action) => {
+                          const config = actionTypeConfig[action.type];
+
+                          return (
+                            <div
+                              key={action.id}
+                              className="bg-white/70 rounded-lg p-3 border border-indigo-200 hover:border-indigo-300 transition-all duration-200 cursor-pointer hover:shadow-md"
+                              onClick={() =>
+                                handleCompleteAction(action, undefined, true)
+                              }
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className="text-lg flex-shrink-0">
+                                  {config.icon}
+                                </span>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Chip
+                                      color={config.color}
+                                      variant="flat"
+                                      size="sm"
+                                      className="text-xs"
+                                    >
+                                      {config.label}
+                                    </Chip>
+                                    <span className="text-xs text-gray-500">
+                                      Action {action.order}
+                                    </span>
+                                  </div>
+                                  <h5 className="font-medium text-gray-800 text-sm mb-1">
+                                    {action.title}
+                                  </h5>
+                                  <p className="text-xs text-gray-600 line-clamp-2">
+                                    {action.description}
+                                  </p>
+                                </div>
+                                <div className="flex items-center">
+                                  <CameraIcon className="w-4 h-4 text-gray-400" />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-600 text-sm">💡</span>
+                        <div>
+                          <p className="text-xs sm:text-sm text-amber-800 font-medium">
+                            Astuce : Validez vos actions à l'avance !
+                          </p>
+                          <p className="text-xs text-amber-700 mt-1">
+                            Vous pouvez déjà préparer et valider ces actions
+                            avec des preuves. Elles seront comptabilisées le
+                            jour du défi ! 🚀
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
+
         {/* Actions Grid - Mobile First */}
         <div className="grid gap-4 sm:gap-6">
           {!activeCampaign ? (
@@ -768,9 +984,117 @@ export default function FBODashboard() {
                 </p>
               </CardBody>
             </Card>
+          ) : allTodayActionsCompleted() ? (
+            // Actions terminées - Accordéon fermé par défaut
+            <Accordion
+              variant="splitted"
+              className="px-0"
+              selectedKeys={
+                completedActionsCollapsed ? [] : ['completed-actions']
+              }
+              onSelectionChange={(keys) => {
+                setCompletedActionsCollapsed(
+                  !Array.from(keys).includes('completed-actions'),
+                );
+              }}
+            >
+              <AccordionItem
+                key="completed-actions"
+                aria-label="Actions du jour terminées"
+                title={
+                  <div className="flex items-center gap-3">
+                    <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                    <span className="text-lg font-semibold text-green-900">
+                      ✅ Actions du jour terminées ({challengeActions.length}/
+                      {challengeActions.length})
+                    </span>
+                    <Badge color="success" variant="flat" className="text-xs">
+                      100%
+                    </Badge>
+                  </div>
+                }
+                className="bg-gradient-to-br from-green-50 to-emerald-100 border-0 shadow-lg rounded-lg"
+                classNames={{
+                  trigger: 'py-4 px-6',
+                  content: 'px-6 pb-6',
+                  title: 'text-left',
+                }}
+              >
+                <div className="grid gap-3">
+                  {challengeActions
+                    .sort((a, b) => a.order - b.order)
+                    .map((action) => {
+                      const config = actionTypeConfig[action.type];
+                      const userAction = getUserAction(action);
+
+                      return (
+                        <div
+                          key={action.id}
+                          className="bg-white/70 rounded-lg p-4 border border-green-200 shadow-sm"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg flex-shrink-0">
+                              {config.icon}
+                            </span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Chip
+                                  color={config.color}
+                                  variant="flat"
+                                  size="sm"
+                                  className="text-xs"
+                                >
+                                  {config.label}
+                                </Chip>
+                                <span className="text-xs text-gray-500">
+                                  Action {action.order}
+                                </span>
+                              </div>
+                              <h5 className="font-medium text-gray-800 text-sm mb-1">
+                                {action.title}
+                              </h5>
+                              <div className="flex items-center gap-2 text-green-600 text-xs">
+                                <CheckCircleIcon className="w-3 h-3" />
+                                <span>
+                                  Complété le{' '}
+                                  {userAction?.completedAt
+                                    ? new Date(
+                                        userAction.completedAt,
+                                      ).toLocaleDateString('fr-FR')
+                                    : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600">🎉</span>
+                    <p className="text-sm text-green-800 font-medium">
+                      Félicitations ! Toutes les actions du jour sont terminées
+                      !
+                    </p>
+                  </div>
+                </div>
+              </AccordionItem>
+            </Accordion>
           ) : (
+            // Actions en cours - Affichage normal avec actions non terminées en premier
             challengeActions
-              .sort((a, b) => a.order - b.order)
+              .sort((a, b) => {
+                const aCompleted = isActionCompleted(a);
+                const bCompleted = isActionCompleted(b);
+
+                // Si une action est terminée et l'autre non, mettre la non terminée en premier
+                if (aCompleted && !bCompleted) return 1;
+                if (!aCompleted && bCompleted) return -1;
+
+                // Si même statut (toutes deux terminées ou non terminées), trier par ordre
+                return a.order - b.order;
+              })
               .map((action) => {
                 const config = actionTypeConfig[action.type];
                 const userAction = getUserAction(action);

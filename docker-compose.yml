@@ -54,6 +54,7 @@ services:
       - backend
     volumes:
       - ./apps/frontend/src:/app/apps/frontend/src
+      - ./apps/frontend/package.json:/app/apps/frontend/package.json
 
 volumes:
   postgres_data:

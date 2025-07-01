@@ -70,6 +70,23 @@ export class ChallengesController {
     return this.challengesService.getTodayChallenges();
   }
 
+  @Get('next')
+  @ApiOperation({ summary: 'Récupérer le prochain défi' })
+  @ApiQuery({
+    name: 'campaignId',
+    required: false,
+    description: 'Filtrer par campagne spécifique',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Prochain défi (null si aucun défi à venir)',
+  })
+  findNext(@Query('campaignId') campaignId?: string) {
+    return this.challengesService.getNextChallenge(
+      campaignId ? parseInt(campaignId) : undefined,
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer un défi par ID' })
   @ApiResponse({ status: 200, description: 'Détails du défi' })

@@ -129,6 +129,23 @@ class CampaignService {
     return response.json();
   }
 
+  async getNextChallenge(campaignId?: number): Promise<Challenge | null> {
+    const params = new URLSearchParams();
+    if (campaignId) params.append('campaignId', campaignId.toString());
+
+    const endpoint = params.toString()
+      ? `${API_ENDPOINTS.CHALLENGES_NEXT}?${params}`
+      : API_ENDPOINTS.CHALLENGES_NEXT;
+
+    const response = await ApiClient.get(endpoint);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch next challenge');
+    }
+
+    return response.json();
+  }
+
   async getChallenge(id: number): Promise<Challenge> {
     const response = await ApiClient.get(API_ENDPOINTS.CHALLENGES_BY_ID(id));
 

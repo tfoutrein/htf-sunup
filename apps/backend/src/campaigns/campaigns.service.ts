@@ -185,17 +185,40 @@ export class CampaignsService {
   async getActiveCampaigns(): Promise<Campaign[]> {
     const today = new Date().toISOString().split('T')[0];
 
-    return await this.db.db
-      .select()
-      .from(campaigns)
-      .where(
-        and(
-          eq(campaigns.status, 'active'),
-          eq(campaigns.archived, false),
-          lte(campaigns.startDate, today),
-          gte(campaigns.endDate, today),
-        ),
-      )
-      .orderBy(campaigns.startDate);
+    console.log('🐛 getActiveCampaigns DEBUG:', {
+      today,
+      query:
+        'campaigns with status=active, archived=false, startDate<=today, endDate>=today',
+    });
+
+    try {
+      const result = await this.db.db
+        .select()
+        .from(campaigns)
+        .where(
+          and(
+            eq(campaigns.status, 'active'),
+            eq(campaigns.archived, false),
+            lte(campaigns.startDate, today),
+            gte(campaigns.endDate, today),
+          ),
+        )
+        .orderBy(campaigns.startDate);
+
+      console.log('🐛 getActiveCampaigns RESULT:', {
+        count: result.length,
+        campaigns: result.map((c) => ({
+          id: c.id,
+          name: c.name,
+          startDate: c.startDate,
+          endDate: c.endDate,
+        })),
+      });
+
+      return result;
+    } catch (error) {
+      console.error('🐛 getActiveCampaigns ERROR:', error);
+      throw error;
+    }
   }
 }
