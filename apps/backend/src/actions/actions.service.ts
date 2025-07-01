@@ -191,7 +191,6 @@ export class ActionsService {
           description: actions.description,
           type: actions.type,
           order: actions.order,
-          pointsValue: actions.pointsValue,
         },
       })
       .from(userActions)
@@ -223,7 +222,6 @@ export class ActionsService {
           description: actions.description,
           type: actions.type,
           order: actions.order,
-          pointsValue: actions.pointsValue,
         },
       })
       .from(userActions)
@@ -449,12 +447,8 @@ export class ActionsService {
         : [];
 
     const completedActions = userCampaignActions.filter((ua) => ua.completed);
-    const totalPoints = completedActions.reduce((sum, ua) => {
-      const action = campaignActions.find((a) => a.id === ua.actionId);
-      return sum + (action?.pointsValue || 0);
-    }, 0);
 
-    // Calculer le nombre de défis complétés (100% des actions)
+    // Calculer le nombre de défis complétés (100% des actions) et les gains
     const challengeCompletionStats = campaignChallenges.map(
       (challenge, index) => {
         const challengeActions = campaignActions.filter(
@@ -479,6 +473,8 @@ export class ActionsService {
               ? (challengeUserActions.length / challengeActions.length) * 100
               : 0,
           dayNumber: index + 1,
+          valueInEuro: challenge.valueInEuro,
+          earnedValue: isCompleted ? parseFloat(challenge.valueInEuro) : 0,
         };
       },
     );
@@ -486,6 +482,17 @@ export class ActionsService {
     const completedChallenges = challengeCompletionStats.filter(
       (c) => c.isCompleted,
     ).length;
+
+    // Calculer les gains totaux
+    const totalEarnedEuros = challengeCompletionStats.reduce(
+      (sum, challenge) => sum + challenge.earnedValue,
+      0,
+    );
+
+    const maxPossibleEuros = campaignChallenges.reduce(
+      (sum, challenge) => sum + parseFloat(challenge.valueInEuro),
+      0,
+    );
 
     return {
       campaign: {
@@ -507,11 +514,8 @@ export class ActionsService {
           campaignActions.length > 0
             ? (completedActions.length / campaignActions.length) * 100
             : 0,
-        totalPointsEarned: totalPoints,
-        maxPossiblePoints: campaignActions.reduce(
-          (sum, a) => sum + a.pointsValue,
-          0,
-        ),
+        totalEarnedEuros,
+        maxPossibleEuros,
       },
       challengeDetails: challengeCompletionStats,
     };
@@ -690,7 +694,6 @@ export class ActionsService {
         description: actions.description,
         type: actions.type,
         order: actions.order,
-        pointsValue: actions.pointsValue,
         createdAt: actions.createdAt,
         updatedAt: actions.updatedAt,
       })
@@ -904,7 +907,6 @@ export class ActionsService {
           description: actions.description,
           type: actions.type,
           order: actions.order,
-          pointsValue: actions.pointsValue,
         })
         .from(actions)
         .where(eq(actions.challengeId, challenge.id))
@@ -924,7 +926,6 @@ export class ActionsService {
             description: actions.description,
             type: actions.type,
             order: actions.order,
-            pointsValue: actions.pointsValue,
           },
         })
         .from(userActions)

@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsInt,
   IsPositive,
+  IsNumber,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -28,4 +30,9 @@ export class CreateChallengeDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({ description: 'Valeur du défi en euros', default: '0.50' })
+  @IsString()
+  @IsOptional()
+  valueInEuro?: string;
 }

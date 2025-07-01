@@ -54,15 +54,4 @@ export class CreateActionDto {
   @Min(1)
   @Max(6)
   order: number;
-
-  @ApiProperty({
-    description: 'Points value for this action',
-    example: 10,
-    required: false,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  pointsValue?: number;
 }

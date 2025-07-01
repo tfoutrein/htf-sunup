@@ -7,6 +7,7 @@ import {
   boolean,
   integer,
   date,
+  decimal,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -47,6 +48,9 @@ export const challenges = pgTable('challenges', {
   date: date('date').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description'),
+  valueInEuro: decimal('value_in_euro', { precision: 10, scale: 2 })
+    .notNull()
+    .default('0.50'), // Valeur en euros pour le défi complet
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -61,7 +65,6 @@ export const actions = pgTable('actions', {
   description: text('description'),
   type: varchar('type', { length: 50 }).notNull(), // 'vente' | 'recrutement' | 'reseaux_sociaux'
   order: integer('order').notNull().default(1), // Position in challenge (1-6)
-  pointsValue: integer('points_value').notNull().default(10), // Points awarded for completing this action
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

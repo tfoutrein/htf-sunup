@@ -53,6 +53,7 @@ export class ChallengesService {
 
     const newChallenge: NewChallenge = {
       campaignId,
+      valueInEuro: createChallengeDto.valueInEuro || '0.50',
       ...rest,
     };
 
@@ -71,6 +72,7 @@ export class ChallengesService {
         date: challenges.date,
         title: challenges.title,
         description: challenges.description,
+        valueInEuro: challenges.valueInEuro,
         createdAt: challenges.createdAt,
         updatedAt: challenges.updatedAt,
       })
@@ -124,6 +126,7 @@ export class ChallengesService {
         date: challenges.date,
         title: challenges.title,
         description: challenges.description,
+        valueInEuro: challenges.valueInEuro,
         createdAt: challenges.createdAt,
         updatedAt: challenges.updatedAt,
       })
