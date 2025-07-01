@@ -1,5 +1,5 @@
-const { drizzle } = require('drizzle-orm/postgres-js');
-const postgres = require('postgres');
+const { drizzle: drizzleFixPasswords } = require('drizzle-orm/postgres-js');
+const postgresFixPasswords = require('postgres');
 const bcrypt = require('bcryptjs');
 
 async function fixDoubleHashedPasswords() {
@@ -14,7 +14,7 @@ async function fixDoubleHashedPasswords() {
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
 
-  const sql = postgres(connectionString, {
+  const sql = postgresFixPasswords(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });

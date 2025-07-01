@@ -1,5 +1,5 @@
-const { drizzle: drizzleClient } = require('drizzle-orm/postgres-js');
-const postgresClient = require('postgres');
+const { drizzle: drizzleHierarchy } = require('drizzle-orm/postgres-js');
+const postgresHierarchy = require('postgres');
 const { users } = require('./schema');
 const { eq, and, ne } = require('drizzle-orm');
 
@@ -15,11 +15,11 @@ async function updateAureliaHierarchy() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = postgresClient(connectionString, {
+  const sql = postgresHierarchy(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
-  const db = drizzleClient(sql);
+  const db = drizzleHierarchy(sql);
 
   try {
     console.log('🔗 Connecting to database...');
