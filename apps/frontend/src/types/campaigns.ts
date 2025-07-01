@@ -18,6 +18,7 @@ export interface Challenge {
   date: string;
   title: string;
   description: string;
+  valueInEuro: string;
   createdAt: string;
   updatedAt: string;
   actions?: Action[];
@@ -30,7 +31,6 @@ export interface Action {
   description: string;
   type: 'vente' | 'recrutement' | 'reseaux_sociaux';
   order: number;
-  pointsValue?: number;
   createdAt: string;
   updatedAt: string;
 }

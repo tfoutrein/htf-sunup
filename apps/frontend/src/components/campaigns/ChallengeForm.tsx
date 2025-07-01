@@ -39,6 +39,7 @@ export default function ChallengeForm({
     date: '',
     title: '',
     description: '',
+    valueInEuro: '0.50',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,12 +71,14 @@ export default function ChallengeForm({
         date: challenge.date.split('T')[0],
         title: challenge.title,
         description: challenge.description || '',
+        valueInEuro: challenge.valueInEuro || '0.50',
       });
     } else {
       setFormData({
         date: '',
         title: '',
         description: '',
+        valueInEuro: '0.50',
       });
     }
     setError(null);
@@ -102,6 +105,7 @@ export default function ChallengeForm({
         date: new Date(formData.date).toISOString().split('T')[0],
         title: formData.title,
         description: formData.description,
+        valueInEuro: formData.valueInEuro,
       };
 
       let result: Challenge;
@@ -125,7 +129,7 @@ export default function ChallengeForm({
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -168,6 +172,22 @@ export default function ChallengeForm({
               placeholder="Description détaillée du défi du jour..."
               rows={4}
             />
+
+            <div>
+              <Input
+                label="Valeur du défi (€) *"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.valueInEuro}
+                onChange={(e) => handleChange('valueInEuro', e.target.value)}
+                placeholder="0.50"
+                required
+              />
+              <p className="text-sm text-gray-600 mt-1">
+                Montant en euros versé pour la réalisation complète de ce défi
+              </p>
+            </div>
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">

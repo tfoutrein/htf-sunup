@@ -17,3 +17,4 @@ export * from './Tabs';
 export * from './LogoDisplay';
 export { default as Aurora } from './Aurora';
 export { default as AuroraBackground } from './AuroraBackground';
+export { default as Counter } from './Counter';

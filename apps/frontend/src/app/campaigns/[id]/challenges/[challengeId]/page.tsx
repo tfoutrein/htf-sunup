@@ -70,6 +70,7 @@ function ChallengeEditPageContent() {
     date: '',
     title: '',
     description: '',
+    valueInEuro: '0.50',
   });
 
   // Gestion des actions
@@ -82,7 +83,6 @@ function ChallengeEditPageContent() {
     type: 'vente',
     title: '',
     description: '',
-    pointsValue: 50,
   });
 
   useEffect(() => {
@@ -119,6 +119,7 @@ function ChallengeEditPageContent() {
         date: challenge.date.split('T')[0],
         title: challenge.title,
         description: challenge.description || '',
+        valueInEuro: challenge.valueInEuro || '0.50',
       });
 
       if (challenge.actions) {
@@ -181,6 +182,7 @@ function ChallengeEditPageContent() {
           date: challengeData.date,
           title: challengeData.title,
           description: challengeData.description,
+          valueInEuro: challengeData.valueInEuro,
         },
       });
 
@@ -200,7 +202,6 @@ function ChallengeEditPageContent() {
           title: action.title!,
           description: action.description || '',
           order: action.order || index + 1,
-          pointsValue: action.pointsValue || 50,
         });
       }
 
@@ -230,7 +231,6 @@ function ChallengeEditPageContent() {
       type: 'vente',
       title: '',
       description: '',
-      pointsValue: 50,
     });
     setShowActionForm(true);
   };
@@ -242,7 +242,6 @@ function ChallengeEditPageContent() {
       type: action.type || 'vente',
       title: action.title || '',
       description: action.description || '',
-      pointsValue: action.pointsValue || 50,
     });
     setShowActionForm(true);
   };
@@ -288,7 +287,7 @@ function ChallengeEditPageContent() {
     setActions((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleActionFormChange = (field: string, value: string | number) => {
+  const handleActionFormChange = (field: string, value: string) => {
     setActionFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -402,6 +401,25 @@ function ChallengeEditPageContent() {
                   placeholder="Description détaillée du défi du jour..."
                   rows={4}
                 />
+
+                <div>
+                  <Input
+                    label="Valeur du défi (€) *"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={challengeData.valueInEuro}
+                    onChange={(e) =>
+                      handleChallengeChange('valueInEuro', e.target.value)
+                    }
+                    placeholder="0.50"
+                    required
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Montant en euros versé pour la réalisation complète de ce
+                    défi
+                  </p>
+                </div>
               </div>
             </Card>
 
@@ -462,9 +480,6 @@ function ChallengeEditPageContent() {
                               </Badge>
                               <Badge color="default" size="sm">
                                 {typeInfo.label}
-                              </Badge>
-                              <Badge color="primary" size="sm">
-                                {action.pointsValue} pts
                               </Badge>
                             </div>
                             <h3 className="font-medium text-gray-900 mb-1 text-mobile">
@@ -535,33 +550,19 @@ function ChallengeEditPageContent() {
                   </h3>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Select
-                          label="Type d'action *"
-                          value={actionFormData.type}
-                          onChange={(e) =>
-                            handleActionFormChange('type', e.target.value)
-                          }
-                          options={actionTypes.map((type) => ({
-                            value: type.key,
-                            label: `${type.icon} ${type.label}`,
-                          }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Slider
-                          label="Points attribués"
-                          value={actionFormData.pointsValue}
-                          onChange={(value) =>
-                            handleActionFormChange('pointsValue', value)
-                          }
-                          min={5}
-                          max={100}
-                          step={5}
-                        />
-                      </div>
+                    <div>
+                      <Select
+                        label="Type d'action *"
+                        value={actionFormData.type}
+                        onChange={(e) =>
+                          handleActionFormChange('type', e.target.value)
+                        }
+                        options={actionTypes.map((type) => ({
+                          value: type.key,
+                          label: `${type.icon} ${type.label}`,
+                        }))}
+                        required
+                      />
                     </div>
 
                     <div>

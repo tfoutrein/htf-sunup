@@ -38,6 +38,7 @@ export default function QuickChallengeForm({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    valueInEuro: '0.50',
   });
   const [actions, setActions] = useState<Partial<Action>[]>([]);
   const [editingActionIndex, setEditingActionIndex] = useState<number | null>(
@@ -67,6 +68,7 @@ export default function QuickChallengeForm({
       setFormData({
         title: challenge.title,
         description: challenge.description || '',
+        valueInEuro: challenge.valueInEuro || '0.50',
       });
       // TODO: Load existing actions if editing
       setActions([]);
@@ -74,6 +76,7 @@ export default function QuickChallengeForm({
       setFormData({
         title: '',
         description: '',
+        valueInEuro: '0.50',
       });
       setActions([]);
     }
@@ -97,6 +100,7 @@ export default function QuickChallengeForm({
         date: challenge ? challenge.date.split('T')[0] : selectedDate!,
         title: formData.title,
         description: formData.description,
+        valueInEuro: formData.valueInEuro,
       };
 
       let result: Challenge;
@@ -117,7 +121,6 @@ export default function QuickChallengeForm({
             title: action.title,
             description: action.description || '',
             order: action.order || index + 1,
-            pointsValue: action.pointsValue || 10,
           });
 
           await createActionMutation.mutateAsync({
@@ -126,7 +129,6 @@ export default function QuickChallengeForm({
             title: action.title!,
             description: action.description || '',
             order: action.order || index + 1,
-            pointsValue: action.pointsValue || 10,
           });
         }
       }
@@ -248,6 +250,22 @@ export default function QuickChallengeForm({
                 placeholder="Description détaillée du défi du jour..."
                 rows={3}
               />
+
+              <div>
+                <Input
+                  label="Valeur du défi (€) *"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.valueInEuro}
+                  onChange={(e) => handleChange('valueInEuro', e.target.value)}
+                  placeholder="0.50"
+                  required
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Montant en euros versé pour la réalisation complète de ce défi
+                </p>
+              </div>
             </div>
 
             {/* Actions du défi */}
@@ -320,8 +338,7 @@ export default function QuickChallengeForm({
                                   {action.title}
                                 </h4>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {action.pointsValue} points - Position{' '}
-                                  {action.order}
+                                  Position {action.order}
                                 </p>
                               </div>
                             </div>

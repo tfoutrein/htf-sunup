@@ -15,6 +15,7 @@ import {
   ModalBody,
   ModalFooter,
   Input,
+  Counter,
 } from '@/components/ui';
 import { Chip, useDisclosure } from '@heroui/react';
 import {
@@ -65,8 +66,10 @@ interface CampaignStats {
     totalActions: number;
     completedActions: number;
     actionCompletionRate: number;
-    totalPointsEarned: number;
-    maxPossiblePoints: number;
+    totalPointsEarned?: number;
+    maxPossiblePoints?: number;
+    totalEarnedEuros: number;
+    maxPossibleEuros: number;
   };
   challengeDetails: Array<{
     challengeId: number;
@@ -76,6 +79,8 @@ interface CampaignStats {
     completedActions: number;
     isCompleted: boolean;
     percentage: number;
+    valueInEuro?: string;
+    earnedValue?: number;
   }>;
 }
 
@@ -258,6 +263,12 @@ export default function FBODashboard() {
   const submitCompletion = async () => {
     if (!selectedAction || !todayChallenge) return;
 
+    // Vérifier qu'une preuve est fournie
+    if (!proofFile && !selectedAction.userAction?.proofUrl) {
+      alert('Une preuve est obligatoire pour valider cette action.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const token = getToken();
@@ -385,125 +396,57 @@ export default function FBODashboard() {
               </div>
             )}
           </div>
-          <Button
-            variant="flat"
-            className="bg-white/20 text-white hover:bg-white/30 w-full sm:w-auto"
-            onPress={handleLogout}
-            size="sm"
-          >
-            Déconnexion
-          </Button>
+
+          {/* Gains de campagne */}
+          {campaignStats && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-200 text-lg">💰</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center -space-x-1">
+                      <Counter
+                        value={Math.floor(campaignStats.stats.totalEarnedEuros)}
+                        places={[10, 1]}
+                        fontSize={24}
+                        padding={4}
+                        gap={0}
+                        textColor="white"
+                        fontWeight={800}
+                        gradientHeight={6}
+                        gradientFrom="transparent"
+                        gradientTo="transparent"
+                      />
+                      <span className="text-white font-bold text-2xl">.</span>
+                      <Counter
+                        value={Math.floor(
+                          (campaignStats.stats.totalEarnedEuros * 100) % 100,
+                        )}
+                        places={[10, 1]}
+                        fontSize={24}
+                        padding={4}
+                        gap={0}
+                        textColor="white"
+                        fontWeight={800}
+                        gradientHeight={6}
+                        gradientFrom="transparent"
+                        gradientTo="transparent"
+                      />
+                    </div>
+                    <span className="text-white font-bold text-2xl">€</span>
+                  </div>
+                  <span className="text-orange-100 text-xs">
+                    sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
+                    possible
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        {/* Gamification Section - Mobile First */}
-        {campaignStats && userStreaks && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 sm:mb-6">
-            {/* Campaign Progress Card */}
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-lg">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-blue-900">
-                    🏆 {campaignStats.campaign.name}
-                  </h3>
-                  <TrophyIcon className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-center mb-2">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {campaignStats.stats.completedChallenges}
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      défis complétés sur {campaignStats.stats.totalChallenges}
-                    </div>
-                  </div>
-                  <Progress
-                    value={campaignStats.stats.challengeCompletionRate}
-                    size="sm"
-                    aria-label="Progression des défis de la campagne"
-                    classNames={{
-                      indicator: 'bg-gradient-to-r from-blue-400 to-indigo-500',
-                    }}
-                  />
-                  <div className="flex justify-between text-xs text-blue-600">
-                    <span>🪙 {campaignStats.stats.totalPointsEarned} pts</span>
-                    <span>
-                      {Math.round(campaignStats.stats.challengeCompletionRate)}%
-                      global
-                    </span>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Streaks Card */}
-            <Card className="bg-gradient-to-br from-orange-50 to-red-100 border-0 shadow-lg">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-orange-900">
-                    Séries
-                  </h3>
-                  <span className="text-lg">🔥</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {userStreaks.currentStreak}
-                    </div>
-                    <div className="text-xs text-orange-700">
-                      jours consécutifs
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-xs text-orange-600">
-                    <span>Record: {userStreaks.longestStreak}</span>
-                    <span>Actif: {userStreaks.totalActiveDays}j</span>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Badges Card */}
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-100 border-0 shadow-lg sm:col-span-2 lg:col-span-1">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-purple-900">
-                    Badges
-                  </h3>
-                  <StarIcon className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {userBadges.length > 0 ? (
-                    userBadges.slice(0, 4).map((badge) => (
-                      <div
-                        key={badge.id}
-                        className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1"
-                        title={badge.description}
-                      >
-                        <span className="text-sm">{badge.icon}</span>
-                        <span className="text-xs font-medium text-purple-800 hidden sm:inline">
-                          {badge.name}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-purple-600 text-center w-full">
-                      Complète tes premières actions pour gagner des badges ! 🎯
-                    </div>
-                  )}
-                  {userBadges.length > 4 && (
-                    <div className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1">
-                      <span className="text-xs font-medium text-purple-800">
-                        +{userBadges.length - 4}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-        )}
-
         {/* Progress Section - Mobile First */}
         <Card className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
           <CardBody className="p-4 sm:p-6">
@@ -680,6 +623,115 @@ export default function FBODashboard() {
               })
           )}
         </div>
+
+        {/* Gamification Section - Mobile First */}
+        {campaignStats && userStreaks && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 sm:mt-8">
+            {/* Campaign Progress Card */}
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-lg">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-blue-900">
+                    🏆 {campaignStats.campaign.name}
+                  </h3>
+                  <TrophyIcon className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="space-y-2">
+                  <div className="text-center mb-2">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {campaignStats.stats.completedChallenges}
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      défis complétés sur {campaignStats.stats.totalChallenges}
+                    </div>
+                  </div>
+                  <Progress
+                    value={campaignStats.stats.challengeCompletionRate}
+                    size="sm"
+                    aria-label="Progression des défis de la campagne"
+                    classNames={{
+                      indicator: 'bg-gradient-to-r from-blue-400 to-indigo-500',
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-blue-600">
+                    <span>
+                      💰 {campaignStats.stats.totalEarnedEuros.toFixed(2)} €
+                    </span>
+                    <span>
+                      {Math.round(campaignStats.stats.challengeCompletionRate)}%
+                      global
+                    </span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Streaks Card */}
+            <Card className="bg-gradient-to-br from-orange-50 to-red-100 border-0 shadow-lg">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-orange-900">
+                    Séries
+                  </h3>
+                  <span className="text-lg">🔥</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {userStreaks.currentStreak}
+                    </div>
+                    <div className="text-xs text-orange-700">
+                      jours consécutifs
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-orange-600">
+                    <span>Record: {userStreaks.longestStreak}</span>
+                    <span>Actif: {userStreaks.totalActiveDays}j</span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Badges Card */}
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-100 border-0 shadow-lg sm:col-span-2 lg:col-span-1">
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-purple-900">
+                    Badges
+                  </h3>
+                  <StarIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {userBadges.length > 0 ? (
+                    userBadges.slice(0, 4).map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1"
+                        title={badge.description}
+                      >
+                        <span className="text-sm">{badge.icon}</span>
+                        <span className="text-xs font-medium text-purple-800 hidden sm:inline">
+                          {badge.name}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-purple-600 text-center w-full">
+                      Complète tes premières actions pour gagner des badges ! 🎯
+                    </div>
+                  )}
+                  {userBadges.length > 4 && (
+                    <div className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1">
+                      <span className="text-xs font-medium text-purple-800">
+                        +{userBadges.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Completion Modal - Mobile First */}
@@ -695,14 +747,15 @@ export default function FBODashboard() {
             </p>
             <Input
               type="file"
-              label="Preuve (photo, vidéo)"
+              label="Preuve (photo, vidéo) *"
               placeholder="Choisir un fichier"
               onChange={(e) =>
                 setProofFile(e.target.files ? e.target.files[0] : null)
               }
               variant="bordered"
-              description="Partage une photo ou une vidéo de ton action"
+              description="Une preuve est obligatoire pour valider cette action"
               size="sm"
+              required
             />
             {proofFile && (
               <div className="mt-2 p-2 bg-gray-50 rounded-md border">
@@ -731,6 +784,7 @@ export default function FBODashboard() {
               onPress={submitCompletion}
               isLoading={submitting}
               size="sm"
+              isDisabled={!proofFile && !selectedAction?.userAction?.proofUrl}
             >
               Confirmer 🎉
             </Button>

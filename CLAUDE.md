@@ -285,3 +285,13 @@ Follow existing patterns in the codebase:
 - Type safety throughout the application
 
 When making changes, ensure consistency with existing architectural patterns and maintain the separation of concerns between frontend and backend.
+
+## Development Notes
+
+- **PostgreSQL Server Access**:
+  - Maintenant, tu peux utiliser le serveur MCP Postgre qui est à ta disposition pour accéder à la base du projet en mode lecture, normalement.
+
+```
+
+</invoke>
+```

@@ -27,7 +27,6 @@ export default function ActionForm({
     type: action?.type || 'vente',
     title: action?.title || '',
     description: action?.description || '',
-    pointsValue: action?.pointsValue || 10,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +52,7 @@ export default function ActionForm({
     });
   };
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -103,19 +102,6 @@ export default function ActionForm({
             onChange={(e) => handleChange('description', e.target.value)}
             placeholder="Décrivez précisément ce que doit faire la FBO..."
             rows={3}
-          />
-        </div>
-
-        <div>
-          <Input
-            label="Points attribués"
-            type="number"
-            min="1"
-            max="100"
-            value={formData.pointsValue.toString()}
-            onChange={(e) =>
-              handleChange('pointsValue', parseInt(e.target.value) || 10)
-            }
           />
         </div>
 
