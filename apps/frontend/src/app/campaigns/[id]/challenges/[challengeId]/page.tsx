@@ -15,7 +15,11 @@ import {
   useChallengeWithActions,
   useUpdateChallenge,
 } from '@/hooks/useChallenges';
-import { useCreateAction, useDeleteAction } from '@/hooks/useActions';
+import {
+  useCreateAction,
+  useDeleteAction,
+  useUpdateAction,
+} from '@/hooks/useActions';
 import {
   Card,
   Button,
@@ -58,12 +62,14 @@ function ChallengeEditPageContent() {
   const updateChallengeMutation = useUpdateChallenge();
   const createActionMutation = useCreateAction();
   const deleteActionMutation = useDeleteAction();
+  const updateActionMutation = useUpdateAction();
 
   const loading = campaignLoading || challengeLoading || challengesLoading;
   const submitting =
     updateChallengeMutation.isPending ||
     createActionMutation.isPending ||
-    deleteActionMutation.isPending;
+    deleteActionMutation.isPending ||
+    updateActionMutation.isPending;
 
   // Formulaire principal du défi
   const [challengeData, setChallengeData] = useState({
@@ -186,22 +192,71 @@ function ChallengeEditPageContent() {
         },
       });
 
-      // Supprimer toutes les actions existantes
-      if (challenge?.actions) {
-        for (const action of challenge.actions) {
+      // Gestion intelligente des actions
+      const existingActions = challenge?.actions || [];
+      const currentActions = actions;
+
+      // 1. Identifier les actions à supprimer (existantes mais plus dans la liste actuelle)
+      const actionsToDelete = existingActions.filter(
+        (existing) =>
+          !currentActions.some((current) => current.id === existing.id),
+      );
+
+      // 2. Identifier les nouvelles actions (sans ID)
+      const actionsToCreate = currentActions.filter((current) => !current.id);
+
+      // 3. Identifier les actions à modifier (avec ID et différentes)
+      const actionsToUpdate = currentActions.filter((current) => {
+        if (!current.id) return false;
+        const existing = existingActions.find((ex) => ex.id === current.id);
+        if (!existing) return false;
+
+        return (
+          existing.title !== current.title ||
+          existing.description !== current.description ||
+          existing.type !== current.type ||
+          existing.order !== current.order
+        );
+      });
+
+      // Tenter de supprimer les actions supprimées (peut échouer si elles ont des userActions)
+      for (const action of actionsToDelete) {
+        try {
           await deleteActionMutation.mutateAsync(action.id);
+        } catch (deleteError) {
+          console.warn(
+            `Impossible de supprimer l'action ${action.id} car elle est assignée à des utilisateurs`,
+          );
+          setError(
+            `Impossible de supprimer l'action "${action.title}" car des FBO ont déjà travaillé dessus. ` +
+              'Vous pouvez la modifier mais pas la supprimer.',
+          );
+          return;
         }
       }
 
       // Créer les nouvelles actions
-      for (let index = 0; index < actions.length; index++) {
-        const action = actions[index];
+      for (let index = 0; index < actionsToCreate.length; index++) {
+        const action = actionsToCreate[index];
         await createActionMutation.mutateAsync({
           challengeId: challengeId,
           type: action.type!,
           title: action.title!,
           description: action.description || '',
-          order: action.order || index + 1,
+          order: action.order || existingActions.length + index + 1,
+        });
+      }
+
+      // Mettre à jour les actions modifiées
+      for (const action of actionsToUpdate) {
+        await updateActionMutation.mutateAsync({
+          id: action.id!,
+          data: {
+            type: action.type!,
+            title: action.title!,
+            description: action.description || '',
+            order: action.order!,
+          },
         });
       }
 

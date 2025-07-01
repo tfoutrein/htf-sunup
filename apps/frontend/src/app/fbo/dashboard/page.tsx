@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -33,6 +33,7 @@ import { ApiClient, API_ENDPOINTS } from '@/services/api';
 import { useTodayChallenges } from '@/hooks/useChallenges';
 import { useChallengeActions } from '@/hooks/useActions';
 import { Challenge, Action, Campaign } from '@/types/campaigns';
+import ConfettiExplosion from 'react-confetti-explosion';
 
 interface User {
   id: number;
@@ -132,6 +133,10 @@ export default function FBODashboard() {
   );
   const [userStreaks, setUserStreaks] = useState<UserStreaks | null>(null);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isMoneyUpdated, setIsMoneyUpdated] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const previousEarnedAmountRef = useRef<number | null>(null);
 
   // TanStack Query hooks
   const { data: activeCampaigns = [], isLoading: campaignsLoading } =
@@ -175,6 +180,18 @@ export default function FBODashboard() {
 
     setUser(userData);
   }, [router]);
+
+  // Détecter si on est sur mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // 640px = sm breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch user actions and gamification data when campaign/challenge data is available
   useEffect(() => {
@@ -225,6 +242,13 @@ export default function FBODashboard() {
       );
       if (campaignStatsResponse.ok) {
         const stats = await campaignStatsResponse.json();
+        console.log('📊 Nouvelles stats reçues:', {
+          oldAmount: campaignStats?.stats.totalEarnedEuros,
+          newAmount: stats.stats.totalEarnedEuros,
+          hasChanged:
+            campaignStats?.stats.totalEarnedEuros !==
+            stats.stats.totalEarnedEuros,
+        });
         setCampaignStats(stats);
       }
 
@@ -325,10 +349,15 @@ export default function FBODashboard() {
         }
       }
 
-      // Refresh data
+      console.log('🔄 Rafraîchissement des données après action complétée...');
+
+      // Refresh data avec un petit délai pour laisser le temps au backend
       await fetchUserActionsForChallenge(todayChallenge.id);
       if (activeCampaign) {
-        await fetchGamificationData(activeCampaign.id);
+        // Petit délai pour s'assurer que les stats sont à jour
+        setTimeout(async () => {
+          await fetchGamificationData(activeCampaign.id);
+        }, 500);
       }
       onClose();
     } catch (error) {
@@ -361,6 +390,48 @@ export default function FBODashboard() {
   const completionPercentage =
     totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
+  // Effet pour détecter les changements de gains et déclencher l'animation
+  useEffect(() => {
+    if (campaignStats?.stats.totalEarnedEuros !== undefined) {
+      const currentAmount = campaignStats.stats.totalEarnedEuros;
+      const previousAmount = previousEarnedAmountRef.current;
+
+      console.log('💰 Détection changement cagnotte:', {
+        currentAmount,
+        previousAmount,
+        hasIncrease: previousAmount !== null && currentAmount > previousAmount,
+        isFirstLoad: previousAmount === null,
+      });
+
+      // Si le montant a augmenté ET ce n'est pas le premier chargement
+      if (previousAmount !== null && currentAmount > previousAmount) {
+        console.log(
+          '🎉 Animation déclenchée - montant augmenté de',
+          previousAmount,
+          'à',
+          currentAmount,
+        );
+
+        // Déclencher l'animation
+        setIsMoneyUpdated(true);
+        setShowConfetti(true);
+
+        // Revenir à la normale après 3 secondes
+        setTimeout(() => {
+          setIsMoneyUpdated(false);
+        }, 3000);
+
+        // Arrêter les confettis après 1 seconde
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 1000);
+      }
+
+      // Mettre à jour la valeur précédente
+      previousEarnedAmountRef.current = currentAmount;
+    }
+  }, [campaignStats?.stats.totalEarnedEuros]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
@@ -383,6 +454,20 @@ export default function FBODashboard() {
               <span className="truncate">
                 Salut {user?.name?.split(' ')[0]} ! ☀️
               </span>
+              {/* Bouton de test temporaire */}
+              <button
+                onClick={() => {
+                  console.log("🧪 Test manuel de l'animation avec confettis");
+                  setIsMoneyUpdated(true);
+                  setShowConfetti(true);
+                  setTimeout(() => setIsMoneyUpdated(false), 3000);
+                  setTimeout(() => setShowConfetti(false), 1000);
+                }}
+                className="ml-2 text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30 transition-colors"
+                title="Test animation cagnotte"
+              >
+                🎉
+              </button>
             </h1>
             <p className="text-orange-100 text-sm sm:text-base">
               {activeCampaign ? activeCampaign.name : "Tes défis t'attendent"}
@@ -396,116 +481,200 @@ export default function FBODashboard() {
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Gains de campagne - Sticky sur mobile */}
-      {campaignStats && (
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-orange-400 to-amber-400 border-t border-orange-300/30 sm:hidden">
-          <div className="max-w-4xl mx-auto p-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
-              <div className="flex items-center gap-2 justify-center">
-                <span className="text-yellow-200 text-lg">💰</span>
-                <div className="flex flex-col items-center">
+          {/* Gains de campagne - Hidden on mobile, shown on desktop */}
+          {campaignStats && (
+            <div
+              className={`hidden sm:flex bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 w-auto transition-all duration-700 relative ${
+                isMoneyUpdated
+                  ? 'scale-125 shadow-2xl bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-yellow-300'
+                  : ''
+              }`}
+            >
+              {/* Confettis Desktop */}
+              {showConfetti && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
+                  <ConfettiExplosion
+                    particleCount={50}
+                    force={0.6}
+                    duration={2500}
+                    width={800}
+                    colors={[
+                      '#FFC700',
+                      '#FF0000',
+                      '#2E3191',
+                      '#41BBC7',
+                      '#FFD700',
+                      '#32CD32',
+                    ]}
+                  />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-yellow-200 text-lg transition-all duration-700 ${
+                    isMoneyUpdated ? 'animate-bounce text-3xl' : ''
+                  }`}
+                >
+                  💰
+                </span>
+                <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center -space-x-1">
                       <Counter
                         value={Math.floor(campaignStats.stats.totalEarnedEuros)}
                         places={[10, 1]}
-                        fontSize={20}
-                        padding={3}
+                        fontSize={isMoneyUpdated ? 32 : 24}
+                        padding={4}
                         gap={0}
                         textColor="white"
                         fontWeight={800}
-                        gradientHeight={5}
+                        gradientHeight={6}
                         gradientFrom="transparent"
                         gradientTo="transparent"
                       />
-                      <span className="text-white font-bold text-xl">.</span>
+                      <span
+                        className={`text-white font-bold transition-all duration-700 ${
+                          isMoneyUpdated ? 'text-4xl' : 'text-2xl'
+                        }`}
+                      >
+                        .
+                      </span>
                       <Counter
                         value={Math.floor(
                           (campaignStats.stats.totalEarnedEuros * 100) % 100,
                         )}
                         places={[10, 1]}
-                        fontSize={20}
-                        padding={3}
+                        fontSize={isMoneyUpdated ? 32 : 24}
+                        padding={4}
                         gap={0}
                         textColor="white"
                         fontWeight={800}
-                        gradientHeight={5}
+                        gradientHeight={6}
                         gradientFrom="transparent"
                         gradientTo="transparent"
                       />
                     </div>
-                    <span className="text-white font-bold text-xl">€</span>
+                    <span
+                      className={`text-white font-bold transition-all duration-700 ${
+                        isMoneyUpdated ? 'text-4xl' : 'text-2xl'
+                      }`}
+                    >
+                      €
+                    </span>
                   </div>
-                  <span className="text-orange-100 text-xs text-center">
+                  <span className="text-orange-100 text-xs">
                     sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
                     possible
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Gains de campagne - Desktop dans le header */}
-      {campaignStats && (
-        <div className="hidden sm:block">
-          <div className="bg-gradient-to-r from-orange-400 to-amber-400 text-white border-t border-orange-300/30">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-4">
-              <div className="flex justify-end">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-yellow-200 text-lg">💰</span>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center -space-x-1">
-                          <Counter
-                            value={Math.floor(
-                              campaignStats.stats.totalEarnedEuros,
-                            )}
-                            places={[10, 1]}
-                            fontSize={24}
-                            padding={4}
-                            gap={0}
-                            textColor="white"
-                            fontWeight={800}
-                            gradientHeight={6}
-                            gradientFrom="transparent"
-                            gradientTo="transparent"
-                          />
-                          <span className="text-white font-bold text-2xl">
-                            .
-                          </span>
-                          <Counter
-                            value={Math.floor(
-                              (campaignStats.stats.totalEarnedEuros * 100) %
-                                100,
-                            )}
-                            places={[10, 1]}
-                            fontSize={24}
-                            padding={4}
-                            gap={0}
-                            textColor="white"
-                            fontWeight={800}
-                            gradientHeight={6}
-                            gradientFrom="transparent"
-                            gradientTo="transparent"
-                          />
-                        </div>
-                        <span className="text-white font-bold text-2xl">€</span>
-                      </div>
-                      <span className="text-orange-100 text-xs">
-                        sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
-                        possible
-                      </span>
+                {isMoneyUpdated && (
+                  <div className="absolute -top-2 -right-2">
+                    <div className="text-yellow-300 animate-spin text-2xl">
+                      ⭐
+                    </div>
+                    <div className="absolute top-1 right-1 text-yellow-200 animate-pulse text-lg">
+                      ✨
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Sticky Cagnotte - Only visible on mobile */}
+      {campaignStats && (
+        <div
+          className={`sm:hidden sticky top-0 z-50 bg-gradient-to-r from-orange-400 to-amber-400 px-4 py-2 shadow-md transition-all duration-700 relative ${
+            isMoneyUpdated
+              ? 'scale-125 shadow-2xl bg-gradient-to-r from-green-400 to-emerald-400 border-b-4 border-yellow-300'
+              : ''
+          }`}
+        >
+          {/* Confettis Mobile */}
+          {showConfetti && (
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
+              <ConfettiExplosion
+                particleCount={40}
+                force={0.5}
+                duration={2000}
+                width={600}
+                colors={[
+                  '#FFC700',
+                  '#FF0000',
+                  '#2E3191',
+                  '#41BBC7',
+                  '#FFD700',
+                  '#32CD32',
+                ]}
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-center gap-2">
+            <span
+              className={`text-yellow-200 text-lg transition-all duration-700 ${
+                isMoneyUpdated ? 'animate-bounce text-3xl' : ''
+              }`}
+            >
+              💰
+            </span>
+            <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center -space-x-1">
+                <Counter
+                  value={Math.floor(campaignStats.stats.totalEarnedEuros)}
+                  places={[10, 1]}
+                  fontSize={isMoneyUpdated ? 28 : 20}
+                  padding={3}
+                  gap={0}
+                  textColor="white"
+                  fontWeight={800}
+                  gradientHeight={6}
+                  gradientFrom="transparent"
+                  gradientTo="transparent"
+                />
+                <span
+                  className={`text-white font-bold transition-all duration-700 ${
+                    isMoneyUpdated ? 'text-3xl' : 'text-xl'
+                  }`}
+                >
+                  .
+                </span>
+                <Counter
+                  value={Math.floor(
+                    (campaignStats.stats.totalEarnedEuros * 100) % 100,
+                  )}
+                  places={[10, 1]}
+                  fontSize={isMoneyUpdated ? 28 : 20}
+                  padding={3}
+                  gap={0}
+                  textColor="white"
+                  fontWeight={800}
+                  gradientHeight={6}
+                  gradientFrom="transparent"
+                  gradientTo="transparent"
+                />
+              </div>
+              <span
+                className={`text-white font-bold transition-all duration-700 ${
+                  isMoneyUpdated ? 'text-3xl' : 'text-xl'
+                }`}
+              >
+                €
+              </span>
+              <span className="text-orange-100 text-xs ml-1">
+                / {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
+              </span>
+            </div>
+            {isMoneyUpdated && (
+              <div className="absolute -top-2 -right-2">
+                <div className="text-yellow-300 animate-spin text-xl">⭐</div>
+                <div className="absolute top-0.5 right-0.5 text-yellow-200 animate-pulse">
+                  ✨
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
