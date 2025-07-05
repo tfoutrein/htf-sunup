@@ -1,7 +1,7 @@
-const { drizzle } = require('drizzle-orm/postgres-js');
-const postgres = require('postgres');
-const { users } = require('./schema');
-const { eq, and } = require('drizzle-orm');
+const { drizzle: drizzleCheck } = require('drizzle-orm/postgres-js');
+const postgresCheck = require('postgres');
+const { users: usersSchema } = require('./schema');
+const { eq: eqCheck, and: andCheck } = require('drizzle-orm');
 
 async function checkAureliaProductionData() {
   const connectionString = process.env.DATABASE_URL;
@@ -25,12 +25,12 @@ async function checkAureliaProductionData() {
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
 
-  const sql = postgres(connectionString, {
+  const sql = postgresCheck(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
 
-  const db = drizzle(sql);
+  const db = drizzleCheck(sql);
 
   try {
     console.log('🔍 Checking Aurélia data in production...');
@@ -39,8 +39,8 @@ async function checkAureliaProductionData() {
     // 1. Rechercher Aurélia par email
     const aureliaByEmail = await db
       .select()
-      .from(users)
-      .where(eq(users.email, 'aurelia@example.com'));
+      .from(usersSchema)
+      .where(eqCheck(usersSchema.email, 'aurelia@example.com'));
 
     if (aureliaByEmail.length === 0) {
       console.log('❌ Aurélia not found with email: aurelia@example.com');
@@ -49,8 +49,8 @@ async function checkAureliaProductionData() {
       console.log('🔍 Searching for users with name containing "aurelia"...');
       const aureliaByName = await db
         .select()
-        .from(users)
-        .where(eq(users.name, 'Aurélia'));
+        .from(usersSchema)
+        .where(eqCheck(usersSchema.name, 'Aurélia'));
 
       if (aureliaByName.length > 0) {
         console.log('✅ Found Aurélia by name:', aureliaByName[0]);
@@ -75,11 +75,11 @@ async function checkAureliaProductionData() {
     // 2. Vérifier la distribution des rôles
     const roleDistribution = await db
       .select({
-        role: users.role,
+        role: usersSchema.role,
         count: sql`count(*)::integer`,
       })
-      .from(users)
-      .groupBy(users.role);
+      .from(usersSchema)
+      .groupBy(usersSchema.role);
 
     console.log('📊 Role distribution:');
     roleDistribution.forEach(({ role, count }) => {
@@ -89,8 +89,8 @@ async function checkAureliaProductionData() {
     // 3. Vérifier s'il y a encore des utilisateurs avec le rôle "marraine"
     const marraineUsers = await db
       .select()
-      .from(users)
-      .where(eq(users.role, 'marraine'));
+      .from(usersSchema)
+      .where(eqCheck(usersSchema.role, 'marraine'));
 
     console.log('\n🔍 Checking for "marraine" role...');
     console.log('-'.repeat(40));
@@ -110,16 +110,16 @@ async function checkAureliaProductionData() {
 
     const managers = await db
       .select()
-      .from(users)
-      .where(eq(users.role, 'manager'));
+      .from(usersSchema)
+      .where(eqCheck(usersSchema.role, 'manager'));
 
     console.log('👥 All managers:');
     for (const manager of managers) {
       const managerName = manager.managerId
         ? await db
             .select()
-            .from(users)
-            .where(eq(users.id, manager.managerId))
+            .from(usersSchema)
+            .where(eqCheck(usersSchema.id, manager.managerId))
             .limit(1)
         : [];
 
@@ -138,8 +138,8 @@ async function checkAureliaProductionData() {
 
       const aureliaSubordinates = await db
         .select()
-        .from(users)
-        .where(eq(users.managerId, aureliaId));
+        .from(usersSchema)
+        .where(eqCheck(usersSchema.managerId, aureliaId));
 
       console.log(`\n🔍 Users managed by Aurélia (ID: ${aureliaId}):`);
       console.log('-'.repeat(40));
