@@ -21,7 +21,8 @@
     "db:seed": "ts-node src/db/seed.ts",
     "db:update-aurelia": "ts-node src/db/update-aurelia-hierarchy.ts",
     "db:fix-column": "ts-node src/db/fix-missing-column.ts",
-    "db:fix-passwords": "ts-node src/db/fix-double-hashed-passwords.ts"
+    "db:fix-passwords": "ts-node src/db/fix-double-hashed-passwords.ts",
+    "db:check-aurelia-prod": "ts-node src/db/check-aurelia-production.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.837.0",
