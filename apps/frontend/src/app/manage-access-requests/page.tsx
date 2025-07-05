@@ -88,7 +88,7 @@ export default function ManageAccessRequestsPage() {
   useEffect(() => {
     if (user && token) {
       fetchAccessRequests();
-      if (user.role === 'marraine') {
+      if (user.role === 'manager') {
         fetchManagers();
       }
     }
@@ -306,8 +306,6 @@ export default function ManageAccessRequestsPage() {
         return "FBO - Membre d'équipe";
       case 'manager':
         return "Manager - Chef d'équipe";
-      case 'marraine':
-        return 'Manager - Superviseur';
       default:
         return role;
     }
@@ -413,7 +411,7 @@ export default function ManageAccessRequestsPage() {
   }
 
   // Vérifier les permissions après le chargement
-  if (!user || (user.role !== 'marraine' && user.role !== 'manager')) {
+  if (!user || user.role !== 'manager') {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
@@ -438,9 +436,7 @@ export default function ManageAccessRequestsPage() {
             Gestion des demandes d'accès
           </h1>
           <p className="text-gray-600 mb-4">
-            {user.role === 'marraine'
-              ? "Gérez les demandes d'accès pour vous et votre équipe"
-              : "Gérez les demandes d'accès pour vous et votre équipe"}
+            Gérez les demandes d'accès pour vous et votre équipe
           </p>
 
           {/* Boutons de filtre */}
@@ -603,15 +599,13 @@ export default function ManageAccessRequestsPage() {
                           >
                             Rejeter
                           </Button>
-                          {user?.role === 'marraine' && (
-                            <Button
-                              color="warning"
-                              variant="light"
-                              onPress={() => openModal(request, 'reassign')}
-                            >
-                              Réassigner
-                            </Button>
-                          )}
+                          <Button
+                            color="warning"
+                            variant="light"
+                            onPress={() => openModal(request, 'reassign')}
+                          >
+                            Réassigner
+                          </Button>
                           <Button
                             color="success"
                             onPress={() => openModal(request, 'approve')}
@@ -751,15 +745,13 @@ export default function ManageAccessRequestsPage() {
                             >
                               Rejeter
                             </Button>
-                            {user?.role === 'marraine' && (
-                              <Button
-                                color="warning"
-                                variant="light"
-                                onPress={() => openModal(request, 'reassign')}
-                              >
-                                Réassigner
-                              </Button>
-                            )}
+                            <Button
+                              color="warning"
+                              variant="light"
+                              onPress={() => openModal(request, 'reassign')}
+                            >
+                              Réassigner
+                            </Button>
                             <Button
                               color="success"
                               onPress={() => openModal(request, 'approve')}

@@ -60,9 +60,7 @@ export default function LoginPage() {
       login(data.access_token, data.user);
 
       // Redirect based on role
-      if (data.user.role === 'marraine') {
-        router.push('/marraine/dashboard');
-      } else if (data.user.role === 'manager') {
+      if (data.user.role === 'manager') {
         router.push('/manager/dashboard');
       } else {
         router.push('/fbo/dashboard');
@@ -97,9 +95,7 @@ export default function LoginPage() {
       login(data.access_token, data.user);
 
       // Redirect based on role
-      if (data.user.role === 'marraine') {
-        router.push('/marraine/dashboard');
-      } else if (data.user.role === 'manager') {
+      if (data.user.role === 'manager') {
         router.push('/manager/dashboard');
       } else {
         router.push('/fbo/dashboard');

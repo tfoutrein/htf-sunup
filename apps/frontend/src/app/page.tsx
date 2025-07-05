@@ -15,9 +15,7 @@ export default function Home() {
 
     if (userData) {
       // Redirect based on role
-      if (userData.role === 'marraine') {
-        router.push('/marraine/dashboard');
-      } else if (userData.role === 'manager') {
+      if (userData.role === 'manager') {
         router.push('/manager/dashboard');
       } else {
         router.push('/fbo/dashboard');

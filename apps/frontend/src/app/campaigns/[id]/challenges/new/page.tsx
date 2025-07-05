@@ -79,10 +79,7 @@ function NewChallengePageContent() {
       }
 
       const currentUser = getUser();
-      if (
-        !currentUser ||
-        (currentUser.role !== 'marraine' && currentUser.role !== 'manager')
-      ) {
+      if (!currentUser || currentUser.role !== 'manager') {
         // Rediriger vers le dashboard approprié au lieu de '/'
         if (currentUser?.role === 'fbo') {
           router.push('/fbo/dashboard');

@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-L'API HTF SunUp est une API REST construite avec Nest.js qui gère les campagnes de défis quotidiens pour les équipes Forever Living. Elle utilise l'authentification JWT et supporte trois rôles utilisateur : marraine, manager et FBO.
+L'API HTF SunUp est une API REST construite avec Nest.js qui gère les campagnes de défis quotidiens pour les équipes Forever Living. Elle utilise l'authentification JWT et supporte deux rôles utilisateur : manager et FBO.
 
 ## Base URL
 
@@ -37,7 +37,7 @@ Connexion utilisateur.
     "id": 25,
     "email": "aurelia@htf.com",
     "name": "Aurélia",
-    "role": "marraine",
+    "role": "manager",
     "managerId": null
   }
 }
@@ -486,8 +486,7 @@ Content-Type: application/json
 
 **Rôles disponibles:**
 
-- `marraine` : Accès complet
-- `manager` : Gestion d'équipe et campagnes
+- `manager` : Gestion d'équipe et campagnes (accès selon la hiérarchie)
 - `fbo` : Validation d'actions
 
 ### GET /users/:id
@@ -608,15 +607,15 @@ curl -X POST http://localhost:3001/actions \
 
 Le seed crée automatiquement ces comptes pour les tests :
 
-| Rôle     | Email            | Mot de passe | Description      |
-| -------- | ---------------- | ------------ | ---------------- |
-| marraine | aurelia@htf.com  | password     | Accès complet    |
-| manager  | jeromine@htf.com | password     | Gestion d'équipe |
-| manager  | gaelle@htf.com   | password     | Gestion d'équipe |
-| manager  | audrey@htf.com   | password     | Gestion d'équipe |
-| fbo      | marie@htf.com    | password     | Membre équipe    |
-| fbo      | pierre@htf.com   | password     | Membre équipe    |
-| fbo      | sophie@htf.com   | password     | Membre équipe    |
+| Rôle              | Email            | Mot de passe | Description      |
+| ----------------- | ---------------- | ------------ | ---------------- |
+| manager principal | aurelia@htf.com  | password     | Accès complet    |
+| manager           | jeromine@htf.com | password     | Gestion d'équipe |
+| manager           | gaelle@htf.com   | password     | Gestion d'équipe |
+| manager           | audrey@htf.com   | password     | Gestion d'équipe |
+| fbo               | marie@htf.com    | password     | Membre équipe    |
+| fbo               | pierre@htf.com   | password     | Membre équipe    |
+| fbo               | sophie@htf.com   | password     | Membre équipe    |
 
 ## Documentation Interactive
 

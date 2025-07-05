@@ -14,7 +14,7 @@ Application de gestion des défis quotidiens pour la Happy Team Factory - Équip
 
 ### Rôles Utilisateurs
 
-- **Marraine** (Aurélia) : Gestion globale des campagnes et supervision
+- **Manager Principal** (Aurélia) : Gestion globale des campagnes et supervision
 - **Managers** : Co-gestion des campagnes et suivi de leurs équipes
 - **FBO** : Validation des actions quotidiennes avec preuves
 
@@ -23,7 +23,7 @@ Application de gestion des défis quotidiens pour la Happy Team Factory - Équip
 - **Frontend**: Next.js 14 avec TypeScript et Tailwind CSS
 - **Backend**: Nest.js avec TypeScript ✅
 - **Base de données**: PostgreSQL avec Drizzle ORM ✅
-- **Authentification**: JWT avec rôles (marraine/manager/fbo) ✅
+- **Authentification**: JWT avec rôles (manager/fbo) ✅
 - **Stockage**: S3 compatible (iDrive e2) pour les preuves d'actions ✅
 - **Gestion d'état**: TanStack Query v5 pour le cache et la synchronisation ✅
 - **Monorepo**: pnpm workspaces
@@ -37,7 +37,7 @@ htf-sunup/
 ├── apps/
 │   ├── frontend/          # Application Next.js
 │   │   ├── src/
-│   │   │   ├── app/       # Pages par rôle (marraine, manager, fbo)
+│   │   │   ├── app/       # Pages par rôle (manager, fbo)
 │   │   │   ├── components/
 │   │   │   └── utils/
 │   │   ├── package.json
@@ -138,7 +138,7 @@ pnpm db:seed      # Seed avec données de test
 ```sql
 -- Utilisateurs avec rôles
 Users (id, name, email, password, role, manager_id)
-├── Roles: 'marraine' | 'manager' | 'fbo'
+├── Roles: 'manager' | 'fbo'
 
 -- Campagnes de défis (globales)
 Campaigns (id, name, description, start_date, end_date, status, created_by)
@@ -161,7 +161,7 @@ UserActions (id, user_id, action_id, challenge_id, completed, proof_url)
 
 Le seed crée automatiquement :
 
-- **1 Marraine** : aurelia@htf.com (mot de passe: `password`)
+- **1 Manager Principal** : aurelia@htf.com (mot de passe: `password`)
 - **3 Managers** : jeromine@htf.com, gaelle@htf.com, audrey@htf.com
 - **3 FBO** : marie@htf.com, pierre@htf.com, sophie@htf.com
 - **1 Campagne active** : "Les défis de l'été de la Happy Team"
@@ -353,7 +353,7 @@ Dans la modal de completion d'action, l'utilisateur peut :
 
 ### 📋 **PROCHAINES ÉTAPES**
 
-1. **Interface gestion campagnes** (marraine/managers)
+1. **Interface gestion campagnes** (managers)
 2. **Dashboard FBO adapté** (défis de la campagne active)
 3. **Vue hebdomadaire imprimable** (planning défis)
 
@@ -364,7 +364,7 @@ Dans la modal de completion d'action, l'utilisateur peut :
 Utilisez les comptes de test créés par le seed :
 
 ```bash
-# Marraine (gestion globale)
+# Manager Principal (gestion globale)
 Email: aurelia@htf.com
 Password: password
 

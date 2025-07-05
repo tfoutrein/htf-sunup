@@ -18,7 +18,7 @@ export default function CampaignsPage() {
       return;
     }
 
-    if (user.role !== 'marraine' && user.role !== 'manager') {
+    if (user.role !== 'manager') {
       // Rediriger vers le dashboard approprié
       router.push('/fbo/dashboard');
       return;
@@ -38,7 +38,7 @@ export default function CampaignsPage() {
   }
 
   // Vérifier les permissions
-  if (user.role !== 'marraine' && user.role !== 'manager') {
+  if (user.role !== 'manager') {
     return null; // La redirection est gérée dans useEffect
   }
 

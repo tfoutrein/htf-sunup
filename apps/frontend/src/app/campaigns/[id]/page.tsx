@@ -30,10 +30,7 @@ export default function CampaignDetailPage() {
       }
 
       const currentUser = getUser();
-      if (
-        !currentUser ||
-        (currentUser.role !== 'marraine' && currentUser.role !== 'manager')
-      ) {
+      if (!currentUser || currentUser.role !== 'manager') {
         if (currentUser?.role === 'fbo') {
           router.push('/fbo/dashboard');
         } else {

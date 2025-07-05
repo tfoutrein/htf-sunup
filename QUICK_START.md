@@ -32,11 +32,11 @@ docker-compose ps
 
 Utilisez ces comptes créés automatiquement :
 
-| Rôle         | Email            | Mot de passe | Accès              |
-| ------------ | ---------------- | ------------ | ------------------ |
-| **Marraine** | aurelia@htf.com  | password     | Gestion globale    |
-| **Manager**  | jeromine@htf.com | password     | Gestion équipe     |
-| **FBO**      | marie@htf.com    | password     | Validation actions |
+| Rôle                  | Email            | Mot de passe | Accès              |
+| --------------------- | ---------------- | ------------ | ------------------ |
+| **Manager Principal** | aurelia@htf.com  | password     | Gestion globale    |
+| **Manager**           | jeromine@htf.com | password     | Gestion équipe     |
+| **FBO**               | marie@htf.com    | password     | Validation actions |
 
 ### 5. Test Rapide de l'API
 
@@ -55,7 +55,7 @@ curl -X GET http://localhost:3001/campaigns \
 
 ### Backend Complet
 
-- ✅ **Authentification JWT** avec 3 rôles (marraine/manager/fbo)
+- ✅ **Authentification JWT** avec 2 rôles (manager/fbo)
 - ✅ **Gestion des campagnes** : CRUD complet avec validation des dates
 - ✅ **Gestion des défis** : Défis quotidiens liés aux campagnes
 - ✅ **Gestion des actions** : 1-6 actions par défi (vente/recrutement/réseaux sociaux)
@@ -69,7 +69,7 @@ Le système crée automatiquement :
 
 - 1 Campagne active : "Les défis de l'été de la Happy Team"
 - 1 Défi pour aujourd'hui avec 3 actions
-- 7 utilisateurs (1 marraine, 3 managers, 3 FBO)
+- 7 utilisateurs (4 managers avec hiérarchie, 3 FBO)
 
 ## 🔧 Développement Local
 
@@ -96,7 +96,7 @@ pnpm dev
 
 ### Frontend à Adapter
 
-- [ ] Interface de gestion des campagnes (marraine/managers)
+- [ ] Interface de gestion des campagnes (managers)
 - [ ] Dashboard FBO adapté aux défis de campagnes
 - [ ] Vue hebdomadaire imprimable
 

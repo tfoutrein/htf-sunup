@@ -12,7 +12,7 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: 'marraine' | 'manager' | 'fbo';
+  role: 'manager' | 'fbo';
 }
 
 interface AuthContextType {

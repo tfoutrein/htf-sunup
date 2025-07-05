@@ -25,8 +25,6 @@ export function Navigation() {
   const getDashboardLink = () => {
     if (!user) return '#';
     switch (user.role) {
-      case 'marraine':
-        return '/marraine/dashboard';
       case 'manager':
         return '/manager/dashboard';
       case 'fbo':
@@ -100,7 +98,7 @@ export function Navigation() {
                     </Button>
                   </Link>
 
-                  {(user.role === 'marraine' || user.role === 'manager') && (
+                  {user.role === 'manager' && (
                     <>
                       <Link href="/campaigns">
                         <Button
@@ -289,7 +287,7 @@ export function Navigation() {
                       </Button>
                     </Link>
 
-                    {(user.role === 'marraine' || user.role === 'manager') && (
+                    {user.role === 'manager' && (
                       <>
                         <Link href="/campaigns" onClick={closeMenu}>
                           <Button
