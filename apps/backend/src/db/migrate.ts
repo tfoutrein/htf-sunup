@@ -210,6 +210,57 @@ async function runMigrations() {
       console.log('✅ temporary_password column already exists');
     }
 
+    // Vérifier et ajouter les colonnes Facebook manquantes dans la table users
+    console.log('🔍 Checking for Facebook columns in users table...');
+
+    const facebookColumns = [
+      { name: 'facebook_id', type: 'varchar(255)', constraint: 'UNIQUE' },
+      { name: 'facebook_access_token', type: 'varchar(1000)' },
+      { name: 'profile_picture', type: 'varchar(500)' },
+      { name: 'auth_provider', type: 'varchar(50)', default: "'local'" },
+    ];
+
+    for (const column of facebookColumns) {
+      const columnExists = await sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = ${column.name}
+      `;
+
+      if (columnExists.length === 0) {
+        console.log(
+          `📝 Adding missing ${column.name} column to users table...`,
+        );
+        let alterQuery = `ALTER TABLE users ADD COLUMN ${column.name} ${column.type}`;
+
+        if (column.default) {
+          alterQuery += ` DEFAULT ${column.default}`;
+        }
+
+        await sql.unsafe(alterQuery);
+
+        // Ajouter la contrainte UNIQUE si nécessaire
+        if (column.constraint === 'UNIQUE') {
+          try {
+            await sql.unsafe(
+              `ALTER TABLE users ADD CONSTRAINT users_${column.name}_unique UNIQUE(${column.name})`,
+            );
+          } catch (error) {
+            if (!error.message.includes('already exists')) {
+              console.warn(
+                `⚠️  Warning adding unique constraint for ${column.name}:`,
+                error.message,
+              );
+            }
+          }
+        }
+
+        console.log(`✅ Added ${column.name} column successfully`);
+      } else {
+        console.log(`✅ ${column.name} column already exists`);
+      }
+    }
+
     // Vérifier et ajouter les colonnes manquantes dans la table actions
     console.log('🔍 Checking for missing columns in actions table...');
 
