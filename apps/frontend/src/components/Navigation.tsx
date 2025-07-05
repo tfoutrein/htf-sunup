@@ -110,6 +110,24 @@ export function Navigation() {
                           Campagnes
                         </Button>
                       </Link>
+                      <Link href="/manager/team-management">
+                        <Button
+                          variant={
+                            isActive('/manager/team-management')
+                              ? 'flat'
+                              : 'light'
+                          }
+                          color={
+                            isActive('/manager/team-management')
+                              ? 'warning'
+                              : 'default'
+                          }
+                          size="sm"
+                          className="font-medium"
+                        >
+                          Gestion d'équipe
+                        </Button>
+                      </Link>
                       <Link href="/manage-access-requests">
                         <Button
                           variant={
@@ -299,6 +317,27 @@ export function Navigation() {
                             className="w-full justify-start font-medium"
                           >
                             Campagnes
+                          </Button>
+                        </Link>
+                        <Link
+                          href="/manager/team-management"
+                          onClick={closeMenu}
+                        >
+                          <Button
+                            variant={
+                              isActive('/manager/team-management')
+                                ? 'flat'
+                                : 'light'
+                            }
+                            color={
+                              isActive('/manager/team-management')
+                                ? 'warning'
+                                : 'default'
+                            }
+                            size="sm"
+                            className="w-full justify-start font-medium"
+                          >
+                            Gestion d'équipe
                           </Button>
                         </Link>
                         <Link

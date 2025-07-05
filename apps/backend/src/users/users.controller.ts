@@ -8,6 +8,8 @@ import {
   Put,
   UseGuards,
   Query,
+  Request,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -125,5 +127,87 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   assignManager(@Param('id') id: string, @Body() body: { managerId: number }) {
     return this.usersService.assignManager(+id, body.managerId);
+  }
+
+  // Advanced team management routes
+  @Get('team-hierarchy/my-team')
+  @ApiOperation({ summary: 'Get current manager team hierarchy' })
+  @ApiResponse({
+    status: 200,
+    description: 'Team hierarchy with nested structure',
+  })
+  getMyTeamHierarchy(@Request() req) {
+    const user = req.user;
+    if (user.role !== 'manager') {
+      throw new Error('Only managers can access team hierarchy');
+    }
+    return this.usersService.getTeamHierarchy(user.id);
+  }
+
+  @Get('team-list/my-team')
+  @ApiOperation({ summary: 'Get current manager full team list' })
+  @ApiResponse({
+    status: 200,
+    description: 'Flat list of all team members',
+  })
+  getMyFullTeamList(@Request() req) {
+    const user = req.user;
+    if (user.role !== 'manager') {
+      throw new Error('Only managers can access team list');
+    }
+    return this.usersService.getFullTeamList(user.id);
+  }
+
+  @Get('team-hierarchy/:managerId')
+  @ApiOperation({ summary: 'Get team hierarchy for a specific manager' })
+  @ApiResponse({
+    status: 200,
+    description: 'Team hierarchy with nested structure',
+  })
+  getTeamHierarchy(@Param('managerId') managerId: string) {
+    return this.usersService.getTeamHierarchy(+managerId);
+  }
+
+  @Get('team-list/:managerId')
+  @ApiOperation({ summary: 'Get full team list for a specific manager' })
+  @ApiResponse({
+    status: 200,
+    description: 'Flat list of all team members',
+  })
+  getFullTeamList(@Param('managerId') managerId: string) {
+    return this.usersService.getFullTeamList(+managerId);
+  }
+
+  @Patch('team-member/:memberId')
+  @ApiOperation({ summary: 'Update a team member (manager only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Team member updated successfully',
+    type: UserDto,
+  })
+  updateTeamMember(
+    @Param('memberId') memberId: string,
+    @Body() updateData: UpdateUserDto,
+    @Request() req,
+  ) {
+    const user = req.user;
+    if (user.role !== 'manager') {
+      throw new Error('Only managers can update team members');
+    }
+    return this.usersService.updateTeamMember(+memberId, updateData, user.id);
+  }
+
+  @Delete('team-member/:memberId')
+  @ApiOperation({ summary: 'Remove a team member (manager only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Team member removed successfully',
+  })
+  removeTeamMember(@Param('memberId') memberId: string, @Request() req) {
+    const user = req.user;
+    if (user.role !== 'manager') {
+      throw new Error('Only managers can remove team members');
+    }
+    return this.usersService.removeTeamMember(+memberId, user.id);
   }
 }

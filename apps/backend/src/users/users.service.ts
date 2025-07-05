@@ -138,4 +138,148 @@ export class UsersService {
 
     return membersWithManager;
   }
+
+  // Advanced team management for hierarchy
+  async getTeamHierarchy(managerId: number): Promise<any> {
+    // Get the manager
+    const manager = await this.findOne(managerId);
+
+    // Get direct team members (both managers and FBOs)
+    const directMembers = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.managerId, managerId));
+
+    // Build hierarchy recursively
+    const hierarchy = {
+      ...manager,
+      directMembers: await Promise.all(
+        directMembers.map(async (member) => {
+          if (member.role === 'manager') {
+            // If member is a manager, get their team hierarchy
+            const subHierarchy = await this.getTeamHierarchy(member.id);
+            return {
+              ...member,
+              type: 'manager',
+              teamSize: subHierarchy.totalMembers || 0,
+              subTeam: subHierarchy.directMembers || [],
+            };
+          } else {
+            // If member is FBO, just return basic info
+            return {
+              ...member,
+              type: 'fbo',
+              teamSize: 0,
+              subTeam: [],
+            };
+          }
+        }),
+      ),
+      totalMembers: 0, // Will be calculated
+    };
+
+    // Calculate total members recursively
+    const calculateTotalMembers = (node: any): number => {
+      let total = node.directMembers.length;
+      node.directMembers.forEach((member: any) => {
+        if (member.type === 'manager') {
+          total += calculateTotalMembers(member);
+        }
+      });
+      return total;
+    };
+
+    hierarchy.totalMembers = calculateTotalMembers(hierarchy);
+    return hierarchy;
+  }
+
+  async getFullTeamList(managerId: number): Promise<any[]> {
+    const allMembers = [];
+
+    // Get direct team members
+    const directMembers = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.managerId, managerId));
+
+    for (const member of directMembers) {
+      // Add manager info to member
+      const memberWithManager = {
+        ...member,
+        managerName: (await this.findOne(managerId)).name,
+        isDirectReport: true,
+      };
+      allMembers.push(memberWithManager);
+
+      // If member is a manager, get their team recursively
+      if (member.role === 'manager') {
+        const subTeam = await this.getFullTeamList(member.id);
+        allMembers.push(
+          ...subTeam.map((subMember) => ({
+            ...subMember,
+            isDirectReport: false,
+          })),
+        );
+      }
+    }
+
+    return allMembers;
+  }
+
+  async updateTeamMember(
+    memberId: number,
+    updateData: Partial<User>,
+    managerId: number,
+  ): Promise<User> {
+    // Verify the member belongs to the manager's team
+    const member = await this.findOne(memberId);
+    const isInTeam = await this.isMemberInTeam(memberId, managerId);
+
+    if (!isInTeam) {
+      throw new BadRequestException('You can only update members of your team');
+    }
+
+    // Don't allow password update through this method
+    const { password, ...safeUpdateData } = updateData as any;
+
+    const [updatedUser] = await this.db
+      .update(users)
+      .set({ ...safeUpdateData, updatedAt: new Date() })
+      .where(eq(users.id, memberId))
+      .returning();
+
+    if (!updatedUser) {
+      throw new NotFoundException(`User with ID ${memberId} not found`);
+    }
+
+    return updatedUser;
+  }
+
+  async removeTeamMember(memberId: number, managerId: number): Promise<void> {
+    // Verify the member belongs to the manager's team
+    const isInTeam = await this.isMemberInTeam(memberId, managerId);
+
+    if (!isInTeam) {
+      throw new BadRequestException('You can only remove members of your team');
+    }
+
+    // If the member is a manager, reassign their team first
+    const member = await this.findOne(memberId);
+    if (member.role === 'manager') {
+      const subTeam = await this.getTeamMembers(memberId);
+      for (const subMember of subTeam) {
+        await this.assignManager(subMember.id, managerId);
+      }
+    }
+
+    await this.remove(memberId);
+  }
+
+  private async isMemberInTeam(
+    memberId: number,
+    managerId: number,
+  ): Promise<boolean> {
+    const fullTeam = await this.getFullTeamList(managerId);
+    return fullTeam.some((member) => member.id === memberId);
+  }
 }
