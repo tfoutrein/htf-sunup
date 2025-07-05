@@ -1,5 +1,4 @@
 import { Button } from './Button';
-import { useFacebookAuth } from '../../hooks/useFacebookAuth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -14,72 +13,36 @@ export const FacebookLoginButton = ({
   onError,
   className = '',
 }: FacebookLoginButtonProps) => {
-  const { loginWithFacebook, isLoading, isSDKLoaded } = useFacebookAuth();
   const router = useRouter();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFacebookLogin = async () => {
     try {
-      setIsAuthenticating(true);
+      setIsLoading(true);
 
-      // Get Facebook user data
-      const facebookUser = await loginWithFacebook();
-
-      if (!facebookUser) {
-        throw new Error('Facebook login cancelled');
-      }
-
-      // Send to backend for authentication
-      const response = await fetch('/api/auth/facebook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          facebookId: facebookUser.userID,
-          accessToken: facebookUser.accessToken,
-          email: facebookUser.email,
-          name: facebookUser.name,
-          profilePicture: facebookUser.picture?.data?.url,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Authentication failed');
-      }
-
-      const result = await response.json();
-
-      // Store JWT token
-      localStorage.setItem('token', result.access_token);
-
-      // Call success callback
-      if (onSuccess) {
-        onSuccess(result.user);
-      }
-
-      // Redirect to dashboard
-      router.push('/');
+      // Redirection directe vers l'OAuth Facebook via le backend
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      window.location.href = `${backendUrl}/auth/facebook`;
     } catch (error) {
       console.error('Facebook authentication error:', error);
       if (onError) {
         onError(error as Error);
       }
-    } finally {
-      setIsAuthenticating(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <Button
       onClick={handleFacebookLogin}
-      disabled={!isSDKLoaded || isLoading || isAuthenticating}
+      disabled={isLoading}
       className={`bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 ${className}`}
     >
-      {isLoading || isAuthenticating ? (
+      {isLoading ? (
         <>
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span>Connexion...</span>
+          <span>Redirection...</span>
         </>
       ) : (
         <>
