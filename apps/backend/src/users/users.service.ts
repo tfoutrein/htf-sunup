@@ -161,8 +161,10 @@ export class UsersService {
             return {
               ...member,
               type: 'manager',
-              teamSize: subHierarchy.totalMembers || 0,
-              subTeam: subHierarchy.directMembers || [],
+              teamSize: subHierarchy?.totalMembers || 0,
+              subTeam: Array.isArray(subHierarchy?.directMembers)
+                ? subHierarchy.directMembers
+                : [],
             };
           } else {
             // If member is FBO, just return basic info
@@ -180,16 +182,63 @@ export class UsersService {
 
     // Calculate total members recursively
     const calculateTotalMembers = (node: any): number => {
-      let total = node.directMembers.length;
-      node.directMembers.forEach((member: any) => {
-        if (member.type === 'manager') {
+      if (!node) return 0;
+
+      const members = node.directMembers || node.subTeam || [];
+      if (!Array.isArray(members)) return 0;
+
+      let total = members.length;
+      members.forEach((member: any) => {
+        if (
+          member &&
+          member.role === 'manager' &&
+          member.subTeam &&
+          Array.isArray(member.subTeam) &&
+          member.subTeam.length > 0
+        ) {
           total += calculateTotalMembers(member);
         }
       });
       return total;
     };
 
+    // Calculate managers and FBOs recursively
+    const calculateRoleStats = (
+      node: any,
+    ): { managers: number; fbos: number } => {
+      if (!node) return { managers: 0, fbos: 0 };
+
+      const members = node.directMembers || node.subTeam || [];
+      if (!Array.isArray(members)) return { managers: 0, fbos: 0 };
+
+      let managers = 0;
+      let fbos = 0;
+
+      members.forEach((member: any) => {
+        if (member && member.role === 'manager') {
+          managers++;
+          if (
+            member.subTeam &&
+            Array.isArray(member.subTeam) &&
+            member.subTeam.length > 0
+          ) {
+            const subStats = calculateRoleStats(member);
+            managers += subStats.managers;
+            fbos += subStats.fbos;
+          }
+        } else if (member && member.role === 'fbo') {
+          fbos++;
+        }
+      });
+
+      return { managers, fbos };
+    };
+
     hierarchy.totalMembers = calculateTotalMembers(hierarchy);
+    const roleStats = calculateRoleStats(hierarchy);
+    hierarchy.totalManagers = roleStats.managers;
+    hierarchy.totalFbos = roleStats.fbos;
+
     return hierarchy;
   }
 
