@@ -7,12 +7,6 @@ import {
   CardBody,
   CardHeader,
   Button,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Badge,
   Modal,
   ModalContent,
@@ -26,7 +20,7 @@ import {
   Avatar,
   Chip,
   Divider,
-} from '@nextui-org/react';
+} from '@heroui/react';
 import {
   UsersIcon,
   PencilIcon,
@@ -39,7 +33,7 @@ import {
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import { ApiClient } from '@/services/api';
-import { toast } from 'react-hot-toast';
+import { addToast } from '@heroui/toast';
 
 // Types
 interface User {
@@ -150,7 +144,11 @@ export default function TeamManagementPage() {
       }
     } catch (error) {
       console.error('Error fetching team data:', error);
-      toast.error("Erreur lors du chargement de l'équipe");
+      addToast({
+        title: 'Erreur',
+        description: "Erreur lors du chargement de l'équipe",
+        color: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -181,16 +179,28 @@ export default function TeamManagementPage() {
       );
 
       if (response.ok) {
-        toast.success('Membre mis à jour avec succès');
+        addToast({
+          title: 'Succès',
+          description: 'Membre mis à jour avec succès',
+          color: 'success',
+        });
         await fetchTeamData();
         onEditClose();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Erreur lors de la mise à jour');
+        addToast({
+          title: 'Erreur',
+          description: errorData.message || 'Erreur lors de la mise à jour',
+          color: 'danger',
+        });
       }
     } catch (error) {
       console.error('Error updating member:', error);
-      toast.error('Erreur lors de la mise à jour');
+      addToast({
+        title: 'Erreur',
+        description: 'Erreur lors de la mise à jour',
+        color: 'danger',
+      });
     }
   };
 
@@ -203,16 +213,28 @@ export default function TeamManagementPage() {
       );
 
       if (response.ok) {
-        toast.success('Membre supprimé avec succès');
+        addToast({
+          title: 'Succès',
+          description: 'Membre supprimé avec succès',
+          color: 'success',
+        });
         await fetchTeamData();
         onDeleteClose();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'Erreur lors de la suppression');
+        addToast({
+          title: 'Erreur',
+          description: errorData.message || 'Erreur lors de la suppression',
+          color: 'danger',
+        });
       }
     } catch (error) {
       console.error('Error deleting member:', error);
-      toast.error('Erreur lors de la suppression');
+      addToast({
+        title: 'Erreur',
+        description: 'Erreur lors de la suppression',
+        color: 'danger',
+      });
     }
   };
 
@@ -310,38 +332,26 @@ export default function TeamManagementPage() {
   };
 
   const renderListView = () => (
-    <Table aria-label="Team members table">
-      <TableHeader>
-        <TableColumn>MEMBRE</TableColumn>
-        <TableColumn>RÔLE</TableColumn>
-        <TableColumn>MANAGER</TableColumn>
-        <TableColumn>RAPPORT DIRECT</TableColumn>
-        <TableColumn>ACTIONS</TableColumn>
-      </TableHeader>
-      <TableBody>
-        {teamList.map((member) => (
-          <TableRow key={member.id}>
-            <TableCell>
-              <div className="flex items-center gap-3">
-                <Avatar size="sm" name={member.name} />
-                <div>
-                  <div className="font-medium">{member.name}</div>
-                  <div className="text-sm text-gray-500">{member.email}</div>
-                </div>
+    <div className="space-y-3">
+      {teamList.map((member) => (
+        <Card key={member.id} className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Avatar size="sm" name={member.name} />
+              <div className="flex flex-col">
+                <div className="font-medium">{member.name}</div>
+                <div className="text-sm text-gray-500">{member.email}</div>
               </div>
-            </TableCell>
-            <TableCell>
               <Badge
                 color={member.role === 'manager' ? 'primary' : 'secondary'}
                 variant="flat"
+                size="sm"
               >
                 {member.role === 'manager' ? 'Manager' : 'FBO'}
               </Badge>
-            </TableCell>
-            <TableCell>
-              <span className="text-sm">{member.managerName || 'N/A'}</span>
-            </TableCell>
-            <TableCell>
+              <div className="text-sm text-gray-600">
+                Manager: {member.managerName || 'N/A'}
+              </div>
               <Chip
                 size="sm"
                 variant="flat"
@@ -349,32 +359,30 @@ export default function TeamManagementPage() {
               >
                 {member.isDirectReport ? 'Direct' : 'Indirect'}
               </Chip>
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="light"
-                  isIconOnly
-                  onClick={() => handleEdit(member)}
-                >
-                  <PencilIcon className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="light"
-                  color="danger"
-                  isIconOnly
-                  onClick={() => handleDelete(member)}
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="light"
+                isIconOnly
+                onClick={() => handleEdit(member)}
+              >
+                <PencilIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="light"
+                color="danger"
+                isIconOnly
+                onClick={() => handleDelete(member)}
+              >
+                <TrashIcon className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 
   const renderTreeView = () => (
