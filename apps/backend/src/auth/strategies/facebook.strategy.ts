@@ -6,12 +6,22 @@ import { AuthService } from '../auth.service';
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   constructor(private authService: AuthService) {
+    const clientID = process.env.FACEBOOK_APP_ID;
+    const clientSecret = process.env.FACEBOOK_APP_SECRET;
+    const callbackURL =
+      process.env.FACEBOOK_CALLBACK_URL ||
+      'http://localhost:3000/auth/facebook/callback';
+
+    if (!clientID || !clientSecret) {
+      throw new Error(
+        'Facebook OAuth configuration is missing. Please set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET environment variables.',
+      );
+    }
+
     super({
-      clientID: process.env.FACEBOOK_APP_ID || '',
-      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
-      callbackURL:
-        process.env.FACEBOOK_CALLBACK_URL ||
-        'http://localhost:3000/auth/facebook/callback',
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['email', 'public_profile'],
       profileFields: ['id', 'emails', 'name', 'picture.type(large)'],
     });
