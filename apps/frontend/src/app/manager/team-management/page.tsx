@@ -309,7 +309,7 @@ export default function TeamManagementPage() {
   // Obtenir les données filtrées
   const filteredTeamList = filterTeamList(teamList, searchTerm, roleFilter);
   const filteredTeamHierarchy = filterTeamHierarchy(
-    teamHierarchy,
+    teamHierarchy || null,
     searchTerm,
     roleFilter,
   );
