@@ -5,3 +5,4 @@ export * from './useActions';
 export * from './useUsers';
 export * from './useAuroraPages';
 export * from './useRandomLogo';
+export * from './useAuth';

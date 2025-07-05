@@ -17,10 +17,14 @@ import {
 } from '../db/schema';
 import { CreateActionDto } from './dto/create-action.dto';
 import { UpdateActionDto } from './dto/update-action.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ActionsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly usersService: UsersService,
+  ) {}
 
   async create(createActionDto: CreateActionDto): Promise<Action> {
     const { challengeId, order, ...rest } = createActionDto;
@@ -349,17 +353,8 @@ export class ActionsService {
   }
 
   async getTeamProgress(managerId: number): Promise<any[]> {
-    // Get team members for this manager
-    const teamMembers = await this.db.db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.role, 'fbo'),
-          eq(users.managerId, managerId),
-          isNotNull(users.managerId),
-        ),
-      );
+    // Get team members for this manager using the updated logic
+    const teamMembers = await this.usersService.getTeamMembers(managerId);
 
     const activeCampaign = await this.db.db
       .select()
@@ -715,16 +710,7 @@ export class ActionsService {
       );
     }
 
-    const teamMembers = await this.db.db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.role, 'fbo'),
-          eq(users.managerId, managerId),
-          isNotNull(users.managerId),
-        ),
-      );
+    const teamMembers = await this.usersService.getTeamMembers(managerId);
 
     const campaignChallenges = await this.db.db
       .select()

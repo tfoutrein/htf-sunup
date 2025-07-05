@@ -64,3 +64,6 @@ Ces règles doivent être mises à jour lorsque :
 - 🔄 De nouvelles conventions sont adoptées
 - 🔄 Des patterns sont modifiés ou ajoutés
 - 🔄 De nouveaux outils sont intégrés
+
+
+- Ne pas chercher tout le temps à redémarrer le frontend ou le backend après chaque modification ou feature ajoutée car le frontend et le backend tournent sur docker en continu en mode développement. 

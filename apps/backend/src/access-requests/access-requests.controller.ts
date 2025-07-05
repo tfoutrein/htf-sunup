@@ -103,13 +103,33 @@ export class AccessRequestsController {
   }
 
   private generateTemporaryPassword(): string {
-    const chars =
-      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    // Générer un mot de passe temporaire qui respecte les nouvelles règles
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
     let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    // Assurer qu'il y a au moins un caractère de chaque type requis
+    password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+    password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+    password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    password += specialChars.charAt(
+      Math.floor(Math.random() * specialChars.length),
+    );
+
+    // Compléter avec des caractères aléatoires pour atteindre 10 caractères
+    const allChars = lowercase + uppercase + numbers + specialChars;
+    for (let i = 4; i < 10; i++) {
+      password += allChars.charAt(Math.floor(Math.random() * allChars.length));
     }
-    return password;
+
+    // Mélanger les caractères pour éviter un pattern prévisible
+    return password
+      .split('')
+      .sort(() => Math.random() - 0.5)
+      .join('');
   }
 
   @UseGuards(JwtAuthGuard)

@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground, FacebookLoginButton } from '@/components/ui';
-import { login } from '@/utils/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { useLogo } from '@/contexts/LogoContext';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
+import { isFacebookAuthEnabled } from '@/utils/facebook';
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
@@ -20,14 +20,15 @@ export default function LoginPage() {
   });
   const router = useRouter();
   const { logoChoice } = useLogo();
+  const { loginAsync, isLoggingIn } = useAuth();
 
   useEffect(() => {
     // Check for success message in URL params
     const urlParams = new URLSearchParams(window.location.search);
     const message = urlParams.get('message');
-    if (message === 'request-sent') {
+    if (message === 'account-created') {
       setSuccessMessage(
-        "Demande d'accès envoyée avec succès ! Vous recevrez une réponse par email.",
+        'Compte créé avec succès ! Connectez-vous maintenant avec vos identifiants.',
       );
       // Clear the URL parameter
       window.history.replaceState({}, '', '/login');
@@ -38,37 +39,28 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setSuccessMessage(''); // Clear any previous success message
 
     try {
-      console.log('🔥 DEBUT LOGIN - Utilisation ApiClient.postPublic');
-      console.log('🔥 API_ENDPOINTS.LOGIN:', API_ENDPOINTS.LOGIN);
-      const response = await ApiClient.postPublic(
-        API_ENDPOINTS.LOGIN,
-        formData,
-      );
-      console.log('🔥 Response reçue:', response.url);
+      const result = await loginAsync(formData);
 
-      if (!response.ok) {
-        throw new Error('Email ou mot de passe incorrect');
+      // Check if user needs to choose a manager (first-time FBO login)
+      if (result.user.role === 'fbo' && !result.user.managerId) {
+        router.push('/welcome');
+        return;
       }
 
-      const data = await response.json();
-
-      // Store token and user info
-      login(data.access_token, data.user);
-
       // Redirect based on role
-      if (data.user.role === 'manager') {
+      if (result.user.role === 'manager') {
         router.push('/manager/dashboard');
       } else {
         router.push('/fbo/dashboard');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-    } finally {
-      setIsLoading(false);
+      setError(
+        err instanceof Error ? err.message : 'Email ou mot de passe incorrect',
+      );
     }
   };
 
@@ -76,34 +68,25 @@ export default function LoginPage() {
     const testData = { email, password };
     setFormData(testData);
     setError('');
-    setIsLoading(true);
+    setSuccessMessage('');
 
     try {
-      console.log('🔥 QUICK LOGIN - Utilisation ApiClient.postPublic');
-      console.log('🔥 API_ENDPOINTS.LOGIN:', API_ENDPOINTS.LOGIN);
-      const response = await ApiClient.postPublic(
-        API_ENDPOINTS.LOGIN,
-        testData,
-      );
-      console.log('🔥 Quick login response URL:', response.url);
+      const result = await loginAsync(testData);
 
-      if (!response.ok) {
-        throw new Error('Erreur de connexion');
+      // Check if user needs to choose a manager (first-time FBO login)
+      if (result.user.role === 'fbo' && !result.user.managerId) {
+        router.push('/welcome');
+        return;
       }
 
-      const data = await response.json();
-      login(data.access_token, data.user);
-
       // Redirect based on role
-      if (data.user.role === 'manager') {
+      if (result.user.role === 'manager') {
         router.push('/manager/dashboard');
       } else {
         router.push('/fbo/dashboard');
       }
     } catch (err) {
       setError('Erreur de connexion');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -233,30 +216,34 @@ export default function LoginPage() {
                 type="submit"
                 className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold w-full"
                 size="lg"
-                isLoading={isLoading}
+                isLoading={isLoggingIn}
                 disabled={!formData.email || !formData.password}
               >
-                {isLoading ? 'Connexion...' : 'Se connecter'}
+                {isLoggingIn ? 'Connexion...' : 'Se connecter'}
               </Button>
             </form>
 
-            {/* Facebook Login Section */}
-            <div className="my-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+            {/* Facebook Login Section - only show if Facebook is enabled */}
+            {isFacebookAuthEnabled() && (
+              <>
+                <div className="my-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white/20 text-gray-500">ou</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white/20 text-gray-500">ou</span>
-                </div>
-              </div>
-            </div>
 
-            <FacebookLoginButton
-              onSuccess={handleFacebookSuccess}
-              onError={handleFacebookError}
-              className="w-full"
-            />
+                <FacebookLoginButton
+                  onSuccess={handleFacebookSuccess}
+                  onError={handleFacebookError}
+                  className="w-full"
+                />
+              </>
+            )}
 
             <div className="border-t border-gray-200 my-4 sm:my-6"></div>
 

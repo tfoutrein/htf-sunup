@@ -400,6 +400,38 @@ refactor: optimize challenge queries
 - **backend** : API Nest.js (port 3001)
 - **frontend** : Application Next.js (port 3000)
 
+### Configuration Facebook avec Docker
+
+Les variables d'environnement Facebook sont configurées dans `docker-compose.yml` :
+
+```yaml
+backend:
+  environment:
+    FACEBOOK_AUTH_ENABLED: ${FACEBOOK_AUTH_ENABLED}
+    FACEBOOK_APP_ID: ${FACEBOOK_APP_ID}
+    # ...
+
+frontend:
+  environment:
+    NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED: ${NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED}
+    # ...
+```
+
+### Tests Docker avec Facebook
+
+```bash
+# Valider la configuration Docker
+./scripts/validate-docker-config.sh
+
+# Tester avec Facebook désactivé
+./scripts/test-docker-facebook.sh disabled
+
+# Tester avec Facebook activé
+./scripts/test-docker-facebook.sh enabled
+```
+
+Voir [DOCKER_FACEBOOK_TESTING.md](./DOCKER_FACEBOOK_TESTING.md) pour plus de détails.
+
 ### Commandes Utiles
 
 ```bash
@@ -471,3 +503,112 @@ Ce projet est sous licence MIT.
 ---
 
 **HTF Sunup** - Gestion des défis quotidiens pour booster l'activité des équipes Forever Living 🌅
+
+## 📱 Application de défis d'été pour Happy Team Factory
+
+### ✨ Fonctionnalités principales
+
+- **Authentification multi-plateforme** (Email/Mot de passe + Facebook OAuth)
+- **Avatars Facebook automatiques** : Photo de profil synchronisée depuis Facebook
+- **Gestion d'équipe hiérarchique** avec managers et FBO
+- **Système de campagnes et défis quotidiens**
+- **Gamification** avec points, badges et streaks
+- **Interface responsive** avec animations Aurora
+- **Accueil personnalisé** pour nouveaux utilisateurs Facebook
+
+### 🖼️ Gestion des avatars
+
+L'application récupère automatiquement les photos de profil Facebook en haute qualité :
+
+#### **Pour les nouveaux utilisateurs Facebook**
+
+- Photo de profil récupérée automatiquement lors de l'inscription
+- Résolution 200x200 pixels pour une qualité optimale
+- Affichage dans la navigation et le profil utilisateur
+
+#### **Pour les utilisateurs existants**
+
+- Possibilité de lier son compte Facebook depuis la page Profil
+- Synchronisation automatique de la photo de profil
+- Mise à jour en temps réel dans toute l'interface
+
+#### **Fonctionnalités techniques**
+
+- Composant Avatar amélioré avec support des URLs d'images
+- Fallback vers initiales si pas de photo disponible
+- Indicateur Facebook sur les avatars liés
+- Cache automatique des images par le navigateur
+
+### 🔧 Configuration Facebook
+
+Pour activer les avatars Facebook, configurer les variables d'environnement :
+
+```bash
+# Backend
+FACEBOOK_AUTH_ENABLED=true
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+FACEBOOK_CALLBACK_URL=http://localhost:3000/auth/facebook/callback
+
+# Frontend
+NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED=true
+NEXT_PUBLIC_FACEBOOK_APP_ID=your_facebook_app_id
+```
+
+#### **Contrôle d'activation**
+
+- `FACEBOOK_AUTH_ENABLED` (backend) : Active/désactive les endpoints Facebook
+- `NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED` (frontend) : Masque/affiche les boutons Facebook
+- Si `false`, les utilisateurs ne verront pas les options Facebook dans l'interface
+- **Interface intelligente** : Le séparateur "ou" disparaît automatiquement quand Facebook est désactivé
+
+#### **Test de l'interface**
+
+```bash
+# Test interactif de l'affichage conditionnel
+./scripts/test-facebook-ui.sh
+```
+
+Voir [FACEBOOK_UI_TEST_GUIDE.md](./FACEBOOK_UI_TEST_GUIDE.md) pour plus de détails.
+
+### 🎯 Flux d'authentification
+
+1. **Nouvel utilisateur Facebook** :
+
+   - Connexion Facebook → Récupération photo → Page d'accueil → Sélection manager → Dashboard
+
+2. **Utilisateur existant** :
+   - Page Profil → Liaison Facebook → Synchronisation photo → Avatar mis à jour
+
+### 🛠️ Technologies utilisées
+
+- **Backend** : NestJS, PostgreSQL, Drizzle ORM, Passport Facebook
+- **Frontend** : Next.js, TailwindCSS, HeroUI, Facebook SDK
+- **Base de données** : Support natif du champ `profilePicture`
+- **Authentification** : JWT avec informations avatar intégrées
+
+## 🚀 Installation et démarrage
+
+```bash
+# Installation des dépendances
+pnpm install
+
+# Démarrage en développement
+pnpm back:dev  # Backend sur port 3001
+pnpm front:dev # Frontend sur port 3000
+```
+
+## 📦 Structure du projet
+
+```
+htf-sunup/
+├── apps/
+│   ├── backend/     # API NestJS avec auth Facebook
+│   └── frontend/    # Interface Next.js avec avatars
+├── docs/           # Documentation
+└── resources/      # Assets et ressources
+```
+
+---
+
+_Développé avec ❤️ par Happy Team Factory_

@@ -16,6 +16,24 @@ export const login = (token: string, user: any) => {
   window.dispatchEvent(new CustomEvent('user-login'));
 };
 
+// Individual token management functions
+export const setToken = (token: string) => {
+  localStorage.setItem('token', token);
+};
+
+export const removeToken = () => {
+  localStorage.removeItem('token');
+};
+
+// Individual user management functions
+export const setUser = (user: any) => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
+
+export const removeUser = () => {
+  localStorage.removeItem('user');
+};
+
 export const getUser = () => {
   const userData = localStorage.getItem('user');
   if (userData) {

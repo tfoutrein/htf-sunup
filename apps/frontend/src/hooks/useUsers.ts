@@ -12,6 +12,7 @@ interface User {
   managerId?: number;
   managerName?: string;
   isDirectReport?: boolean;
+  profilePicture?: string;
   createdAt: string;
   updatedAt: string;
 }

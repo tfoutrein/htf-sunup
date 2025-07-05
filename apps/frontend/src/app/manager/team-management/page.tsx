@@ -17,10 +17,10 @@ import {
   Select,
   SelectItem,
   useDisclosure,
-  Avatar,
   Chip,
   Divider,
 } from '@heroui/react';
+import { Avatar } from '@/components/ui/Avatar';
 import {
   UsersIcon,
   PencilIcon,
@@ -347,7 +347,12 @@ export default function TeamManagementPage() {
               )}
               {!hasChildren && <div className="w-6 flex-shrink-0"></div>}
 
-              <Avatar size="sm" name={member.name} className="shrink-0" />
+              <Avatar
+                size="sm"
+                name={member.name}
+                profilePicture={member.profilePicture}
+                className="shrink-0"
+              />
 
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="font-medium truncate">{member.name}</span>
@@ -423,7 +428,12 @@ export default function TeamManagementPage() {
                 )}
                 {!hasChildren && <div className="w-6 flex-shrink-0"></div>}
 
-                <Avatar size="sm" name={member.name} className="shrink-0" />
+                <Avatar
+                  size="sm"
+                  name={member.name}
+                  profilePicture={member.profilePicture}
+                  className="shrink-0"
+                />
 
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="font-medium truncate">{member.name}</span>
@@ -511,7 +521,11 @@ export default function TeamManagementPage() {
             {/* Desktop layout */}
             <div className="hidden md:flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Avatar size="sm" name={member.name} />
+                <Avatar
+                  size="sm"
+                  name={member.name}
+                  profilePicture={member.profilePicture}
+                />
                 <div className="flex flex-col min-w-0">
                   <div className="font-medium truncate">{member.name}</div>
                   <div className="text-sm text-gray-500 truncate">
@@ -563,7 +577,11 @@ export default function TeamManagementPage() {
             <div className="md:hidden space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <Avatar size="sm" name={member.name} />
+                  <Avatar
+                    size="sm"
+                    name={member.name}
+                    profilePicture={member.profilePicture}
+                  />
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="font-medium truncate">{member.name}</div>
                     <div className="text-sm text-gray-500 truncate">

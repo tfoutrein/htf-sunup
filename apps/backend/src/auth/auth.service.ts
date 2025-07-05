@@ -30,6 +30,10 @@ export class AuthService {
       sub: user.id,
       role: user.role,
       name: user.name,
+      managerId: user.managerId,
+      profilePicture: user.profilePicture,
+      authProvider: user.authProvider,
+      facebookId: user.facebookId,
     };
 
     return {
@@ -42,6 +46,7 @@ export class AuthService {
         managerId: user.managerId,
         profilePicture: user.profilePicture,
         authProvider: user.authProvider,
+        facebookId: user.facebookId,
       },
     };
   }
@@ -72,6 +77,27 @@ export class AuthService {
     return this.login(user);
   }
 
+  async createUser(registerDto: {
+    name: string;
+    email: string;
+    password: string;
+    role: string;
+    managerId?: number;
+  }): Promise<User> {
+    const hashedPassword = await this.hashPassword(registerDto.password);
+
+    const userData = {
+      name: registerDto.name,
+      email: registerDto.email,
+      password: hashedPassword,
+      role: registerDto.role,
+      authProvider: 'local',
+      ...(registerDto.managerId && { managerId: registerDto.managerId }),
+    };
+
+    return this.usersService.create(userData);
+  }
+
   async findOrCreateFacebookUser(facebookData: {
     facebookId: string;
     email: string;
@@ -85,11 +111,12 @@ export class AuthService {
     );
 
     if (user) {
-      // Mettre à jour le token d'accès Facebook
-      user = await this.usersService.updateFacebookToken(
-        user.id,
-        facebookData.facebookAccessToken,
-      );
+      // Mettre à jour toutes les informations Facebook lors de la reconnexion
+      user = await this.usersService.updateFacebookInfo(user.id, {
+        facebookAccessToken: facebookData.facebookAccessToken,
+        profilePicture: facebookData.profilePicture,
+        name: facebookData.name,
+      });
       return user;
     }
 
@@ -116,8 +143,50 @@ export class AuthService {
       profilePicture: facebookData.profilePicture,
       authProvider: 'facebook',
       role: 'fbo', // Role par défaut
+      // Pas de managerId assigné - l'utilisateur devra choisir son manager
     });
 
     return newUser;
+  }
+
+  // Nouvelle méthode pour assigner un manager à un utilisateur
+  async assignManagerToUser(userId: number, managerId: number): Promise<User> {
+    return this.usersService.assignManager(userId, managerId);
+  }
+
+  // Méthode pour récupérer un utilisateur par son ID
+  async findUserById(userId: number): Promise<User> {
+    return this.usersService.findOne(userId);
+  }
+
+  // Méthode pour vérifier si l'utilisateur a besoin d'un manager
+  async checkUserNeedsManager(user: User): Promise<boolean> {
+    return !user.managerId && user.role === 'fbo';
+  }
+
+  // Nouvelle méthode pour lier un compte Facebook à un compte existant
+  async linkFacebookToExistingUser(
+    userId: number,
+    facebookData: {
+      facebookId: string;
+      facebookAccessToken: string;
+      profilePicture?: string;
+    },
+  ): Promise<User> {
+    // Vérifier d'abord si ce Facebook ID n'est pas déjà utilisé
+    const existingFacebookUser = await this.usersService.findByFacebookId(
+      facebookData.facebookId,
+    );
+
+    if (existingFacebookUser && existingFacebookUser.id !== userId) {
+      throw new Error('Ce compte Facebook est déjà lié à un autre utilisateur');
+    }
+
+    return this.usersService.linkFacebookAccount(userId, {
+      facebookId: facebookData.facebookId,
+      facebookAccessToken: facebookData.facebookAccessToken,
+      profilePicture: facebookData.profilePicture,
+      authProvider: 'facebook',
+    });
   }
 }

@@ -37,6 +37,8 @@ import {
   CalendarIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
+import { validatePassword, getPasswordStrengthMessage } from '@/utils/password';
+import { PasswordRequirements } from '@/components/ui';
 
 interface User {
   id: number;
@@ -300,6 +302,13 @@ export default function ManagerDashboard() {
 
   const handleAddMember = async () => {
     if (!user) return;
+
+    // Valider le mot de passe
+    const passwordValidation = validatePassword(memberForm.password);
+    if (!passwordValidation.isValid) {
+      alert('Le mot de passe ne respecte pas les exigences de sécurité.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -642,7 +651,7 @@ export default function ManagerDashboard() {
               <Input
                 type="password"
                 label="Mot de passe temporaire"
-                placeholder="Au moins 6 caractères"
+                placeholder={getPasswordStrengthMessage()}
                 value={memberForm.password}
                 onValueChange={(value) =>
                   setMemberForm((prev) => ({ ...prev, password: value }))
@@ -650,6 +659,13 @@ export default function ManagerDashboard() {
                 variant="bordered"
                 isRequired
               />
+
+              {memberForm.password && (
+                <PasswordRequirements
+                  password={memberForm.password}
+                  className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                />
+              )}
             </div>
           </ModalBody>
           <ModalFooter>

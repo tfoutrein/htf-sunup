@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import { DATABASE_CONNECTION } from '../db/database.module';
 import { users, User, NewUser } from '../db/schema';
@@ -24,13 +24,22 @@ export class UsersService {
 
     let userData = { ...createUserDto };
 
-    // Hash password only if it's provided (not for Facebook users)
-    if (createUserDto.password) {
+    // Hash password only if it's provided and not already hashed
+    // (not for Facebook users and not for already hashed passwords from auth service)
+    if (
+      createUserDto.password &&
+      !this.isPasswordHashed(createUserDto.password)
+    ) {
       userData.password = await bcrypt.hash(createUserDto.password, 10);
     }
 
     const [user] = await this.db.insert(users).values(userData).returning();
     return user;
+  }
+
+  private isPasswordHashed(password: string): boolean {
+    // bcrypt hashes always start with $2a$, $2b$, or $2y$ and are 60 characters long
+    return password && password.length === 60 && password.startsWith('$2');
   }
 
   async findAll(): Promise<User[]> {
@@ -97,6 +106,40 @@ export class UsersService {
     return user;
   }
 
+  async updateFacebookInfo(
+    userId: number,
+    facebookData: {
+      facebookAccessToken: string;
+      profilePicture?: string;
+      name?: string;
+    },
+  ): Promise<User> {
+    const updateData: any = {
+      facebookAccessToken: facebookData.facebookAccessToken,
+      updatedAt: new Date(),
+    };
+
+    if (facebookData.profilePicture) {
+      updateData.profilePicture = facebookData.profilePicture;
+    }
+
+    if (facebookData.name) {
+      updateData.name = facebookData.name;
+    }
+
+    const [user] = await this.db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return user;
+  }
+
   async linkFacebookAccount(
     userId: number,
     facebookData: {
@@ -138,10 +181,32 @@ export class UsersService {
 
   // Team management methods
   async getTeamMembers(managerId: number): Promise<User[]> {
-    return await this.db
+    // Check if this is the principal manager
+    const isPrincipalManager = await this.isPrincipalManager(managerId);
+
+    // Get direct team members
+    const directMembers = await this.db
       .select()
       .from(users)
       .where(eq(users.managerId, managerId));
+
+    // If this is the principal manager, also include users without manager
+    if (isPrincipalManager) {
+      const usersWithoutManager = await this.db
+        .select()
+        .from(users)
+        .where(
+          and(
+            isNull(users.managerId),
+            eq(users.role, 'fbo'), // Only include FBO users without manager
+          ),
+        );
+
+      // Add users without manager to direct members
+      directMembers.push(...usersWithoutManager);
+    }
+
+    return directMembers;
   }
 
   async getAllManagers(): Promise<User[]> {
@@ -198,11 +263,30 @@ export class UsersService {
     // Get the manager
     const manager = await this.findOne(managerId);
 
+    // Check if this is the principal manager
+    const isPrincipalManager = await this.isPrincipalManager(managerId);
+
     // Get direct team members (both managers and FBOs)
     const directMembers = await this.db
       .select()
       .from(users)
       .where(eq(users.managerId, managerId));
+
+    // If this is the principal manager, also include users without manager
+    if (isPrincipalManager) {
+      const usersWithoutManager = await this.db
+        .select()
+        .from(users)
+        .where(
+          and(
+            isNull(users.managerId),
+            eq(users.role, 'fbo'), // Only include FBO users without manager
+          ),
+        );
+
+      // Add users without manager to direct members
+      directMembers.push(...usersWithoutManager);
+    }
 
     // Build hierarchy recursively
     const hierarchy = {
@@ -232,6 +316,8 @@ export class UsersService {
         }),
       ),
       totalMembers: 0, // Will be calculated
+      totalManagers: 0, // Will be calculated
+      totalFbos: 0, // Will be calculated
     };
 
     // Calculate total members recursively
@@ -299,6 +385,9 @@ export class UsersService {
   async getFullTeamList(managerId: number): Promise<any[]> {
     const allMembers = [];
 
+    // Check if this is the principal manager
+    const isPrincipalManager = await this.isPrincipalManager(managerId);
+
     // Get direct team members
     const directMembers = await this.db
       .select()
@@ -323,6 +412,27 @@ export class UsersService {
             isDirectReport: false,
           })),
         );
+      }
+    }
+
+    // If this is the principal manager, also include users without manager
+    if (isPrincipalManager) {
+      const usersWithoutManager = await this.db
+        .select()
+        .from(users)
+        .where(
+          and(
+            isNull(users.managerId),
+            eq(users.role, 'fbo'), // Only include FBO users without manager
+          ),
+        );
+
+      for (const user of usersWithoutManager) {
+        allMembers.push({
+          ...user,
+          managerName: "Aucun (En attente d'assignation)",
+          isDirectReport: true,
+        });
       }
     }
 
@@ -384,5 +494,11 @@ export class UsersService {
   ): Promise<boolean> {
     const fullTeam = await this.getFullTeamList(managerId);
     return fullTeam.some((member) => member.id === memberId);
+  }
+
+  // Méthode pour déterminer si un manager est le manager principal
+  private async isPrincipalManager(managerId: number): Promise<boolean> {
+    const manager = await this.findOne(managerId);
+    return manager.role === 'manager' && !manager.managerId;
   }
 }

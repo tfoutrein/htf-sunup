@@ -1,108 +1,66 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Input,
-  Button,
-  Select,
-  SelectItem,
-  Textarea,
-} from '@heroui/react';
+import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { AuroraBackground } from '@/components/ui';
-import { SunIcon } from '@heroicons/react/24/outline';
+import { SunIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useLogo } from '@/contexts/LogoContext';
+import { ApiClient } from '@/services/api';
+import { validatePassword, getPasswordStrengthMessage } from '@/utils/password';
+import { PasswordRequirements } from '@/components/ui';
 
-interface Manager {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
-
-export default function RequestAccessPage() {
+export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [managersLoading, setManagersLoading] = useState(false);
   const [error, setError] = useState('');
-  const [managers, setManagers] = useState<Manager[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'fbo',
-    managerId: '',
-    message: '',
+    password: '',
+    confirmPassword: '',
   });
   const router = useRouter();
   const { logoChoice } = useLogo();
-
-  useEffect(() => {
-    if (formData.role === 'fbo') {
-      fetchManagers();
-    }
-  }, [formData.role]);
-
-  const fetchManagers = async () => {
-    setManagersLoading(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/access-requests/managers/list`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setManagers(data);
-      }
-    } catch (err) {
-      console.error('Erreur lors du chargement des managers:', err);
-    } finally {
-      setManagersLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    if (formData.role === 'fbo' && !formData.managerId) {
-      setError('Veuillez sélectionner votre manager');
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation du mot de passe avec les nouvelles règles
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError('Le mot de passe ne respecte pas les exigences de sécurité.');
       setIsLoading(false);
       return;
     }
 
     try {
-      const requestData = {
+      const response = await ApiClient.post('/auth/register', {
         name: formData.name,
         email: formData.email,
-        requestedRole: formData.role,
-        requestedManagerId: formData.managerId
-          ? parseInt(formData.managerId)
-          : undefined,
-        message: formData.message,
-      };
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/access-requests`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        },
-      );
+        password: formData.password,
+        role: 'fbo', // Tous les nouveaux utilisateurs sont des FBO
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message || "Erreur lors de la demande d'accès",
+          errorData.message || 'Erreur lors de la création du compte',
         );
       }
 
-      // Succès - rediriger vers login avec message
-      router.push('/login?message=request-sent');
+      // Succès - rediriger vers login avec message de confirmation
+      router.push('/login?message=account-created');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
@@ -152,158 +110,145 @@ export default function RequestAccessPage() {
             Les défis de l'été
           </h1>
           <p className="text-gray-500 text-sm">by Happy Team Factory</p>
-          <p className="text-sm text-gray-600 mt-1">Rejoins l'aventure !</p>
+          <p className="text-sm text-gray-600 mt-1">Créer votre compte</p>
         </div>
 
         <Card className="bg-white/20 backdrop-blur-md shadow-2xl border border-white/30 shadow-orange-500/20">
           <CardHeader className="text-center pb-6">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Demander l'accès aux défis de l'été
+              Inscription
             </h2>
+            <p className="text-sm text-gray-600 mt-2">
+              Rejoignez l'aventure des défis de l'été !
+            </p>
           </CardHeader>
           <CardBody className="gap-4">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <Input
                 type="text"
                 label="Prénom et nom"
-                placeholder="Ton prénom et ton nom"
+                placeholder="Votre prénom et nom"
                 value={formData.name}
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, name: value }))
                 }
                 variant="bordered"
                 isRequired
+                classNames={{
+                  input: 'text-gray-800',
+                  label: 'text-gray-700',
+                }}
               />
 
               <Input
                 type="email"
                 label="Email"
-                placeholder="ton.email@exemple.com"
+                placeholder="votre.email@exemple.com"
                 value={formData.email}
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, email: value }))
                 }
                 variant="bordered"
                 isRequired
+                classNames={{
+                  input: 'text-gray-800',
+                  label: 'text-gray-700',
+                }}
               />
 
-              <Select
-                label="Rôle"
-                placeholder="Sélectionne ton rôle"
-                selectedKeys={[formData.role]}
-                onSelectionChange={(keys) => {
-                  const role = Array.from(keys)[0] as string;
-                  setFormData((prev) => ({ ...prev, role }));
-                }}
-                variant="bordered"
-                classNames={{
-                  listbox: 'text-gray-900',
-                  popoverContent: 'bg-white',
-                  value: '!text-gray-900 font-medium',
-                  trigger: 'data-[hover=true]:!text-gray-900',
-                  innerWrapper: '!text-gray-900',
-                  mainWrapper: '!text-gray-900',
-                }}
-              >
-                <SelectItem key="fbo" className="text-gray-900">
-                  FBO (Membre d'équipe)
-                </SelectItem>
-                <SelectItem key="manager" className="text-gray-900">
-                  Manager
-                </SelectItem>
-              </Select>
-
-              {formData.role === 'fbo' && (
-                <Select
-                  label="Manager"
-                  placeholder="Sélectionnez votre manager"
-                  description="Choisissez votre manager direct ou le manager principal si vous n'avez pas de manager spécifique"
-                  selectedKeys={formData.managerId ? [formData.managerId] : []}
-                  onSelectionChange={(keys) => {
-                    const managerId = Array.from(keys)[0] as string;
-                    setFormData((prev) => ({ ...prev, managerId }));
-                  }}
-                  variant="bordered"
-                  isLoading={managersLoading}
-                  isRequired
-                  classNames={{
-                    listbox: 'text-gray-900',
-                    popoverContent: 'bg-white',
-                    value: '!text-gray-900 !font-medium',
-                    trigger: '!text-gray-900',
-                    innerWrapper: '!text-gray-900',
-                    mainWrapper: '!text-gray-900',
-                    description: '!text-gray-700 font-medium',
-                  }}
-                  renderValue={(items) => {
-                    return items.map((item) => (
-                      <div key={item.key} className="text-gray-900 font-medium">
-                        {item.textValue}
-                      </div>
-                    ));
-                  }}
-                >
-                  {managers.map((manager) => (
-                    <SelectItem
-                      key={manager.id.toString()}
-                      className="text-gray-900"
-                      textValue={`${manager.name} - ${manager.email}`}
-                    >
-                      {manager.name} - {manager.email}
-                    </SelectItem>
-                  ))}
-                </Select>
-              )}
-
-              <Textarea
-                label="Message (optionnel)"
-                placeholder="Présentez-vous, un petit mot, une blague..."
-                value={formData.message}
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                label="Mot de passe"
+                placeholder={getPasswordStrengthMessage()}
+                value={formData.password}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, message: value }))
+                  setFormData((prev) => ({ ...prev, password: value }))
                 }
                 variant="bordered"
-                maxRows={4}
+                isRequired
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </button>
+                }
+                classNames={{
+                  input: 'text-gray-800',
+                  label: 'text-gray-700',
+                }}
+              />
+
+              {formData.password && (
+                <PasswordRequirements
+                  password={formData.password}
+                  className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                />
+              )}
+
+              <Input
+                type={showConfirmPassword ? 'text' : 'password'}
+                label="Confirmer le mot de passe"
+                placeholder="Répétez votre mot de passe"
+                value={formData.confirmPassword}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, confirmPassword: value }))
+                }
+                variant="bordered"
+                isRequired
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="focus:outline-none"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </button>
+                }
+                classNames={{
+                  input: 'text-gray-800',
+                  label: 'text-gray-700',
+                }}
               />
 
               {error && (
-                <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
+                <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
                   {error}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold"
-                size="lg"
                 isLoading={isLoading}
-                disabled={!formData.name || !formData.email}
+                className="w-full bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 text-white font-semibold"
+                size="lg"
               >
-                {isLoading ? 'Envoi...' : 'Envoyer la demande'}
+                {isLoading ? 'Création du compte...' : 'Créer mon compte'}
               </Button>
-            </form>
 
-            <div className="border-t border-gray-200 my-4"></div>
-
-            <div className="text-center">
-              <p className="text-gray-600 text-sm">
-                Déjà un compte ?{' '}
+              <div className="text-center text-sm text-gray-600">
+                Vous avez déjà un compte ?{' '}
                 <button
+                  type="button"
                   onClick={() => router.push('/login')}
-                  className="text-orange-500 hover:text-orange-600 font-medium underline"
+                  className="text-orange-600 hover:text-orange-700 font-medium underline"
                 >
                   Se connecter
                 </button>
-              </p>
-            </div>
+              </div>
+            </form>
           </CardBody>
         </Card>
-
-        <div className="text-center mt-6">
-          <p className="text-xs text-gray-500">
-            Une initiative de la Happy Team Factory 🌻
-          </p>
-        </div>
       </div>
     </div>
   );

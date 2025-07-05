@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Switch } from '@/components/ui';
 import { LogoDisplay } from '@/components/ui/LogoDisplay';
-import { logout } from '@/utils/auth';
-import { useAuth } from '@/app/providers';
+import { useAuth } from '@/hooks/useAuth';
 import { useAurora } from '@/contexts/AuroraContext';
 import { useAuroraPages } from '@/hooks/useAuroraPages';
 import { useLogo } from '@/contexts/LogoContext';
@@ -17,7 +16,7 @@ export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { isAuroraEnabled, toggleAurora } = useAurora();
   const { isAuroraPage } = useAuroraPages();
   const { logoChoice } = useLogo();
@@ -40,7 +39,7 @@ export function Navigation() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    logout();
     router.push('/login');
     closeMenu();
   };
@@ -165,21 +164,24 @@ export function Navigation() {
 
                   {/* User Menu */}
                   <div className="flex items-center space-x-3 ml-4">
-                    <div className="flex items-center space-x-2">
-                      <Avatar
-                        name={user.name}
-                        size="sm"
-                        className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
-                      />
-                      <div className="hidden lg:flex lg:flex-col">
-                        <span className="text-sm font-medium text-gray-900">
-                          {user.name}
-                        </span>
-                        <span className="text-xs text-gray-500 capitalize">
-                          {user.role}
-                        </span>
+                    <Link href="/profile">
+                      <div className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg px-2 py-1 transition-colors duration-200">
+                        <Avatar
+                          name={user.name}
+                          profilePicture={user.profilePicture}
+                          size="sm"
+                          className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
+                        />
+                        <div className="hidden lg:flex lg:flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {user.name}
+                          </span>
+                          <span className="text-xs text-gray-500 capitalize">
+                            {user.role}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                     <Button
                       variant="light"
                       color="danger"
@@ -273,21 +275,24 @@ export function Navigation() {
                 (user ? (
                   <>
                     {/* User Info */}
-                    <div className="flex items-center space-x-3 px-3 py-2 bg-orange-50 rounded-lg mb-3">
-                      <Avatar
-                        name={user.name}
-                        size="sm"
-                        className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900">
-                          {user.name}
-                        </span>
-                        <span className="text-xs text-gray-500 capitalize">
-                          {user.role}
-                        </span>
+                    <Link href="/profile" onClick={closeMenu}>
+                      <div className="flex items-center space-x-3 px-3 py-2 bg-orange-50 rounded-lg mb-3 cursor-pointer hover:bg-orange-100 transition-colors duration-200">
+                        <Avatar
+                          name={user.name}
+                          profilePicture={user.profilePicture}
+                          size="sm"
+                          className="bg-gradient-to-r from-orange-400 to-amber-400 text-white"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {user.name}
+                          </span>
+                          <span className="text-xs text-gray-500 capitalize">
+                            {user.role}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Navigation Links */}
                     <Link href={getDashboardLink()} onClick={closeMenu}>

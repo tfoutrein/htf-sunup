@@ -1,6 +1,7 @@
 import { Button } from './Button';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { isFacebookAuthEnabled } from '@/utils/facebook';
 
 interface FacebookLoginButtonProps {
   onSuccess?: (user: any) => void;
@@ -15,6 +16,11 @@ export const FacebookLoginButton = ({
 }: FacebookLoginButtonProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Ne pas afficher le composant si Facebook n'est pas activé
+  if (!isFacebookAuthEnabled()) {
+    return null;
+  }
 
   const handleFacebookLogin = async () => {
     try {

@@ -7,6 +7,7 @@ import {
   IsIn,
   IsNumber,
 } from 'class-validator';
+import { IsStrongPassword } from '../../utils/password-validator';
 
 export class CreateUserDto {
   @ApiProperty({ description: 'User name', example: 'John Doe' })
@@ -18,9 +19,9 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ description: 'User password', example: 'password123' })
+  @ApiProperty({ description: 'User password', example: 'MyPassword123!' })
   @IsString()
-  @MinLength(6)
+  @IsStrongPassword()
   password: string;
 
   @ApiProperty({
