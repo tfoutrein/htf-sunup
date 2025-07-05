@@ -16,6 +16,7 @@
     "@heroui/toast": "^2.0.12",
     "@tanstack/react-query": "^5.81.2",
     "@tanstack/react-query-devtools": "^5.81.2",
+    "@types/facebook-js-sdk": "^3.3.12",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

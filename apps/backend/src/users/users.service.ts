@@ -15,23 +15,21 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto | any): Promise<User> {
     // Check if email already exists
     const existingUser = await this.findByEmail(createUserDto.email);
     if (existingUser) {
       throw new BadRequestException('Email already exists');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    let userData = { ...createUserDto };
 
-    const [user] = await this.db
-      .insert(users)
-      .values({
-        ...createUserDto,
-        password: hashedPassword,
-      })
-      .returning();
+    // Hash password only if it's provided (not for Facebook users)
+    if (createUserDto.password) {
+      userData.password = await bcrypt.hash(createUserDto.password, 10);
+    }
+
+    const [user] = await this.db.insert(users).values(userData).returning();
     return user;
   }
 
@@ -57,6 +55,14 @@ export class UsersService {
     return user || null;
   }
 
+  async findByFacebookId(facebookId: string): Promise<User | null> {
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.facebookId, facebookId));
+    return user || null;
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const [user] = await this.db
       .update(users)
@@ -66,6 +72,54 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return user;
+  }
+
+  async updateFacebookToken(
+    userId: number,
+    accessToken: string,
+  ): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        facebookAccessToken: accessToken,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return user;
+  }
+
+  async linkFacebookAccount(
+    userId: number,
+    facebookData: {
+      facebookId: string;
+      facebookAccessToken: string;
+      profilePicture?: string;
+      authProvider: string;
+    },
+  ): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set({
+        facebookId: facebookData.facebookId,
+        facebookAccessToken: facebookData.facebookAccessToken,
+        profilePicture: facebookData.profilePicture,
+        authProvider: facebookData.authProvider,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
     return user;

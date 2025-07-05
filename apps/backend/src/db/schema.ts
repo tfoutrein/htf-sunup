@@ -16,9 +16,16 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }).notNull(),
+  password: varchar('password', { length: 255 }), // Nullable pour les utilisateurs Facebook
   role: varchar('role', { length: 50 }).notNull().default('fbo'), // 'manager' | 'fbo'
   managerId: integer('manager_id').references(() => users.id),
+  // Champs pour l'authentification Facebook
+  facebookId: varchar('facebook_id', { length: 255 }).unique(),
+  facebookAccessToken: varchar('facebook_access_token', { length: 1000 }),
+  profilePicture: varchar('profile_picture', { length: 500 }),
+  authProvider: varchar('auth_provider', { length: 50 })
+    .notNull()
+    .default('local'), // 'local' | 'facebook'
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -14,7 +14,11 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.usersService.findByEmail(email);
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (
+      user &&
+      user.authProvider === 'local' &&
+      (await bcrypt.compare(password, user.password))
+    ) {
       return user;
     }
     return null;
@@ -36,6 +40,8 @@ export class AuthService {
         name: user.name,
         role: user.role,
         managerId: user.managerId,
+        profilePicture: user.profilePicture,
+        authProvider: user.authProvider,
       },
     };
   }
@@ -58,10 +64,60 @@ export class AuthService {
       email: registerDto.email,
       password: hashedPassword,
       role: registerDto.role,
+      authProvider: 'local',
       ...(registerDto.managerId && { managerId: registerDto.managerId }),
     };
 
     const user = await this.usersService.create(userData);
     return this.login(user);
+  }
+
+  async findOrCreateFacebookUser(facebookData: {
+    facebookId: string;
+    email: string;
+    name: string;
+    profilePicture?: string;
+    facebookAccessToken: string;
+  }): Promise<User> {
+    // Vérifier si l'utilisateur existe déjà par Facebook ID
+    let user = await this.usersService.findByFacebookId(
+      facebookData.facebookId,
+    );
+
+    if (user) {
+      // Mettre à jour le token d'accès Facebook
+      user = await this.usersService.updateFacebookToken(
+        user.id,
+        facebookData.facebookAccessToken,
+      );
+      return user;
+    }
+
+    // Vérifier si l'utilisateur existe déjà par email
+    user = await this.usersService.findByEmail(facebookData.email);
+
+    if (user) {
+      // Lier le compte Facebook à l'utilisateur existant
+      user = await this.usersService.linkFacebookAccount(user.id, {
+        facebookId: facebookData.facebookId,
+        facebookAccessToken: facebookData.facebookAccessToken,
+        profilePicture: facebookData.profilePicture,
+        authProvider: 'facebook',
+      });
+      return user;
+    }
+
+    // Créer un nouvel utilisateur Facebook
+    const newUser = await this.usersService.create({
+      name: facebookData.name,
+      email: facebookData.email,
+      facebookId: facebookData.facebookId,
+      facebookAccessToken: facebookData.facebookAccessToken,
+      profilePicture: facebookData.profilePicture,
+      authProvider: 'facebook',
+      role: 'fbo', // Role par défaut
+    });
+
+    return newUser;
   }
 }

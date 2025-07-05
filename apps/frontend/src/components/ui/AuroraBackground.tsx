@@ -1,7 +1,7 @@
 'use client';
 
 import { useAurora } from '@/contexts/AuroraContext';
-import Aurora from './Aurora';
+import { Aurora } from './Aurora';
 
 interface AuroraBackgroundProps {
   colorStops?: string[];
@@ -11,7 +11,7 @@ interface AuroraBackgroundProps {
   time?: number;
 }
 
-export default function AuroraBackground(props: AuroraBackgroundProps) {
+export function AuroraBackground(props: AuroraBackgroundProps) {
   const { isAuroraEnabled } = useAurora();
 
   if (!isAuroraEnabled) {

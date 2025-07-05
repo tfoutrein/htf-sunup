@@ -117,7 +117,7 @@ interface AuroraProps {
   time?: number;
 }
 
-export default function Aurora(props: AuroraProps) {
+export function Aurora(props: AuroraProps) {
   const {
     colorStops = ['#5227FF', '#7cff67', '#5227FF'],
     amplitude = 1.0,

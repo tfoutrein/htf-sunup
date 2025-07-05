@@ -16,6 +16,7 @@ import {
   ModalFooter,
   Input,
   Counter,
+  AuroraBackground,
 } from '@/components/ui';
 import { Chip, useDisclosure, Accordion, AccordionItem } from '@heroui/react';
 import {
@@ -34,7 +35,6 @@ import { useTodayChallenges, useNextChallenge } from '@/hooks/useChallenges';
 import { useChallengeActions } from '@/hooks/useActions';
 import { Challenge, Action, Campaign } from '@/types/campaigns';
 import ConfettiExplosion from 'react-confetti-explosion';
-import AuroraBackground from '@/components/ui/AuroraBackground';
 
 interface User {
   id: number;

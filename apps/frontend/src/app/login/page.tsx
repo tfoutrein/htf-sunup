@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { SunIcon } from '@heroicons/react/24/outline';
-import { AuroraBackground } from '@/components/ui';
+import { AuroraBackground, FacebookLoginButton } from '@/components/ui';
 import { login } from '@/utils/auth';
 import { useLogo } from '@/contexts/LogoContext';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
@@ -105,6 +105,19 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFacebookSuccess = (user: any) => {
+    // User is already logged in, redirect based on role
+    if (user.role === 'manager') {
+      router.push('/manager/dashboard');
+    } else {
+      router.push('/fbo/dashboard');
+    }
+  };
+
+  const handleFacebookError = (error: Error) => {
+    setError('Erreur de connexion avec Facebook : ' + error.message);
   };
 
   return (
@@ -226,6 +239,24 @@ export default function LoginPage() {
                 {isLoading ? 'Connexion...' : 'Se connecter'}
               </Button>
             </form>
+
+            {/* Facebook Login Section */}
+            <div className="my-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white/20 text-gray-500">ou</span>
+                </div>
+              </div>
+            </div>
+
+            <FacebookLoginButton
+              onSuccess={handleFacebookSuccess}
+              onError={handleFacebookError}
+              className="w-full"
+            />
 
             <div className="border-t border-gray-200 my-4 sm:my-6"></div>
 
