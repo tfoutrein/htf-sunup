@@ -40,8 +40,8 @@ export class AccessRequestsController {
   async findAll(@Request() req) {
     const user = req.user;
 
-    if (user.role === 'marraine' || user.role === 'manager') {
-      // Les marraines et managers voient les demandes pour eux et leur équipe
+    if (user.role === 'manager') {
+      // Les managers voient les demandes pour eux et leur équipe
       return await this.accessRequestsService.findByManagerAndTeam(user.id);
     } else {
       return {
@@ -66,7 +66,7 @@ export class AccessRequestsController {
   ) {
     const user = req.user;
 
-    if (user.role !== 'marraine' && user.role !== 'manager') {
+    if (user.role !== 'manager') {
       throw new Error('Accès non autorisé');
     }
 
@@ -121,7 +121,7 @@ export class AccessRequestsController {
   ) {
     const user = req.user;
 
-    if (user.role !== 'marraine' && user.role !== 'manager') {
+    if (user.role !== 'manager') {
       throw new Error('Accès non autorisé');
     }
 
@@ -152,9 +152,13 @@ export class AccessRequestsController {
   ) {
     const user = req.user;
 
-    if (user.role !== 'marraine') {
-      throw new Error('Seules les marraines peuvent réassigner des demandes');
+    if (user.role !== 'manager') {
+      throw new Error('Seuls les managers peuvent réassigner des demandes');
     }
+
+    // Vérifier si l'utilisateur est un manager de niveau supérieur
+    // Pour l'instant, on permet à tous les managers de réassigner
+    // TODO: Implémenter une logique hiérarchique plus complexe si nécessaire
 
     const parsedId = parseInt(id);
     if (isNaN(parsedId)) {
@@ -172,15 +176,9 @@ export class AccessRequestsController {
   @Get('managers/list')
   async getManagers() {
     const managers = await this.usersService.getUsersByRole('manager');
-    const marraines = await this.usersService.getUsersByRole('marraine');
 
-    // Combiner managers et marraines pour la sélection, avec marraines en premier
-    const allManagers = [...marraines, ...managers];
-
-    // Trier par rôle (marraine en premier) puis par nom
-    return allManagers.sort((a, b) => {
-      if (a.role === 'marraine' && b.role !== 'marraine') return -1;
-      if (a.role !== 'marraine' && b.role === 'marraine') return 1;
+    // Trier par nom
+    return managers.sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
   }

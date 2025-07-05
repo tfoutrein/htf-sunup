@@ -18,27 +18,37 @@ async function fixHierarchy() {
     const allUsers = await db.select().from(users);
     console.log('Current users:', allUsers);
 
-    // Trouver la marraine
-    const marraine = allUsers.find((u) => u.role === 'marraine');
-    if (!marraine) {
-      throw new Error('Aucune marraine trouvée');
+    // Trouver le manager principal (celui sans manager_id)
+    const principalManager = allUsers.find(
+      (u) => u.role === 'manager' && !u.managerId,
+    );
+    if (!principalManager) {
+      console.log(
+        'Aucun manager principal trouvé, tous les managers ont déjà un manager_id',
+      );
+      return;
     }
 
-    console.log(`Marraine trouvée: ${marraine.name} (ID: ${marraine.id})`);
+    console.log(
+      `Manager principal trouvé: ${principalManager.name} (ID: ${principalManager.id})`,
+    );
 
-    // Trouver les managers sans manager_id
+    // Trouver les autres managers sans manager_id (sauf le principal)
     const managersWithoutBoss = allUsers.filter(
-      (u) => u.role === 'manager' && !u.managerId,
+      (u) =>
+        u.role === 'manager' && !u.managerId && u.id !== principalManager.id,
     );
 
     console.log(`Managers sans hiérarchie: ${managersWithoutBoss.length}`);
 
-    // Assigner tous les managers à la marraine
+    // Assigner tous les managers au manager principal
     for (const manager of managersWithoutBoss) {
-      console.log(`Assignation de ${manager.name} à ${marraine.name}...`);
+      console.log(
+        `Assignation de ${manager.name} au manager principal ${principalManager.name}...`,
+      );
       await db
         .update(users)
-        .set({ managerId: marraine.id })
+        .set({ managerId: principalManager.id })
         .where(eq(users.id, manager.id));
     }
 
@@ -46,13 +56,13 @@ async function fixHierarchy() {
     const updatedUsers = await db.select().from(users);
     console.log('\n📊 Hiérarchie finale:');
 
-    console.log(`\n🎯 Marraine: ${marraine.name}`);
+    console.log(`\n🎯 Manager Principal: ${principalManager.name}`);
 
-    const managersUnderMarraine = updatedUsers.filter(
-      (u) => u.role === 'manager' && u.managerId === marraine.id,
+    const managersUnderPrincipal = updatedUsers.filter(
+      (u) => u.role === 'manager' && u.managerId === principalManager.id,
     );
-    console.log(`├── Managers (${managersUnderMarraine.length}):`);
-    managersUnderMarraine.forEach((manager) => {
+    console.log(`├── Managers (${managersUnderPrincipal.length}):`);
+    managersUnderPrincipal.forEach((manager) => {
       console.log(`│   ├── ${manager.name}`);
 
       const fbosUnderManager = updatedUsers.filter(

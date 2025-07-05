@@ -17,13 +17,13 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
-  role: varchar('role', { length: 50 }).notNull().default('fbo'), // 'marraine' | 'manager' | 'fbo'
+  role: varchar('role', { length: 50 }).notNull().default('fbo'), // 'manager' | 'fbo'
   managerId: integer('manager_id').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Campaigns table - Global campaigns shared between marraine and managers
+// Campaigns table - Global campaigns shared between managers
 export const campaigns = pgTable('campaigns', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),

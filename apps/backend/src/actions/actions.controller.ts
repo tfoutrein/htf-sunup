@@ -58,7 +58,7 @@ export class ActionsController {
 
   @Get('global-progress')
   @ApiOperation({
-    summary: 'Récupérer le progrès global pour le dashboard marraine',
+    summary: 'Récupérer le progrès global pour le dashboard manager',
   })
   @ApiResponse({ status: 200, description: 'Statistiques de progrès global' })
   getGlobalProgress() {

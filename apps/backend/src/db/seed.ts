@@ -24,18 +24,21 @@ async function seed() {
 
     // Récupérer les utilisateurs existants
     const existingUsers = await db.select().from(users);
-    const marraine = existingUsers.find((u) => u.role === 'marraine');
-    const managers = existingUsers.filter((u) => u.role === 'manager');
+    const allManagers = existingUsers.filter((u) => u.role === 'manager');
     const fbos = existingUsers.filter((u) => u.role === 'fbo');
 
-    if (!marraine || managers.length === 0 || fbos.length === 0) {
+    if (allManagers.length === 0 || fbos.length === 0) {
       throw new Error('Utilisateurs manquants dans la base de données');
     }
 
+    // Le premier manager sera le manager principal (ex-marraine)
+    const principalManager = allManagers[0];
+    const otherManagers = allManagers.slice(1);
+
     // Utiliser les managers existants
-    const manager1 = managers[0];
-    const manager2 = managers[1];
-    const manager3 = managers[2];
+    const manager1 = otherManagers[0];
+    const manager2 = otherManagers[1];
+    const manager3 = otherManagers[2];
 
     // Assigner les FBO existants aux managers
     const fbo1 = fbos[0];
@@ -68,7 +71,7 @@ async function seed() {
         startDate: '2025-07-07',
         endDate: '2025-08-31',
         status: 'active',
-        createdBy: marraine.id,
+        createdBy: principalManager.id,
       })
       .returning();
 
@@ -132,8 +135,8 @@ async function seed() {
 
     console.log('✅ Seed completed successfully!');
     console.log(`Created:
-    - 1 Marraine: ${marraine.email}
-    - 3 Managers: ${manager1.email}, ${manager2.email}, ${manager3.email}
+    - 1 Manager Principal: ${principalManager.email}
+    - 3 Managers: ${manager1 ? manager1.email : 'N/A'}, ${manager2 ? manager2.email : 'N/A'}, ${manager3 ? manager3.email : 'N/A'}
     - 3 FBOs: ${fbo1.email}, ${fbo2.email}, ${fbo3.email}
     - 1 Campaign: ${campaign.name}
     - 1 Challenge for ${today}
