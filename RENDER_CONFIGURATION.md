@@ -190,6 +190,54 @@ LOG_LEVEL=info
 3. Vérifier les permissions du bucket
 4. Tester la connectivité depuis les logs Render
 
+### Erreur de base de données
+
+Vérifiez que :
+
+1. Le service PostgreSQL est créé et running
+2. La variable `DATABASE_URL` est correctement configurée
+3. L'URL utilise le nom d'hôte interne de Render
+
+### Erreur de requête SQL Failed query
+
+Si vous obtenez cette erreur :
+
+```
+Failed query: select "id", "name", "email", "password", "role", "manager_id", "facebook_id", "facebook_access_token", "profile_picture", "auth_provider", "created_at", "updated_at" from "users" where "users"."email" = $1
+```
+
+**Cause** : Les colonnes Facebook ne sont pas présentes dans la table `users`.
+
+**Solution** : Le script de migration a été mis à jour pour ajouter automatiquement les colonnes manquantes. Redéployez l'application et les colonnes seront créées automatiquement.
+
+**Colonnes ajoutées** :
+
+- `facebook_id` (varchar(255) UNIQUE)
+- `facebook_access_token` (varchar(1000))
+- `profile_picture` (varchar(500))
+- `auth_provider` (varchar(50) DEFAULT 'local')
+
+### Erreur de build
+
+Vérifiez que :
+
+1. Les commandes de build utilisent `pnpm` et non `npm`
+2. Le répertoire de travail est correct (`cd apps/backend` ou `cd apps/frontend`)
+3. Toutes les dépendances sont installées
+
+## Ordre de déploiement recommandé
+
+1. **Créer la base de données PostgreSQL** d'abord
+2. **Déployer le backend** avec toutes les variables d'environnement
+3. **Déployer le frontend** avec l'URL du backend
+4. **Tester** l'application complète
+
+## Surveillance des déploiements
+
+- Les logs de déploiement sont visibles dans l'onglet "Logs" de chaque service
+- Les erreurs de migration sont visibles au début des logs
+- Les erreurs d'application sont visibles après le message "Available at your primary URL"
+
 ## 📊 Monitoring et Logs
 
 ### Logs disponibles :
@@ -251,3 +299,110 @@ curl https://htf-sunup-backend.onrender.com/docs
 # Test endpoint
 curl https://htf-sunup-backend.onrender.com/campaigns
 ```
+
+## Variables d'environnement Backend
+
+### Variables obligatoires
+
+```
+NODE_ENV=production
+JWT_SECRET=your-jwt-secret-key
+DATABASE_URL=postgresql://user:password@host:port/database
+```
+
+### Variables Facebook
+
+**IMPORTANT**: Même si vous n'utilisez pas l'authentification Facebook, vous devez définir ces variables pour éviter les erreurs de déploiement :
+
+```
+FACEBOOK_AUTH_ENABLED=false
+FACEBOOK_APP_ID=dummy
+FACEBOOK_APP_SECRET=dummy
+FACEBOOK_CALLBACK_URL=https://votre-app.onrender.com/auth/facebook/callback
+```
+
+Si vous souhaitez activer Facebook :
+
+```
+FACEBOOK_AUTH_ENABLED=true
+FACEBOOK_APP_ID=votre-app-id-facebook
+FACEBOOK_APP_SECRET=votre-app-secret-facebook
+FACEBOOK_CALLBACK_URL=https://votre-app.onrender.com/auth/facebook/callback
+```
+
+### Variables optionnelles
+
+```
+FRONTEND_URL=https://votre-frontend.onrender.com
+PORT=3000
+```
+
+## Variables d'environnement Frontend
+
+### Variables obligatoires
+
+```
+NEXT_PUBLIC_API_URL=https://votre-backend.onrender.com
+```
+
+### Variables Facebook
+
+```
+NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED=false
+```
+
+Si vous souhaitez activer Facebook :
+
+```
+NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED=true
+```
+
+## Configuration du service Backend sur Render
+
+1. **Nom du service** : `htf-sunup-backend`
+2. **Environment** : `Node`
+3. **Build Command** : `cd apps/backend && pnpm install && pnpm build`
+4. **Start Command** : `cd apps/backend && pnpm start:prod`
+5. **Root Directory** : Laisser vide (utilise la racine du repo)
+
+## Configuration du service Frontend sur Render
+
+1. **Nom du service** : `htf-sunup-frontend`
+2. **Environment** : `Static Site`
+3. **Build Command** : `cd apps/frontend && pnpm install && pnpm build`
+4. **Publish Directory** : `apps/frontend/out`
+5. **Root Directory** : Laisser vide (utilise la racine du repo)
+
+## Configuration de la base de données
+
+1. Créer un service PostgreSQL sur Render
+2. Copier l'URL de connexion interne
+3. L'ajouter comme variable d'environnement `DATABASE_URL` dans le service backend
+
+## Résolution des erreurs courantes
+
+### Erreur Facebook Strategy
+
+Si vous obtenez cette erreur :
+
+```
+Facebook OAuth configuration is missing. Please set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET environment variables.
+```
+
+**Solution** : Ajoutez les variables Facebook avec des valeurs factices comme indiqué ci-dessus, même si vous n'utilisez pas Facebook.
+
+### Erreur de base de données
+
+Vérifiez que :
+
+1. Le service PostgreSQL est créé et running
+2. La variable `DATABASE_URL` est correctement configurée
+3. L'URL utilise le nom d'hôte interne de Render
+
+### Erreur de build
+
+Vérifiez que :
+
+1. Les commandes de build utilisent `pnpm` et non `npm`
+2. Le répertoire de travail est correct (`cd apps/backend` ou `cd apps/frontend`)
+3. Toutes les dépendances sont installées

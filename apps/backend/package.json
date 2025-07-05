@@ -19,6 +19,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:deploy": "ts-node src/db/migrate.ts",
     "db:seed": "ts-node src/db/seed.ts",
+    "db:diagnose": "ts-node src/db/diagnose.ts",
     "db:update-aurelia": "ts-node src/db/update-aurelia-hierarchy.ts",
     "db:fix-column": "ts-node src/db/fix-missing-column.ts",
     "db:fix-passwords": "ts-node src/db/fix-double-hashed-passwords.ts",
