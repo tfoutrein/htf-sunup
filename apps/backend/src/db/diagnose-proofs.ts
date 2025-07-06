@@ -1,5 +1,5 @@
-const { drizzle: drizzleORM } = require('drizzle-orm/postgres-js');
-const pgClientLib = require('postgres');
+const { drizzle: drizzleDiagnose } = require('drizzle-orm/postgres-js');
+const pgDiagnoseLib = require('postgres');
 
 async function diagnoseProofsIssue() {
   const connectionString =
@@ -10,7 +10,7 @@ async function diagnoseProofsIssue() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = pgClientLib(connectionString, {
+  const sql = pgDiagnoseLib(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });

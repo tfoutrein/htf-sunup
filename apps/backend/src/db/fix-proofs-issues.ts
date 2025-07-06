@@ -1,5 +1,5 @@
-const { drizzle: drizzleORM } = require('drizzle-orm/postgres-js');
-const pgClientLib = require('postgres');
+const { drizzle: drizzleFix } = require('drizzle-orm/postgres-js');
+const pgFixLib = require('postgres');
 
 async function fixProofsIssues() {
   const connectionString =
@@ -10,7 +10,7 @@ async function fixProofsIssues() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = pgClientLib(connectionString, {
+  const sql = pgFixLib(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
@@ -37,13 +37,6 @@ async function fixProofsIssues() {
         );
       });
 
-      // Demander confirmation avant suppression
-      console.log(
-        '\n🗑️ These orphaned proofs will be deleted. Continue? (y/N)',
-      );
-
-      // Pour automatiser, on peut soit supprimer automatiquement ou log seulement
-      // Ici on va juste logger pour sécurité
       console.log(
         '🔒 Safety mode: Logging only. To delete, uncomment the deletion code below.',
       );
