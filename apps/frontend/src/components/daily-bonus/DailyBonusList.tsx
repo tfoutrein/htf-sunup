@@ -24,9 +24,16 @@ import {
   CalendarDaysIcon,
   CurrencyEuroIcon,
 } from '@heroicons/react/24/outline';
-import { useMyBonuses, useDeleteDailyBonus, useUploadProof } from '@/hooks';
+import {
+  useMyBonuses,
+  useDeleteDailyBonus,
+  useUploadProof,
+  useMultipleProofUpload,
+} from '@/hooks';
 import { DailyBonus } from '@/types/daily-bonus';
 import { BONUS_TYPE_CONFIG, BONUS_STATUS_CONFIG } from '@/types/daily-bonus';
+import type { ProofFile } from '@/types/proofs';
+import { MultiProofUpload } from '@/components/ui';
 
 interface DailyBonusListProps {
   onCreateNew?: () => void;
@@ -35,40 +42,12 @@ interface DailyBonusListProps {
 export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
   const { data: bonuses = [], isLoading, error } = useMyBonuses();
   const deleteBonus = useDeleteDailyBonus();
-  const uploadProof = useUploadProof();
+  const { uploadMultipleProofs, isUploading } = useMultipleProofUpload();
 
   const [selectedBonus, setSelectedBonus] = useState<DailyBonus | null>(null);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
+  const [proofFiles, setProofFiles] = useState<ProofFile[]>([]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-
-  // Nettoyage des URLs de prévisualisation
-  useEffect(() => {
-    if (proofFile) {
-      // Nettoyer l'ancienne URL si elle existe
-      if (proofPreviewUrl) {
-        URL.revokeObjectURL(proofPreviewUrl);
-      }
-      // Créer une nouvelle URL
-      const newUrl = URL.createObjectURL(proofFile);
-      setProofPreviewUrl(newUrl);
-    } else {
-      // Nettoyer l'URL si le fichier est supprimé
-      if (proofPreviewUrl) {
-        URL.revokeObjectURL(proofPreviewUrl);
-        setProofPreviewUrl(null);
-      }
-    }
-
-    // Cleanup quand le composant se démonte
-    return () => {
-      if (proofPreviewUrl) {
-        URL.revokeObjectURL(proofPreviewUrl);
-      }
-    };
-  }, [proofFile]);
 
   const handleDeleteBonus = async (bonus: DailyBonus) => {
     if (bonus.status !== 'pending') {
@@ -97,31 +76,36 @@ export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
   };
 
   const handleUploadProof = async () => {
-    if (!selectedBonus || !proofFile) return;
+    if (!selectedBonus || proofFiles.length === 0) return;
 
-    setIsUploading(true);
     try {
-      await uploadProof.mutateAsync({ id: selectedBonus.id, file: proofFile });
+      const files = proofFiles.map((pf) => pf.file);
+
+      await uploadMultipleProofs(files, {
+        type: 'daily-bonus',
+        id: selectedBonus.id,
+      });
+
       addToast({
         title: 'Succès',
-        description: 'Preuve téléchargée avec succès',
+        description: `${proofFiles.length} preuve(s) téléchargée(s) avec succès`,
         color: 'success',
       });
+
       onClose();
-      setProofFile(null);
+      setProofFiles([]);
     } catch (error: any) {
       addToast({
         title: 'Erreur',
         description: error.message || 'Erreur lors du téléchargement',
         color: 'danger',
       });
-    } finally {
-      setIsUploading(false);
     }
   };
 
   const openProofModal = (bonus: DailyBonus) => {
     setSelectedBonus(bonus);
+    setProofFiles([]); // Reset des fichiers
     onOpen();
   };
 
@@ -260,8 +244,8 @@ export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
                               startContent={<CameraIcon className="w-4 h-4" />}
                             >
                               {bonus.proofUrl
-                                ? 'Modifier preuve'
-                                : 'Ajouter preuve'}
+                                ? 'Ajouter preuves'
+                                : 'Ajouter preuves'}
                             </Button>
 
                             <Button
@@ -304,7 +288,7 @@ export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
           <ModalHeader>
             <div className="flex items-center gap-2">
               <CameraIcon className="w-5 h-5" />
-              Ajouter une preuve photo
+              Ajouter des preuves (jusqu'à 5)
             </div>
           </ModalHeader>
           <ModalBody>
@@ -327,40 +311,29 @@ export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
 
                 <div className="space-y-3">
                   <p className="text-sm text-gray-700">
-                    Sélectionnez une photo pour prouver votre{' '}
+                    Ajoutez jusqu'à 5 preuves (photos ou vidéos) pour votre{' '}
                     {BONUS_TYPE_CONFIG[
                       selectedBonus.bonusType
                     ].label.toLowerCase()}
                     .
                   </p>
 
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  <MultiProofUpload
+                    files={proofFiles}
+                    onFilesChange={setProofFiles}
+                    maxFiles={5}
+                    disabled={isUploading}
                   />
 
-                  {proofFile && (
-                    <div className="space-y-3">
-                      <div className="text-sm text-green-600">
-                        ✓ Fichier sélectionné: {proofFile.name}
-                      </div>
-                      {/* Miniature de l'image */}
-                      <div className="flex justify-center">
-                        <div className="relative">
-                          <img
-                            src={proofPreviewUrl || ''}
-                            alt="Aperçu de la preuve"
-                            className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-xs opacity-0 hover:opacity-100 transition-opacity duration-200">
-                              Aperçu
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                  {selectedBonus.proofUrl && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-900 font-medium">
+                        ℹ️ Ce bonus a déjà des preuves
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Les nouvelles preuves s'ajouteront aux preuves
+                        existantes.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -380,9 +353,10 @@ export function DailyBonusList({ onCreateNew }: DailyBonusListProps) {
               color="primary"
               onPress={handleUploadProof}
               isLoading={isUploading}
-              isDisabled={!proofFile}
+              isDisabled={proofFiles.length === 0}
             >
-              Télécharger
+              Télécharger{' '}
+              {proofFiles.length > 0 ? `(${proofFiles.length})` : ''}
             </Button>
           </ModalFooter>
         </ModalContent>

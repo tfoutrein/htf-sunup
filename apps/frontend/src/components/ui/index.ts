@@ -20,3 +20,5 @@ export * from './Switch';
 export * from './Tabs';
 export * from './Textarea';
 export * from './PasswordRequirements';
+export * from './MultiProofUpload';
+export * from './MultiProofViewer';

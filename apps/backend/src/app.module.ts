@@ -12,6 +12,7 @@ import { ChallengesModule } from './challenges/challenges.module';
 import { StorageModule } from './storage/storage.module';
 
 import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
+import { ProofsModule } from './proofs/proofs.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
     ChallengesModule,
     StorageModule,
     DailyBonusModule,
+    ProofsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

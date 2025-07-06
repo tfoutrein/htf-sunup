@@ -3,6 +3,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
@@ -50,6 +51,20 @@ export class StorageService {
     } catch (error) {
       console.error('Error generating signed URL:', error);
       throw new Error('Failed to generate signed URL');
+    }
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+
+    try {
+      await this.s3.send(command);
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      throw new Error('Failed to delete file');
     }
   }
 

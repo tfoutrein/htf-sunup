@@ -50,6 +50,13 @@
       "when": 1751808028056,
       "tag": "0006_old_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1751821406781,
+      "tag": "0007_busy_veda",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,7 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  MultiProofViewer,
 } from '@/components/ui';
 import {
   ArrowLeftIcon,
@@ -30,7 +31,11 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
-import { useUserCampaignBonuses } from '@/hooks';
+import {
+  useUserCampaignBonuses,
+  useActionProofs,
+  useBonusProofs,
+} from '@/hooks';
 import { DailyBonus } from '@/types/daily-bonus';
 
 // Types
@@ -110,12 +115,91 @@ export default function MemberDetailsPage() {
   const [bonusProofUrl, setBonusProofUrl] = useState<string | null>(null);
   const [loadingBonusProof, setLoadingBonusProof] = useState(false);
 
+  // États pour les données enrichies avec preuves
+  const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
+  const [enrichedMemberDetails, setEnrichedMemberDetails] =
+    useState<MemberDetails | null>(null);
+
   // Hook pour les bonus quotidiens - utiliser le hook React Query
   const {
     data: memberBonuses = [],
     isLoading: bonusesLoading,
     error: bonusesError,
   } = useUserCampaignBonuses(parseInt(memberId), currentCampaign?.id || 0);
+
+  // Hooks pour gérer les preuves multiples
+  const actionProofsHook = useActionProofs();
+  const bonusProofsHook = useBonusProofs();
+
+  // Calculs de statistiques de bonus à partir des données enrichies
+  const totalBonusAmount = enrichedBonuses.reduce(
+    (total, bonus) => total + parseFloat(bonus.amount),
+    0,
+  );
+  const bonusCount = enrichedBonuses.length;
+  const basketBonusCount = enrichedBonuses.filter(
+    (bonus) => bonus.bonusType === 'basket',
+  ).length;
+  const sponsorshipBonusCount = enrichedBonuses.filter(
+    (bonus) => bonus.bonusType === 'sponsorship',
+  ).length;
+
+  // Enrichir les bonus avec le comptage de preuves
+  useEffect(() => {
+    const enrichBonuses = async () => {
+      if (memberBonuses && memberBonuses.length > 0) {
+        try {
+          const enriched =
+            await bonusProofsHook.enrichBonusesWithProofCounts(memberBonuses);
+          setEnrichedBonuses(enriched);
+        } catch (error) {
+          console.error("Erreur lors de l'enrichissement des bonus:", error);
+          setEnrichedBonuses(memberBonuses);
+        }
+      } else {
+        setEnrichedBonuses([]);
+      }
+    };
+
+    enrichBonuses();
+  }, [memberBonuses]);
+
+  // Enrichir les détails du membre avec le comptage de preuves des actions
+  useEffect(() => {
+    const enrichMemberDetails = async () => {
+      if (memberDetails) {
+        try {
+          const enrichedDailyChallenges = await Promise.all(
+            memberDetails.dailyChallenges.map(async (challenge) => {
+              const enrichedActions =
+                await actionProofsHook.enrichActionsWithProofCounts(
+                  challenge.actions,
+                );
+              return {
+                ...challenge,
+                actions: enrichedActions,
+              };
+            }),
+          );
+
+          setEnrichedMemberDetails({
+            ...memberDetails,
+            dailyChallenges: enrichedDailyChallenges,
+          });
+        } catch (error) {
+          console.error(
+            "Erreur lors de l'enrichissement des détails du membre:",
+            error,
+          );
+          setEnrichedMemberDetails(memberDetails);
+        }
+      } else {
+        setEnrichedMemberDetails(null);
+      }
+    };
+
+    enrichMemberDetails();
+  }, [memberDetails]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -263,19 +347,6 @@ export default function MemberDetailsPage() {
     }
   };
 
-  // Calculer les statistiques des bonus
-  const totalBonusAmount = memberBonuses.reduce(
-    (sum, bonus) => sum + parseFloat(bonus.amount || '0'),
-    0,
-  );
-  const bonusCount = memberBonuses.length;
-  const basketBonusCount = memberBonuses.filter(
-    (b) => b.bonusType === 'basket',
-  ).length;
-  const sponsorshipBonusCount = memberBonuses.filter(
-    (b) => b.bonusType === 'sponsorship',
-  ).length;
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
@@ -374,15 +445,19 @@ export default function MemberDetailsPage() {
           </div>
           <div className="space-y-4">
             {(() => {
-              if (!memberDetails.dailyChallenges) return null;
+              if (!enrichedMemberDetails?.dailyChallenges) return null;
 
               // Séparer et trier les jours
               const today = new Date();
               today.setHours(0, 0, 0, 0);
 
-              const sortedDays = memberDetails.dailyChallenges.sort((a, b) => {
-                return new Date(a.date).getTime() - new Date(b.date).getTime();
-              });
+              const sortedDays = enrichedMemberDetails.dailyChallenges.sort(
+                (a, b) => {
+                  return (
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                  );
+                },
+              );
 
               const todayDay = sortedDays.find((day) => {
                 const dayDate = new Date(day.date);
@@ -576,82 +651,26 @@ export default function MemberDetailsPage() {
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
-                                      {action.proofUrl &&
-                                        action.userActionId && (
-                                          <Button
-                                            size="sm"
-                                            variant="flat"
-                                            color="primary"
-                                            isLoading={isLoadingProof}
-                                            startContent={
-                                              !isLoadingProof ? (
-                                                <EyeIcon className="w-4 h-4" />
-                                              ) : null
-                                            }
-                                            onPress={async () => {
-                                              try {
-                                                setIsLoadingProof(true);
-                                                if (!action.userActionId) {
-                                                  alert(
-                                                    "Identifiant d'action utilisateur manquant.",
-                                                  );
-                                                  return;
-                                                }
-                                                const response =
-                                                  await ApiClient.get(
-                                                    API_ENDPOINTS.USER_ACTIONS_PROOF_URL(
-                                                      action.userActionId,
-                                                    ),
-                                                  );
-                                                if (response.ok) {
-                                                  const { url } =
-                                                    await response.json();
-                                                  console.log(
-                                                    '🖼️ URL de preuve récupérée:',
-                                                    url,
-                                                  );
-                                                  setSelectedProofUrl(url);
-                                                  setSelectedActionTitle(
-                                                    action.title,
-                                                  );
-                                                  onOpen();
-                                                } else if (
-                                                  response.status === 404
-                                                ) {
-                                                  alert(
-                                                    "Cette action n'existe plus ou n'a pas encore été créée.",
-                                                  );
-                                                } else if (
-                                                  response.status === 403
-                                                ) {
-                                                  alert(
-                                                    "Vous n'avez pas les permissions pour voir cette preuve.",
-                                                  );
-                                                } else {
-                                                  const errorData =
-                                                    await response
-                                                      .json()
-                                                      .catch(() => ({}));
-                                                  alert(
-                                                    `Erreur lors de la récupération de la preuve: ${errorData.message || 'Erreur inconnue'}`,
-                                                  );
-                                                }
-                                              } catch (error) {
-                                                console.error(
-                                                  'Erreur lors de la récupération de la preuve:',
-                                                  error,
-                                                );
-                                                alert(
-                                                  'Erreur de connexion. Veuillez réessayer plus tard.',
-                                                );
-                                              } finally {
-                                                setIsLoadingProof(false);
-                                              }
-                                            }}
-                                          >
-                                            Voir preuve
-                                          </Button>
-                                        )}
+                                      {action.hasProofs && (
+                                        <Button
+                                          size="sm"
+                                          variant="flat"
+                                          color="primary"
+                                          isLoading={actionProofsHook.isLoading}
+                                          startContent={
+                                            !actionProofsHook.isLoading ? (
+                                              <EyeIcon className="w-4 h-4" />
+                                            ) : null
+                                          }
+                                          onPress={() =>
+                                            actionProofsHook.viewActionProofs(
+                                              action,
+                                            )
+                                          }
+                                        >
+                                          Voir preuves ({action.proofsCount})
+                                        </Button>
+                                      )}
                                       <Badge
                                         color={
                                           actionStatusColor === 'success'
@@ -789,7 +808,7 @@ export default function MemberDetailsPage() {
                       {bonusesError.message}
                     </p>
                   </div>
-                ) : memberBonuses.length === 0 ? (
+                ) : enrichedBonuses.length === 0 ? (
                   <div className="text-center p-8">
                     <CurrencyEuroIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-600 mb-2">
@@ -802,7 +821,7 @@ export default function MemberDetailsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {memberBonuses.map((bonus, index) => (
+                    {enrichedBonuses.map((bonus, index) => (
                       <div key={bonus.id}>
                         <div className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                           {/* Version mobile : layout vertical */}
@@ -835,19 +854,18 @@ export default function MemberDetailsPage() {
                                 {getBonusTypeLabel(bonus.bonusType)}
                               </Badge>
 
-                              {bonus.proofUrl && (
+                              {bonus.hasProofs && (
                                 <Button
                                   size="sm"
                                   variant="flat"
                                   startContent={<EyeIcon className="w-4 h-4" />}
-                                  onPress={() => handleViewBonusProof(bonus)}
-                                  isLoading={
-                                    loadingBonusProof &&
-                                    selectedBonusProof?.id === bonus.id
+                                  onPress={() =>
+                                    bonusProofsHook.viewBonusProofs(bonus)
                                   }
+                                  isLoading={bonusProofsHook.isLoading}
                                   className="min-w-0 px-2"
                                 >
-                                  👁️
+                                  👁️({bonus.proofsCount})
                                 </Button>
                               )}
                             </div>
@@ -882,24 +900,23 @@ export default function MemberDetailsPage() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                              {bonus.proofUrl && (
+                              {bonus.hasProofs && (
                                 <Button
                                   size="sm"
                                   variant="flat"
                                   startContent={<EyeIcon className="w-4 h-4" />}
-                                  onPress={() => handleViewBonusProof(bonus)}
-                                  isLoading={
-                                    loadingBonusProof &&
-                                    selectedBonusProof?.id === bonus.id
+                                  onPress={() =>
+                                    bonusProofsHook.viewBonusProofs(bonus)
                                   }
+                                  isLoading={bonusProofsHook.isLoading}
                                 >
-                                  Voir preuve
+                                  Voir preuves ({bonus.proofsCount})
                                 </Button>
                               )}
                             </div>
                           </div>
                         </div>
-                        {index < memberBonuses.length - 1 && (
+                        {index < enrichedBonuses.length - 1 && (
                           <div className="border-b border-gray-200 my-2" />
                         )}
                       </div>
@@ -1057,6 +1074,30 @@ export default function MemberDetailsPage() {
           )}
         </ModalContent>
       </Modal>
+
+      {/* Modal pour visualiser les preuves multiples des actions */}
+      <MultiProofViewer
+        isOpen={actionProofsHook.viewModalOpen}
+        onClose={actionProofsHook.closeViewModal}
+        proofs={actionProofsHook.proofs}
+        currentIndex={actionProofsHook.currentProofIndex}
+        currentUrl={actionProofsHook.currentProofUrl}
+        isLoading={actionProofsHook.isLoading}
+        title="Preuves de l'action"
+        onNavigate={actionProofsHook.navigateProof}
+      />
+
+      {/* Modal pour visualiser les preuves multiples des bonus */}
+      <MultiProofViewer
+        isOpen={bonusProofsHook.viewModalOpen}
+        onClose={bonusProofsHook.closeViewModal}
+        proofs={bonusProofsHook.proofs}
+        currentIndex={bonusProofsHook.currentProofIndex}
+        currentUrl={bonusProofsHook.currentProofUrl}
+        isLoading={bonusProofsHook.isLoading}
+        title="Preuves du bonus"
+        onNavigate={bonusProofsHook.navigateProof}
+      />
     </div>
   );
 }

@@ -135,6 +135,25 @@ export const dailyBonus = pgTable('daily_bonus', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Proofs table - Multiple proofs for user actions and daily bonuses
+export const proofs = pgTable('proofs', {
+  id: serial('id').primaryKey(),
+  url: varchar('url', { length: 500 }).notNull(), // URL de la preuve stockée
+  type: varchar('type', { length: 50 }).notNull(), // 'image' | 'video'
+  originalName: varchar('original_name', { length: 255 }).notNull(), // Nom original du fichier
+  size: integer('size').notNull(), // Taille en bytes
+  mimeType: varchar('mime_type', { length: 100 }).notNull(), // Type MIME du fichier
+  // Relations - une preuve appartient soit à une action utilisateur soit à un bonus
+  userActionId: integer('user_action_id').references(() => userActions.id, {
+    onDelete: 'cascade',
+  }),
+  dailyBonusId: integer('daily_bonus_id').references(() => dailyBonus.id, {
+    onDelete: 'cascade',
+  }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -175,7 +194,7 @@ export const actionsRelations = relations(actions, ({ one, many }) => ({
   userActions: many(userActions),
 }));
 
-export const userActionsRelations = relations(userActions, ({ one }) => ({
+export const userActionsRelations = relations(userActions, ({ one, many }) => ({
   user: one(users, {
     fields: [userActions.userId],
     references: [users.id],
@@ -188,6 +207,7 @@ export const userActionsRelations = relations(userActions, ({ one }) => ({
     fields: [userActions.challengeId],
     references: [challenges.id],
   }),
+  proofs: many(proofs),
 }));
 
 export const campaignBonusConfigRelations = relations(
@@ -200,7 +220,7 @@ export const campaignBonusConfigRelations = relations(
   }),
 );
 
-export const dailyBonusRelations = relations(dailyBonus, ({ one }) => ({
+export const dailyBonusRelations = relations(dailyBonus, ({ one, many }) => ({
   user: one(users, {
     fields: [dailyBonus.userId],
     references: [users.id],
@@ -212,6 +232,18 @@ export const dailyBonusRelations = relations(dailyBonus, ({ one }) => ({
   reviewer: one(users, {
     fields: [dailyBonus.reviewedBy],
     references: [users.id],
+  }),
+  proofs: many(proofs),
+}));
+
+export const proofsRelations = relations(proofs, ({ one }) => ({
+  userAction: one(userActions, {
+    fields: [proofs.userActionId],
+    references: [userActions.id],
+  }),
+  dailyBonus: one(dailyBonus, {
+    fields: [proofs.dailyBonusId],
+    references: [dailyBonus.id],
   }),
 }));
 
@@ -230,3 +262,5 @@ export type CampaignBonusConfig = typeof campaignBonusConfig.$inferSelect;
 export type NewCampaignBonusConfig = typeof campaignBonusConfig.$inferInsert;
 export type DailyBonus = typeof dailyBonus.$inferSelect;
 export type NewDailyBonus = typeof dailyBonus.$inferInsert;
+export type Proof = typeof proofs.$inferSelect;
+export type NewProof = typeof proofs.$inferInsert;

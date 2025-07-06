@@ -13,6 +13,8 @@ import {
   ModalFooter,
   Input,
   AuroraBackground,
+  MultiProofUpload,
+  MultiProofViewer,
 } from '@/components/ui';
 import { Chip, useDisclosure, Accordion, AccordionItem } from '@heroui/react';
 import {
@@ -32,6 +34,7 @@ import { ApiClient, API_ENDPOINTS } from '@/services/api';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardAnimations } from '@/hooks/useDashboardAnimations';
 import { useBonusActions } from '@/hooks/useBonusActions';
+import { useBonusProofs, useMultipleProofUpload } from '@/hooks';
 
 // Composants
 import {
@@ -43,6 +46,7 @@ import {
 
 // Types et utilitaires
 import { Action } from '@/types/dashboard';
+import type { ProofFile } from '@/types/proofs';
 import {
   isActionCompleted,
   getUserAction,
@@ -96,7 +100,6 @@ export default function FBODashboard() {
   const {
     bonusModalOpen,
     bonusType,
-    bonusProofFile,
     bonusSubmitting,
     bonusAccordionOpen,
     selectedBonusProof,
@@ -104,79 +107,54 @@ export default function FBODashboard() {
     bonusProofUrl,
     loadingBonusProof,
     openBonusModal,
-    closeBonusModal,
-    setBonusProofFile,
-    handleBonusSubmit,
+    closeBonusModal: originalCloseBonusModal,
     setBonusAccordionOpen,
     handleViewBonusProof,
     closeBonusProofModal,
   } = useBonusActions(activeCampaign?.id, triggerTestAnimation);
 
+  // Hook pour gérer les preuves multiples des bonus
+  const bonusProofsHook = useBonusProofs();
+
+  // Adapter closeBonusModal pour gérer les nouveaux fichiers
+  const closeBonusModal = () => {
+    originalCloseBonusModal();
+    setBonusProofFiles([]);
+  };
+
   // États locaux pour la logique spécifique au composant
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [selectedUserAction, setSelectedUserAction] = useState<any>(null);
   const [isNextChallenge, setIsNextChallenge] = useState(false);
-  const [actionProofFile, setActionProofFile] = useState<File | null>(null);
-  const [actionProofPreviewUrl, setActionProofPreviewUrl] = useState<
-    string | null
-  >(null);
-  const [bonusProofPreviewUrl, setBonusProofPreviewUrl] = useState<
-    string | null
-  >(null);
+  const [actionProofFiles, setActionProofFiles] = useState<ProofFile[]>([]);
+  const [bonusProofFiles, setBonusProofFiles] = useState<ProofFile[]>([]);
+  const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
 
   // Modal states
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Nettoyage des URLs de prévisualisation
+  // Enrichir les bonus avec le comptage de preuves
   useEffect(() => {
-    if (actionProofFile) {
-      // Nettoyer l'ancienne URL si elle existe
-      if (actionProofPreviewUrl) {
-        URL.revokeObjectURL(actionProofPreviewUrl);
-      }
-      // Créer une nouvelle URL
-      const newUrl = URL.createObjectURL(actionProofFile);
-      setActionProofPreviewUrl(newUrl);
-    } else {
-      // Nettoyer l'URL si le fichier est supprimé
-      if (actionProofPreviewUrl) {
-        URL.revokeObjectURL(actionProofPreviewUrl);
-        setActionProofPreviewUrl(null);
-      }
-    }
-
-    // Cleanup quand le composant se démonte
-    return () => {
-      if (actionProofPreviewUrl) {
-        URL.revokeObjectURL(actionProofPreviewUrl);
+    const enrichBonuses = async () => {
+      if (myBonuses && myBonuses.length > 0) {
+        try {
+          const enriched =
+            await bonusProofsHook.enrichBonusesWithProofCounts(myBonuses);
+          setEnrichedBonuses(enriched);
+        } catch (error) {
+          console.error("Erreur lors de l'enrichissement des bonus:", error);
+          setEnrichedBonuses(myBonuses); // Fallback aux bonus non enrichis
+        }
+      } else {
+        setEnrichedBonuses([]);
       }
     };
-  }, [actionProofFile]);
 
-  useEffect(() => {
-    if (bonusProofFile) {
-      // Nettoyer l'ancienne URL si elle existe
-      if (bonusProofPreviewUrl) {
-        URL.revokeObjectURL(bonusProofPreviewUrl);
-      }
-      // Créer une nouvelle URL
-      const newUrl = URL.createObjectURL(bonusProofFile);
-      setBonusProofPreviewUrl(newUrl);
-    } else {
-      // Nettoyer l'URL si le fichier est supprimé
-      if (bonusProofPreviewUrl) {
-        URL.revokeObjectURL(bonusProofPreviewUrl);
-        setBonusProofPreviewUrl(null);
-      }
-    }
+    enrichBonuses();
+  }, [myBonuses]);
 
-    // Cleanup quand le composant se démonte
-    return () => {
-      if (bonusProofPreviewUrl) {
-        URL.revokeObjectURL(bonusProofPreviewUrl);
-      }
-    };
-  }, [bonusProofFile]);
+  // Hook pour l'upload multiple de preuves
+  const { uploadMultipleProofs, isUploading } = useMultipleProofUpload();
 
   // Derived state
   const shouldShowNextChallenges =
@@ -198,7 +176,7 @@ export default function FBODashboard() {
     setSelectedAction(action);
     setSelectedUserAction(userAction);
     setIsNextChallenge(isNextChallenge);
-    setActionProofFile(null); // Reset du fichier
+    setActionProofFiles([]); // Reset des fichiers
     onOpen();
   };
 
@@ -230,26 +208,27 @@ export default function FBODashboard() {
       const userAction = await response.json();
       console.log('✅ User action créée:', userAction);
 
-      // 2. Upload de la preuve si présente
-      if (actionProofFile && userAction.id) {
-        const formData = new FormData();
-        formData.append('file', actionProofFile);
+      // 2. Upload des preuves multiples si présentes
+      if (actionProofFiles.length > 0 && userAction.id) {
+        console.log(`📤 Upload de ${actionProofFiles.length} preuve(s)...`);
 
-        const proofResponse = await ApiClient.post(
-          `/user-actions/${userAction.id}/proof`,
-          formData,
-        );
+        const files = actionProofFiles.map((pf) => pf.file);
 
-        if (!proofResponse.ok) {
+        try {
+          await uploadMultipleProofs(files, {
+            type: 'user-action',
+            id: userAction.id,
+          });
+          console.log('✅ Toutes les preuves uploadées avec succès');
+        } catch (error) {
           console.warn(
-            "⚠️ Erreur lors de l'upload de la preuve, mais action créée",
+            "⚠️ Erreur lors de l'upload des preuves, mais action créée:",
+            error,
           );
-        } else {
-          console.log('✅ Preuve uploadée avec succès');
         }
       }
 
-      setActionProofFile(null); // Reset du fichier
+      setActionProofFiles([]); // Reset des fichiers
       onClose();
 
       // Rafraîchir les données
@@ -263,13 +242,67 @@ export default function FBODashboard() {
 
   // Fonction pour soumettre un bonus avec callback de rafraîchissement
   const handleBonusSubmitWithRefresh = async () => {
+    if (!bonusType || bonusProofFiles.length === 0) {
+      console.error('Type de bonus ou fichiers de preuve manquants');
+      return;
+    }
+
     try {
-      await handleBonusSubmit(() => {
-        // Callback de succès pour rafraîchir les données
-        refetchGamificationData();
-      });
+      if (!activeCampaign?.id) {
+        throw new Error('Aucune campagne active trouvée');
+      }
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      const amount = bonusType === 'sponsorship' ? '5.00' : '1.00';
+
+      // 1. Créer le bonus
+      const bonusData = {
+        campaignId: activeCampaign.id,
+        bonusDate: currentDate,
+        bonusType: bonusType,
+        amount: amount,
+      };
+
+      console.log('🚀 Création du bonus:', bonusData);
+      const response = await ApiClient.post('/daily-bonus', bonusData);
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création du bonus');
+      }
+
+      const bonus = await response.json();
+      console.log('✅ Bonus créé:', bonus);
+
+      // 2. Upload des preuves multiples
+      if (bonusProofFiles.length > 0 && bonus.id) {
+        console.log(
+          `📤 Upload de ${bonusProofFiles.length} preuve(s) pour le bonus...`,
+        );
+
+        const files = bonusProofFiles.map((pf) => pf.file);
+
+        await uploadMultipleProofs(files, {
+          type: 'daily-bonus',
+          id: bonus.id,
+        });
+        console.log('✅ Toutes les preuves du bonus uploadées avec succès');
+      }
+
+      // Fermer la modal et réinitialiser
+      closeBonusModal();
+      setBonusProofFiles([]);
+
+      // Déclencher l'animation des gains
+      if (triggerTestAnimation) {
+        console.log("🎉 Déclenchement de l'animation des gains pour le bonus");
+        triggerTestAnimation();
+      }
+
+      // Rafraîchir les données
+      refetchGamificationData();
     } catch (error) {
-      console.error('Erreur lors de la déclaration du bonus:', error);
+      console.error('❌ Erreur lors de la déclaration du bonus:', error);
+      throw error;
     }
   };
 
@@ -660,7 +693,7 @@ export default function FBODashboard() {
 
               {bonusAccordionOpen && (
                 <div className="p-4 sm:p-6 pt-0">
-                  {myBonuses.length === 0 ? (
+                  {enrichedBonuses.length === 0 ? (
                     <div className="text-center p-8">
                       <CurrencyEuroIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-600 mb-2">
@@ -673,7 +706,7 @@ export default function FBODashboard() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {myBonuses.map((bonus) => (
+                      {enrichedBonuses.map((bonus) => (
                         <div
                           key={bonus.id}
                           className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -696,18 +729,17 @@ export default function FBODashboard() {
                               </Badge>
                             </div>
 
-                            {bonus.proofUrl && (
+                            {bonus.hasProofs && (
                               <Button
                                 size="sm"
                                 variant="flat"
                                 startContent={<EyeIcon className="w-4 h-4" />}
-                                onPress={() => handleViewBonusProof(bonus)}
-                                isLoading={
-                                  loadingBonusProof &&
-                                  selectedBonusProof?.id === bonus.id
+                                onPress={() =>
+                                  bonusProofsHook.viewBonusProofs(bonus)
                                 }
+                                isLoading={bonusProofsHook.isLoading}
                               >
-                                Voir
+                                Voir preuves ({bonus.proofsCount})
                               </Button>
                             )}
                           </div>
@@ -746,64 +778,25 @@ export default function FBODashboard() {
             <div className="space-y-4">
               <p className="text-sm text-gray-800 font-medium">
                 {selectedUserAction?.completed
-                  ? 'Cette action a déjà été complétée. Vous pouvez voir ou modifier la preuve envoyée.'
-                  : 'Téléchargez une photo comme preuve de completion de cette action.'}
+                  ? "Cette action a déjà été complétée. Vous pouvez ajouter jusqu'à 5 preuves supplémentaires ou modifier les preuves existantes."
+                  : "Ajoutez jusqu'à 5 preuves (photos ou vidéos) pour valider cette action."}
               </p>
 
-              <div>
-                <input
-                  ref={(input) => {
-                    if (input) {
-                      (window as any).actionFileInput = input;
-                    }
-                  }}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setActionProofFile(e.target.files?.[0] || null)
-                  }
-                  className="hidden"
-                />
-                <Button
-                  variant="bordered"
-                  onPress={() => (window as any).actionFileInput?.click()}
-                  startContent={<CameraIcon className="w-4 h-4" />}
-                  className="w-full justify-center h-12 text-gray-700 border-gray-300 hover:border-gray-400"
-                >
-                  Choisir une photo de preuve
-                </Button>
-              </div>
-
-              {actionProofFile && (
-                <div className="mt-2 space-y-3">
-                  <div className="flex items-center gap-2 bg-green-50 text-green-800 p-2 rounded-lg border border-green-200">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium">
-                      Fichier sélectionné : {actionProofFile.name}
-                    </span>
-                  </div>
-                  {/* Miniature de l'image */}
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <img
-                        src={actionProofPreviewUrl || ''}
-                        alt="Aperçu de la preuve"
-                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-xs opacity-0 hover:opacity-100 transition-opacity duration-200">
-                          Aperçu
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <MultiProofUpload
+                files={actionProofFiles}
+                onFilesChange={setActionProofFiles}
+                maxFiles={5}
+                disabled={isUploading}
+              />
 
               {selectedUserAction?.proofUrl && (
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-900 font-medium">
-                    ✅ Une preuve a déjà été envoyée pour cette action.
+                    ✅ Des preuves ont déjà été envoyées pour cette action.
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Vous pouvez ajouter de nouvelles preuves qui s'ajouteront
+                    aux preuves existantes.
                   </p>
                 </div>
               )}
@@ -821,8 +814,14 @@ export default function FBODashboard() {
               color="primary"
               onPress={submitCompletion}
               className="font-medium"
+              isLoading={isUploading}
+              isDisabled={
+                actionProofFiles.length === 0 && !selectedUserAction?.completed
+              }
             >
-              {selectedUserAction?.completed ? 'Mettre à jour' : 'Valider'}
+              {selectedUserAction?.completed
+                ? 'Ajouter preuves'
+                : 'Valider avec preuves'}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -839,62 +838,19 @@ export default function FBODashboard() {
           <ModalBody>
             <div className="space-y-4">
               <p className="text-sm text-gray-800 font-medium">
-                Téléchargez une photo comme preuve de votre{' '}
+                Ajoutez jusqu'à 5 preuves (photos ou vidéos) pour votre{' '}
                 {bonusType
                   ? getBonusTypeLabel(bonusType).toLowerCase()
                   : 'bonus'}
                 .
               </p>
 
-              <div>
-                <input
-                  ref={(input) => {
-                    if (input) {
-                      (window as any).bonusFileInput = input;
-                    }
-                  }}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setBonusProofFile(e.target.files?.[0] || null)
-                  }
-                  className="hidden"
-                />
-                <Button
-                  variant="bordered"
-                  onPress={() => (window as any).bonusFileInput?.click()}
-                  startContent={<CameraIcon className="w-4 h-4" />}
-                  className="w-full justify-center h-12 text-gray-700 border-gray-300 hover:border-gray-400"
-                >
-                  Choisir une photo de preuve
-                </Button>
-              </div>
-
-              {bonusProofFile && (
-                <div className="mt-2 space-y-3">
-                  <div className="flex items-center gap-2 bg-green-50 text-green-800 p-2 rounded-lg border border-green-200">
-                    <CheckIcon className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium">
-                      Fichier sélectionné : {bonusProofFile.name}
-                    </span>
-                  </div>
-                  {/* Miniature de l'image */}
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <img
-                        src={bonusProofPreviewUrl || ''}
-                        alt="Aperçu de la preuve"
-                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
-                        <span className="text-white text-xs opacity-0 hover:opacity-100 transition-opacity duration-200">
-                          Aperçu
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <MultiProofUpload
+                files={bonusProofFiles}
+                onFilesChange={setBonusProofFiles}
+                maxFiles={5}
+                disabled={bonusSubmitting || isUploading}
+              />
 
               {bonusType && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -917,11 +873,11 @@ export default function FBODashboard() {
             <Button
               color="primary"
               onPress={handleBonusSubmitWithRefresh}
-              isLoading={bonusSubmitting}
-              isDisabled={!bonusProofFile}
+              isLoading={bonusSubmitting || isUploading}
+              isDisabled={bonusProofFiles.length === 0}
               className="font-medium"
             >
-              Déclarer le bonus
+              Déclarer le bonus avec preuves
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -979,6 +935,18 @@ export default function FBODashboard() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal pour visualiser les preuves multiples des bonus */}
+      <MultiProofViewer
+        isOpen={bonusProofsHook.viewModalOpen}
+        onClose={bonusProofsHook.closeViewModal}
+        proofs={bonusProofsHook.proofs}
+        currentIndex={bonusProofsHook.currentProofIndex}
+        currentUrl={bonusProofsHook.currentProofUrl}
+        isLoading={bonusProofsHook.isLoading}
+        title="Preuves du bonus"
+        onNavigate={bonusProofsHook.navigateProof}
+      />
     </div>
   );
 }
