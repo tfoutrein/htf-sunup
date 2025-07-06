@@ -26,7 +26,7 @@ import {
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
+  ChevronRightIcon,
   EyeIcon,
   UserPlusIcon,
   ListBulletIcon,
@@ -341,7 +341,7 @@ export default function TeamManagementPage() {
                   {isExpanded ? (
                     <ChevronDownIcon className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <ChevronLeftIcon className="w-4 h-4" aria-hidden="true" />
+                    <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
                   )}
                 </button>
               )}
@@ -419,7 +419,10 @@ export default function TeamManagementPage() {
                     {isExpanded ? (
                       <ChevronDownIcon className="w-4 h-4" aria-hidden="true" />
                     ) : (
-                      <ChevronLeftIcon className="w-4 h-4" aria-hidden="true" />
+                      <ChevronRightIcon
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
                 )}

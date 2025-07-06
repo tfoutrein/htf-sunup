@@ -23,7 +23,7 @@ import {
   ExclamationTriangleIcon,
   CalendarIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
+  ChevronRightIcon,
   EyeIcon,
   CurrencyEuroIcon,
   CalendarDaysIcon,
@@ -423,7 +423,7 @@ export default function MemberDetailsPage() {
                           showPreviousDays ? (
                             <ChevronDownIcon className="w-4 h-4" />
                           ) : (
-                            <ChevronLeftIcon className="w-4 h-4" />
+                            <ChevronRightIcon className="w-4 h-4" />
                           )
                         }
                       >
@@ -530,7 +530,7 @@ export default function MemberDetailsPage() {
                               {isExpanded ? (
                                 <ChevronDownIcon className="w-4 h-4 text-gray-400" />
                               ) : (
-                                <ChevronLeftIcon className="w-4 h-4 text-gray-400" />
+                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                               )}
                             </div>
                           </div>
@@ -764,7 +764,7 @@ export default function MemberDetailsPage() {
                   {bonusAccordionOpen ? (
                     <ChevronDownIcon className="w-5 h-5 text-gray-500" />
                   ) : (
-                    <ChevronLeftIcon className="w-5 h-5 text-gray-500" />
+                    <ChevronRightIcon className="w-5 h-5 text-gray-500" />
                   )}
                 </div>
               </div>

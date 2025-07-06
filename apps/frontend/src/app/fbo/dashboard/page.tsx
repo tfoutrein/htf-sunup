@@ -22,7 +22,7 @@ import {
   CameraIcon,
   CurrencyEuroIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
+  ChevronRightIcon,
   EyeIcon,
   CheckIcon,
 } from '@heroicons/react/24/outline';
@@ -636,7 +636,7 @@ export default function FBODashboard() {
                     {bonusAccordionOpen ? (
                       <ChevronDownIcon className="w-5 h-5 text-gray-500" />
                     ) : (
-                      <ChevronLeftIcon className="w-5 h-5 text-gray-500" />
+                      <ChevronRightIcon className="w-5 h-5 text-gray-500" />
                     )}
                   </div>
                 </div>
