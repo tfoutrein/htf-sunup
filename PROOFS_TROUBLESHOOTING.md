@@ -182,6 +182,18 @@ Si les problèmes persistent :
 - Nettoyage mensuel des preuves orphelines
 - Mise à jour régulière des statistiques DB
 
+## 🗑️ Nettoyage de Base de Données
+
+Pour un nettoyage complet des campagnes archivées et de leurs preuves associées :
+
+- [Guide de suppression des campagnes archivées](ARCHIVED_CAMPAIGNS_CLEANUP_GUIDE.md) - Nettoyage sécurisé avec scripts dédiés
+
+## 📚 Ressources Supplémentaires
+
+- [Documentation API](docs/API_DOCUMENTATION.md) - Endpoints des preuves
+- [Guide de démarrage rapide](QUICK_START.md) - Configuration de base
+- [Architecture du projet](docs/MVP_PLAN.md) - Vue d'ensemble du système
+
 ---
 
 💡 **Astuce :** En cas de doute, toujours exécuter le diagnostic avant toute action corrective.
