@@ -7,73 +7,85 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export class ApiClient {
-  private static getAuthHeaders() {
+  private static getAuthHeaders(isFormData = false) {
     const token = localStorage.getItem('token');
-    return {
+    const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
     };
+
+    // Ne pas définir Content-Type pour FormData - le navigateur le fait automatiquement avec boundary
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
   }
 
-  static async get(endpoint: string): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
+  static async get(url: string) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'GET',
       headers: this.getAuthHeaders(),
     });
+    return response;
   }
 
-  static async post(endpoint: string, body?: any): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
+  static async post(url: string, data: any, isFormData = false) {
+    const body = isFormData ? data : JSON.stringify(data);
+
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: body ? JSON.stringify(body) : undefined,
+      headers: this.getAuthHeaders(isFormData),
+      body,
     });
+    return response;
   }
 
-  static async put(endpoint: string, body?: any): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: this.getAuthHeaders(),
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  }
-
-  static async patch(endpoint: string, body?: any): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
+  static async patch(url: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
-      body: body ? JSON.stringify(body) : undefined,
+      body: JSON.stringify(data),
     });
+    return response;
   }
 
-  static async delete(endpoint: string): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
+  static async put(url: string, data: any) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
+
+  static async delete(url: string) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
+    return response;
   }
 
-  static async postPublic(endpoint: string, body?: any): Promise<Response> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log('🚀 DEBUG API CALL:', url);
-    console.log('🚀 DEBUG API_BASE_URL:', API_BASE_URL);
-    console.log('🚀 DEBUG endpoint:', endpoint);
-    return fetch(url, {
+  // Public endpoints (no authentication required)
+  static async postPublic(url: string, data?: any) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: data ? JSON.stringify(data) : undefined,
     });
+    return response;
   }
 
-  static async getPublic(endpoint: string): Promise<Response> {
-    return fetch(`${API_BASE_URL}${endpoint}`, {
+  static async getPublic(url: string) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
+    return response;
   }
 }
 
@@ -87,6 +99,11 @@ export const API_ENDPOINTS = {
   USERS_MANAGERS: '/users/managers',
   USERS_ALL_MEMBERS: '/users/all-members',
   USERS_TEAM: (managerId: number) => `/users/team/${managerId}`,
+  USERS_TEAM_LIST: (managerId: number) => `/users/team-list/${managerId}`,
+  USERS_TEAM_HIERARCHY: (managerId: number) =>
+    `/users/team-hierarchy/${managerId}`,
+  USERS_MY_TEAM_LIST: '/users/team-list/my-team',
+  USERS_MY_TEAM_HIERARCHY: '/users/team-hierarchy/my-team',
 
   // Public Users
   PUBLIC_USERS_MANAGERS: '/public/users/managers',
@@ -126,4 +143,19 @@ export const API_ENDPOINTS = {
   CHALLENGES_NEXT: '/challenges/next',
   CHALLENGES_BY_ID: (id: number) => `/challenges/${id}`,
   CHALLENGES_WITH_ACTIONS: (id: number) => `/challenges/${id}/actions`,
+
+  // Daily Bonus
+  DAILY_BONUS: '/daily-bonus',
+  DAILY_BONUS_MY_BONUSES: '/daily-bonus/my-bonuses',
+  DAILY_BONUS_MY_STATS: (campaignId: number) =>
+    `/daily-bonus/my-stats/${campaignId}`,
+  DAILY_BONUS_BY_ID: (id: number) => `/daily-bonus/${id}`,
+  DAILY_BONUS_PROOF: (id: number) => `/daily-bonus/${id}/proof`,
+  DAILY_BONUS_CAMPAIGN_BONUSES: (campaignId: number) =>
+    `/daily-bonus/campaign/${campaignId}/bonuses`,
+  DAILY_BONUS_USER_CAMPAIGN_BONUSES: (userId: number, campaignId: number) =>
+    `/daily-bonus/user/${userId}/campaign/${campaignId}`,
+  DAILY_BONUS_CONFIG: '/daily-bonus/config',
+  DAILY_BONUS_CONFIG_BY_CAMPAIGN: (campaignId: number) =>
+    `/daily-bonus/config?campaignId=${campaignId}`,
 } as const;
