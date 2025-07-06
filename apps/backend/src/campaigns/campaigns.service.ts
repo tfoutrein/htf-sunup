@@ -185,12 +185,6 @@ export class CampaignsService {
   async getActiveCampaigns(): Promise<Campaign[]> {
     const today = new Date().toISOString().split('T')[0];
 
-    console.log('🐛 getActiveCampaigns DEBUG:', {
-      today,
-      query:
-        'campaigns with status=active, archived=false, startDate<=today, endDate>=today',
-    });
-
     try {
       const result = await this.db.db
         .select()
@@ -205,19 +199,9 @@ export class CampaignsService {
         )
         .orderBy(campaigns.startDate);
 
-      console.log('🐛 getActiveCampaigns RESULT:', {
-        count: result.length,
-        campaigns: result.map((c) => ({
-          id: c.id,
-          name: c.name,
-          startDate: c.startDate,
-          endDate: c.endDate,
-        })),
-      });
-
       return result;
     } catch (error) {
-      console.error('🐛 getActiveCampaigns ERROR:', error);
+      console.error('Error fetching active campaigns:', error);
       throw error;
     }
   }

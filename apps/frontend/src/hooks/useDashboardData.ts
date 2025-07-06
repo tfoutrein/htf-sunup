@@ -90,8 +90,8 @@ export const useDashboardData = () => {
       initializeUser();
     }
   }, [
-    activeCampaign,
-    todayChallenge,
+    activeCampaign?.id, // ✅ Utiliser seulement l'ID pour éviter les boucles
+    todayChallenge?.id, // ✅ Utiliser seulement l'ID pour éviter les boucles
     campaignsLoading,
     challengesLoading,
     router,

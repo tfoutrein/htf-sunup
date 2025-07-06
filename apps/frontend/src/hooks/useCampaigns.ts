@@ -29,7 +29,12 @@ export function useActiveCampaigns() {
   return useQuery({
     queryKey: campaignKeys.active(),
     queryFn: () => campaignService.getActiveCampaigns(),
-    staleTime: 1 * 60 * 1000, // 1 minute
+    staleTime: 5 * 60 * 1000, // 5 minutes (plus stable)
+    gcTime: 10 * 60 * 1000, // 10 minutes en cache
+    refetchOnWindowFocus: false, // Éviter les refetch intempestifs
+    refetchOnMount: false, // Ne pas refetch au mount si en cache
+    retry: 2, // Limite les retry en cas d'erreur
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 }
 
@@ -114,11 +119,13 @@ export function useCreateCampaign() {
         newCampaign,
       );
 
-      // Invalidate active campaigns
-      queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
+      // Only invalidate active campaigns if the new campaign is active
+      if (newCampaign.status === 'active') {
+        queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
+      }
     },
     onSettled: () => {
-      // Always refetch after mutation
+      // More selective invalidation - only refetch lists
       queryClient.invalidateQueries({ queryKey: campaignKeys.lists() });
     },
   });
@@ -137,8 +144,18 @@ export function useUpdateCampaign() {
         updatedCampaign,
       );
 
-      // Invalidate lists to reflect changes
-      queryClient.invalidateQueries({ queryKey: campaignKeys.lists() });
+      // Update the campaign in lists cache directly
+      queryClient.setQueryData(
+        campaignKeys.lists(),
+        (old: Campaign[] | undefined) => {
+          if (!old) return [updatedCampaign];
+          return old.map((campaign) =>
+            campaign.id === updatedCampaign.id ? updatedCampaign : campaign,
+          );
+        },
+      );
+
+      // Only invalidate active campaigns if status changed to/from active
       queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
     },
   });
