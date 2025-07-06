@@ -38,18 +38,21 @@ export const StatisticsSection = ({
           key="statistics"
           aria-label="Mes Statistiques"
           title={
-            <div className="flex items-center gap-3">
-              <ChartBarIcon className="w-6 h-6 text-indigo-600" />
-              <span className="text-xl font-bold text-gray-800">
-                Mes Statistiques
-              </span>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <ChartBarIcon className="w-6 h-6 text-indigo-600" />
+                <span className="text-xl font-bold text-gray-800">
+                  Mes Statistiques
+                </span>
+              </div>
             </div>
           }
           className="bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-lg"
           classNames={{
             trigger: 'py-4 px-6 hover:bg-gray-50/50 transition-colors',
             content: 'px-6 pb-6',
-            title: 'text-left',
+            title: 'text-left w-full',
+            indicator: 'text-medium',
           }}
         >
           <div className="space-y-6">

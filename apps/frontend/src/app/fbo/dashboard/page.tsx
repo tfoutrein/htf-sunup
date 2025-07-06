@@ -384,18 +384,21 @@ export default function FBODashboard() {
                 key="completed-actions"
                 aria-label="Actions du jour terminées"
                 title={
-                  <div className="flex items-center gap-3">
-                    <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                    <span className="text-lg font-semibold text-green-800">
-                      ✨ Bravo ! Toutes tes actions du jour sont terminées !
-                    </span>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      <span className="text-lg font-semibold text-green-800">
+                        ✨ Bravo ! Toutes tes actions du jour sont terminées !
+                      </span>
+                    </div>
                   </div>
                 }
                 className="bg-gradient-to-br from-green-50 to-emerald-100 border-0 shadow-lg rounded-lg"
                 classNames={{
                   trigger: 'py-4 px-6',
                   content: 'px-6 pb-6',
-                  title: 'text-left',
+                  title: 'text-left w-full',
+                  indicator: 'text-medium',
                 }}
               >
                 <div className="grid gap-3">

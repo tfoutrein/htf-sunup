@@ -29,19 +29,21 @@ export const NextChallengesSection = ({
           key="next-challenge"
           aria-label="Prochain défi"
           title={
-            <div className="flex items-center gap-3">
-              <CalendarDaysIcon
-                className={`w-5 h-5 text-indigo-600 ${showNextChallengeEmphasis ? 'animate-bounce' : ''}`}
-              />
-              <span
-                className={`text-lg font-semibold text-indigo-900 ${showNextChallengeEmphasis ? 'text-xl' : ''} transition-all duration-500`}
-              >
-                🌟 Prochain défi -{' '}
-                {new Date(nextChallenge.date).toLocaleDateString('fr-FR')}
-              </span>
-              {showNextChallengeEmphasis && (
-                <span className="text-2xl animate-spin">✨</span>
-              )}
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <CalendarDaysIcon
+                  className={`w-5 h-5 text-indigo-600 ${showNextChallengeEmphasis ? 'animate-bounce' : ''}`}
+                />
+                <span
+                  className={`text-lg font-semibold text-indigo-900 ${showNextChallengeEmphasis ? 'text-xl' : ''} transition-all duration-500`}
+                >
+                  🌟 Prochain défi -{' '}
+                  {new Date(nextChallenge.date).toLocaleDateString('fr-FR')}
+                </span>
+                {showNextChallengeEmphasis && (
+                  <span className="text-2xl animate-spin">✨</span>
+                )}
+              </div>
             </div>
           }
           className={`bg-gradient-to-br from-indigo-50 to-purple-100 border-0 shadow-lg rounded-lg ${
@@ -52,7 +54,8 @@ export const NextChallengesSection = ({
           classNames={{
             trigger: 'py-4 px-6',
             content: 'px-6 pb-6',
-            title: 'text-left',
+            title: 'text-left w-full',
+            indicator: 'text-medium',
           }}
         >
           <div className="bg-white/60 rounded-xl p-4 mb-4">
