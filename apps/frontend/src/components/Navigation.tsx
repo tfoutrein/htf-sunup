@@ -23,14 +23,8 @@ export function Navigation() {
 
   const getDashboardLink = () => {
     if (!user) return '#';
-    switch (user.role) {
-      case 'manager':
-        return '/manager/dashboard';
-      case 'fbo':
-        return '/fbo/dashboard';
-      default:
-        return '#';
-    }
+    // Tous les utilisateurs connectés ont accès à la vue d'accueil
+    return '/fbo/dashboard';
   };
 
   const isActive = (path: string) => {
@@ -93,12 +87,28 @@ export function Navigation() {
                       size="sm"
                       className="font-medium"
                     >
-                      Dashboard
+                      Accueil
                     </Button>
                   </Link>
 
                   {user.role === 'manager' && (
                     <>
+                      <Link href="/manager/dashboard">
+                        <Button
+                          variant={
+                            isActive('/manager/dashboard') ? 'flat' : 'light'
+                          }
+                          color={
+                            isActive('/manager/dashboard')
+                              ? 'warning'
+                              : 'default'
+                          }
+                          size="sm"
+                          className="font-medium"
+                        >
+                          Manager Dashboard
+                        </Button>
+                      </Link>
                       <Link href="/campaigns">
                         <Button
                           variant={isActive('/campaigns') ? 'flat' : 'light'}
@@ -125,24 +135,6 @@ export function Navigation() {
                           className="font-medium"
                         >
                           Gestion d'équipe
-                        </Button>
-                      </Link>
-                      <Link href="/manage-access-requests">
-                        <Button
-                          variant={
-                            isActive('/manage-access-requests')
-                              ? 'flat'
-                              : 'light'
-                          }
-                          color={
-                            isActive('/manage-access-requests')
-                              ? 'warning'
-                              : 'default'
-                          }
-                          size="sm"
-                          className="font-medium"
-                        >
-                          Demandes d'accès
                         </Button>
                       </Link>
                     </>
@@ -306,12 +298,28 @@ export function Navigation() {
                         size="sm"
                         className="w-full justify-start font-medium"
                       >
-                        Dashboard
+                        Accueil
                       </Button>
                     </Link>
 
                     {user.role === 'manager' && (
                       <>
+                        <Link href="/manager/dashboard" onClick={closeMenu}>
+                          <Button
+                            variant={
+                              isActive('/manager/dashboard') ? 'flat' : 'light'
+                            }
+                            color={
+                              isActive('/manager/dashboard')
+                                ? 'warning'
+                                : 'default'
+                            }
+                            size="sm"
+                            className="w-full justify-start font-medium"
+                          >
+                            Manager Dashboard
+                          </Button>
+                        </Link>
                         <Link href="/campaigns" onClick={closeMenu}>
                           <Button
                             variant={isActive('/campaigns') ? 'flat' : 'light'}
@@ -343,27 +351,6 @@ export function Navigation() {
                             className="w-full justify-start font-medium"
                           >
                             Gestion d'équipe
-                          </Button>
-                        </Link>
-                        <Link
-                          href="/manage-access-requests"
-                          onClick={closeMenu}
-                        >
-                          <Button
-                            variant={
-                              isActive('/manage-access-requests')
-                                ? 'flat'
-                                : 'light'
-                            }
-                            color={
-                              isActive('/manage-access-requests')
-                                ? 'warning'
-                                : 'default'
-                            }
-                            size="sm"
-                            className="w-full justify-start font-medium"
-                          >
-                            Demandes d'accès
                           </Button>
                         </Link>
                       </>

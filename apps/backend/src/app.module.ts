@@ -10,7 +10,7 @@ import { UserActionsModule } from './user-actions/user-actions.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { StorageModule } from './storage/storage.module';
-import { AccessRequestsModule } from './access-requests/access-requests.module';
+
 import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
 
 @Module({
@@ -26,7 +26,6 @@ import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
     CampaignsModule,
     ChallengesModule,
     StorageModule,
-    AccessRequestsModule,
     DailyBonusModule,
   ],
   controllers: [AppController],

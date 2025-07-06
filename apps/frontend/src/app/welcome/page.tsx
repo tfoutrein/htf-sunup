@@ -39,12 +39,8 @@ export default function WelcomePage() {
 
     // Vérifier si l'utilisateur a vraiment besoin d'un manager
     if (user.role !== 'fbo' || user.managerId) {
-      // Rediriger vers le dashboard approprié
-      if (user.role === 'manager') {
-        router.push('/manager/dashboard');
-      } else {
-        router.push('/fbo/dashboard');
-      }
+      // Tous les utilisateurs connectés vont vers la vue d'accueil
+      router.push('/fbo/dashboard');
       return;
     }
 

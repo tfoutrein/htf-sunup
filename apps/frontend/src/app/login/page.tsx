@@ -51,12 +51,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on role
-      if (result.user.role === 'manager') {
-        router.push('/manager/dashboard');
-      } else {
-        router.push('/fbo/dashboard');
-      }
+      // Tous les utilisateurs connectés vont vers la vue d'accueil
+      router.push('/fbo/dashboard');
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Email ou mot de passe incorrect',
@@ -79,24 +75,16 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on role
-      if (result.user.role === 'manager') {
-        router.push('/manager/dashboard');
-      } else {
-        router.push('/fbo/dashboard');
-      }
+      // Tous les utilisateurs connectés vont vers la vue d'accueil
+      router.push('/fbo/dashboard');
     } catch (err) {
       setError('Erreur de connexion');
     }
   };
 
   const handleFacebookSuccess = (user: any) => {
-    // User is already logged in, redirect based on role
-    if (user.role === 'manager') {
-      router.push('/manager/dashboard');
-    } else {
-      router.push('/fbo/dashboard');
-    }
+    // Tous les utilisateurs connectés vont vers la vue d'accueil
+    router.push('/fbo/dashboard');
   };
 
   const handleFacebookError = (error: Error) => {

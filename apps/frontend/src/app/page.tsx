@@ -14,12 +14,8 @@ export default function Home() {
     const userData = getUser();
 
     if (userData) {
-      // Redirect based on role
-      if (userData.role === 'manager') {
-        router.push('/manager/dashboard');
-      } else {
-        router.push('/fbo/dashboard');
-      }
+      // Tous les utilisateurs connectés vont vers la vue d'accueil
+      router.push('/fbo/dashboard');
     } else {
       // User not logged in, show the page
       setIsChecking(false);

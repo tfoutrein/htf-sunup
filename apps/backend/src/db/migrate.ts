@@ -163,7 +163,7 @@ async function runMigrations() {
       `;
     }
 
-    // Vérifier si la table access_requests existe
+    // Vérifier si la table access_requests existe et la supprimer
     const accessRequestsExists = await sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -172,43 +172,15 @@ async function runMigrations() {
       );
     `;
 
-    if (!accessRequestsExists[0].exists) {
-      console.log('📝 Creating missing access_requests table...');
-      await sql`
-        CREATE TABLE IF NOT EXISTS "access_requests" (
-          "id" serial PRIMARY KEY NOT NULL,
-          "name" varchar(255) NOT NULL,
-          "email" varchar(255) NOT NULL,
-          "requested_role" varchar(50) DEFAULT 'fbo' NOT NULL,
-          "requested_manager_id" integer,
-          "status" varchar(50) DEFAULT 'pending' NOT NULL,
-          "message" text,
-          "reviewed_by" integer,
-          "reviewed_at" timestamp,
-          "review_comment" text,
-          "temporary_password" varchar(255),
-          "created_at" timestamp DEFAULT now() NOT NULL,
-          "updated_at" timestamp DEFAULT now() NOT NULL,
-          CONSTRAINT "access_requests_email_unique" UNIQUE("email")
-        );
-      `;
+    if (accessRequestsExists[0].exists) {
+      console.log('🗑️ Dropping access_requests table (no longer needed)...');
+      await sql`DROP TABLE "access_requests" CASCADE;`;
     }
 
-    // Vérifier et ajouter la colonne temporary_password si elle n'existe pas
-    console.log('🔍 Checking for temporary_password column...');
-    const temporaryPasswordExists = await sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'access_requests' AND column_name = 'temporary_password'
-    `;
-
-    if (temporaryPasswordExists.length === 0) {
-      console.log('📝 Adding missing temporary_password column...');
-      await sql`ALTER TABLE access_requests ADD COLUMN temporary_password varchar(255);`;
-      console.log('✅ Added temporary_password column successfully');
-    } else {
-      console.log('✅ temporary_password column already exists');
-    }
+    // temporary_password column check removed - access_requests table no longer exists
+    console.log(
+      '✅ temporary_password column check skipped (access_requests table removed)',
+    );
 
     // Vérifier et ajouter les colonnes Facebook manquantes dans la table users
     console.log('🔍 Checking for Facebook columns in users table...');
@@ -378,14 +350,6 @@ async function runMigrations() {
         name: 'users_manager_id_users_id_fk',
         sql: 'ALTER TABLE "users" ADD CONSTRAINT "users_manager_id_users_id_fk" FOREIGN KEY ("manager_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
       },
-      {
-        name: 'access_requests_requested_manager_id_users_id_fk',
-        sql: 'ALTER TABLE "access_requests" ADD CONSTRAINT "access_requests_requested_manager_id_users_id_fk" FOREIGN KEY ("requested_manager_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
-      },
-      {
-        name: 'access_requests_reviewed_by_users_id_fk',
-        sql: 'ALTER TABLE "access_requests" ADD CONSTRAINT "access_requests_reviewed_by_users_id_fk" FOREIGN KEY ("reviewed_by") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
-      },
     ];
 
     for (const constraint of constraints) {
@@ -423,8 +387,7 @@ async function runMigrations() {
       challengesExists[0].exists &&
       campaignsExists[0].exists &&
       actionsExists[0].exists &&
-      userActionsExists[0].exists &&
-      accessRequestsExists[0].exists;
+      userActionsExists[0].exists;
 
     // Toujours vérifier si on doit lancer les migrations Drizzle
     console.log('🔍 Checking Drizzle migration status...');
