@@ -1,4 +1,4 @@
-const { drizzle: drizzleFix } = require('drizzle-orm/postgres-js');
+const { drizzle: drizzleAurelia } = require('drizzle-orm/postgres-js');
 const postgresFix = require('postgres');
 const { users: usersTable } = require('./schema');
 const { eq: eqFix, and: andFix } = require('drizzle-orm');
@@ -27,7 +27,7 @@ async function fixAureliaInProduction() {
     ssl: isLocalDatabase ? false : 'require',
   });
 
-  const db = drizzleFix(sql);
+  const db = drizzleAurelia(sql);
 
   try {
     console.log('🔧 Fixing Aurélia data in production...');
