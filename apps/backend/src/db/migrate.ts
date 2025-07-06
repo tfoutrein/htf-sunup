@@ -177,6 +177,59 @@ async function runMigrations() {
       await sql`DROP TABLE "access_requests" CASCADE;`;
     }
 
+    // Vérifier si la table campaign_bonus_config existe
+    const campaignBonusConfigExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'campaign_bonus_config'
+      );
+    `;
+
+    if (!campaignBonusConfigExists[0].exists) {
+      console.log('📝 Creating missing campaign_bonus_config table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "campaign_bonus_config" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "campaign_id" integer NOT NULL,
+          "basket_bonus_amount" numeric(10, 2) DEFAULT '1.00' NOT NULL,
+          "sponsorship_bonus_amount" numeric(10, 2) DEFAULT '5.00' NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL
+        );
+      `;
+    }
+
+    // Vérifier si la table daily_bonus existe
+    const dailyBonusExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'daily_bonus'
+      );
+    `;
+
+    if (!dailyBonusExists[0].exists) {
+      console.log('📝 Creating missing daily_bonus table...');
+      await sql`
+        CREATE TABLE IF NOT EXISTS "daily_bonus" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "user_id" integer NOT NULL,
+          "campaign_id" integer NOT NULL,
+          "bonus_date" date NOT NULL,
+          "bonus_type" varchar(50) NOT NULL,
+          "amount" numeric(10, 2) NOT NULL,
+          "proof_url" varchar(500),
+          "status" varchar(50) DEFAULT 'pending' NOT NULL,
+          "reviewed_by" integer,
+          "reviewed_at" timestamp,
+          "review_comment" text,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL
+        );
+      `;
+    }
+
     // temporary_password column check removed - access_requests table no longer exists
     console.log(
       '✅ temporary_password column check skipped (access_requests table removed)',
@@ -350,6 +403,22 @@ async function runMigrations() {
         name: 'users_manager_id_users_id_fk',
         sql: 'ALTER TABLE "users" ADD CONSTRAINT "users_manager_id_users_id_fk" FOREIGN KEY ("manager_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
       },
+      {
+        name: 'campaign_bonus_config_campaign_id_campaigns_id_fk',
+        sql: 'ALTER TABLE "campaign_bonus_config" ADD CONSTRAINT "campaign_bonus_config_campaign_id_campaigns_id_fk" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE no action ON UPDATE no action',
+      },
+      {
+        name: 'daily_bonus_user_id_users_id_fk',
+        sql: 'ALTER TABLE "daily_bonus" ADD CONSTRAINT "daily_bonus_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
+      },
+      {
+        name: 'daily_bonus_campaign_id_campaigns_id_fk',
+        sql: 'ALTER TABLE "daily_bonus" ADD CONSTRAINT "daily_bonus_campaign_id_campaigns_id_fk" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE no action ON UPDATE no action',
+      },
+      {
+        name: 'daily_bonus_reviewed_by_users_id_fk',
+        sql: 'ALTER TABLE "daily_bonus" ADD CONSTRAINT "daily_bonus_reviewed_by_users_id_fk" FOREIGN KEY ("reviewed_by") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action',
+      },
     ];
 
     for (const constraint of constraints) {
@@ -387,7 +456,9 @@ async function runMigrations() {
       challengesExists[0].exists &&
       campaignsExists[0].exists &&
       actionsExists[0].exists &&
-      userActionsExists[0].exists;
+      userActionsExists[0].exists &&
+      campaignBonusConfigExists[0].exists &&
+      dailyBonusExists[0].exists;
 
     // Toujours vérifier si on doit lancer les migrations Drizzle
     console.log('🔍 Checking Drizzle migration status...');
