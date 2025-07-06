@@ -40,22 +40,64 @@ export class ProofsService {
 
   // Compter les preuves d'une action utilisateur
   async countProofsByUserAction(userActionId: number): Promise<number> {
-    const result = await this.databaseService.db
-      .select({ count: count() })
-      .from(proofs)
-      .where(eq(proofs.userActionId, userActionId));
+    try {
+      console.log(
+        `🔍 [ProofsService] Counting proofs for userActionId: ${userActionId}`,
+      );
 
-    return result[0].count;
+      const result = await this.databaseService.db
+        .select({ count: count() })
+        .from(proofs)
+        .where(eq(proofs.userActionId, userActionId));
+
+      const proofCount = result[0].count;
+      console.log(
+        `📊 [ProofsService] Found ${proofCount} proofs for userActionId: ${userActionId}`,
+      );
+
+      return proofCount;
+    } catch (error) {
+      console.error(
+        `❌ [ProofsService] Error counting proofs for userActionId ${userActionId}:`,
+        error,
+      );
+      // Retourner 0 en cas d'erreur pour permettre la continuation du processus
+      console.log(
+        `⚠️ [ProofsService] Returning 0 as fallback for userActionId: ${userActionId}`,
+      );
+      return 0;
+    }
   }
 
   // Compter les preuves d'un bonus quotidien
   async countProofsByDailyBonus(dailyBonusId: number): Promise<number> {
-    const result = await this.databaseService.db
-      .select({ count: count() })
-      .from(proofs)
-      .where(eq(proofs.dailyBonusId, dailyBonusId));
+    try {
+      console.log(
+        `🔍 [ProofsService] Counting proofs for dailyBonusId: ${dailyBonusId}`,
+      );
 
-    return result[0].count;
+      const result = await this.databaseService.db
+        .select({ count: count() })
+        .from(proofs)
+        .where(eq(proofs.dailyBonusId, dailyBonusId));
+
+      const proofCount = result[0].count;
+      console.log(
+        `📊 [ProofsService] Found ${proofCount} proofs for dailyBonusId: ${dailyBonusId}`,
+      );
+
+      return proofCount;
+    } catch (error) {
+      console.error(
+        `❌ [ProofsService] Error counting proofs for dailyBonusId ${dailyBonusId}:`,
+        error,
+      );
+      // Retourner 0 en cas d'erreur pour permettre la continuation du processus
+      console.log(
+        `⚠️ [ProofsService] Returning 0 as fallback for dailyBonusId: ${dailyBonusId}`,
+      );
+      return 0;
+    }
   }
 
   // Ajouter une preuve à une action utilisateur
@@ -63,7 +105,14 @@ export class ProofsService {
     userActionId: number,
     file: Express.Multer.File,
   ): Promise<Proof> {
+    console.log(
+      `🎯 [ProofsService] Adding proof to userActionId: ${userActionId}`,
+    );
+
     // Vérifier que l'action utilisateur existe
+    console.log(
+      `🔍 [ProofsService] Checking if userAction ${userActionId} exists...`,
+    );
     const userAction = await this.databaseService.db
       .select()
       .from(userActions)
@@ -71,19 +120,39 @@ export class ProofsService {
       .limit(1);
 
     if (userAction.length === 0) {
+      console.error(`❌ [ProofsService] UserAction ${userActionId} not found`);
       throw new NotFoundException(
         `UserAction avec l'ID ${userActionId} non trouvée`,
       );
     }
 
+    console.log(`✅ [ProofsService] UserAction ${userActionId} exists:`, {
+      id: userAction[0].id,
+      userId: userAction[0].userId,
+      actionId: userAction[0].actionId,
+      challengeId: userAction[0].challengeId,
+      completed: userAction[0].completed,
+    });
+
     // Vérifier qu'on ne dépasse pas 5 preuves
+    console.log(
+      `📊 [ProofsService] Checking proof count for userActionId: ${userActionId}`,
+    );
     const currentCount = await this.countProofsByUserAction(userActionId);
+    console.log(`📊 [ProofsService] Current proof count: ${currentCount}/5`);
+
     if (currentCount >= 5) {
+      console.error(
+        `❌ [ProofsService] Too many proofs for userActionId ${userActionId}: ${currentCount}/5`,
+      );
       throw new BadRequestException(
         'Maximum 5 preuves autorisées par action utilisateur',
       );
     }
 
+    console.log(
+      `✅ [ProofsService] Proof count OK (${currentCount}/5), proceeding with upload...`,
+    );
     return this.uploadAndSaveProof(file, userActionId, null);
   }
 
@@ -92,7 +161,14 @@ export class ProofsService {
     dailyBonusId: number,
     file: Express.Multer.File,
   ): Promise<Proof> {
+    console.log(
+      `🎯 [ProofsService] Adding proof to dailyBonusId: ${dailyBonusId}`,
+    );
+
     // Vérifier que le bonus quotidien existe
+    console.log(
+      `🔍 [ProofsService] Checking if dailyBonus ${dailyBonusId} exists...`,
+    );
     const bonus = await this.databaseService.db
       .select()
       .from(dailyBonus)
@@ -100,19 +176,39 @@ export class ProofsService {
       .limit(1);
 
     if (bonus.length === 0) {
+      console.error(`❌ [ProofsService] DailyBonus ${dailyBonusId} not found`);
       throw new NotFoundException(
         `DailyBonus avec l'ID ${dailyBonusId} non trouvé`,
       );
     }
 
+    console.log(`✅ [ProofsService] DailyBonus ${dailyBonusId} exists:`, {
+      id: bonus[0].id,
+      userId: bonus[0].userId,
+      campaignId: bonus[0].campaignId,
+      bonusType: bonus[0].bonusType,
+      amount: bonus[0].amount,
+    });
+
     // Vérifier qu'on ne dépasse pas 5 preuves
+    console.log(
+      `📊 [ProofsService] Checking proof count for dailyBonusId: ${dailyBonusId}`,
+    );
     const currentCount = await this.countProofsByDailyBonus(dailyBonusId);
+    console.log(`📊 [ProofsService] Current proof count: ${currentCount}/5`);
+
     if (currentCount >= 5) {
+      console.error(
+        `❌ [ProofsService] Too many proofs for dailyBonusId ${dailyBonusId}: ${currentCount}/5`,
+      );
       throw new BadRequestException(
         'Maximum 5 preuves autorisées par bonus quotidien',
       );
     }
 
+    console.log(
+      `✅ [ProofsService] Proof count OK (${currentCount}/5), proceeding with upload...`,
+    );
     return this.uploadAndSaveProof(file, null, dailyBonusId);
   }
 
@@ -181,6 +277,8 @@ export class ProofsService {
       throw new BadRequestException('Aucun fichier fourni');
     }
 
+    console.log(`📤 [uploadAndSaveProof] Uploading file: ${file.originalname}`);
+
     // Valider le type de fichier
     const allowedMimeTypes = [
       'image/jpeg',
@@ -195,6 +293,9 @@ export class ProofsService {
     ];
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
+      console.error(
+        `❌ [uploadAndSaveProof] Invalid file type: ${file.mimetype}`,
+      );
       throw new BadRequestException(
         'Type de fichier non supporté. Types autorisés: JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM',
       );
@@ -203,6 +304,9 @@ export class ProofsService {
     // Limiter la taille du fichier (10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB en bytes
     if (file.size > maxSize) {
+      console.error(
+        `❌ [uploadAndSaveProof] File too large: ${file.size} bytes`,
+      );
       throw new BadRequestException(
         'Fichier trop volumineux. Taille maximale: 10MB',
       );
@@ -217,10 +321,14 @@ export class ProofsService {
     const entityType = userActionId ? 'user-action' : 'daily-bonus';
     const entityId = userActionId || dailyBonusId;
     const key = `proofs/${entityType}/${entityId}/${timestamp}.${fileExtension}`;
+    console.log(`🔑 [uploadAndSaveProof] Generated key: ${key}`);
 
     try {
       // Uploader le fichier
       const url = await this.storageService.uploadFile(file, key);
+      console.log(
+        `✅ [uploadAndSaveProof] File uploaded successfully. URL: ${url}`,
+      );
 
       // Sauvegarder en base de données
       const newProof: NewProof = {
@@ -238,6 +346,9 @@ export class ProofsService {
         .values(newProof)
         .returning();
 
+      console.log(
+        `✅ [uploadAndSaveProof] Proof saved successfully. ID: ${savedProof.id}`,
+      );
       return savedProof;
     } catch (error) {
       console.error('Error uploading proof:', error);
