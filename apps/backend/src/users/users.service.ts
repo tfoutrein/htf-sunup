@@ -7,7 +7,14 @@ import {
 import { eq, and, isNull } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import { DATABASE_CONNECTION } from '../db/database.module';
-import { users, User, NewUser } from '../db/schema';
+import {
+  users,
+  User,
+  NewUser,
+  userActions,
+  dailyBonus,
+  campaigns,
+} from '../db/schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -169,6 +176,16 @@ export class UsersService {
   }
 
   async remove(id: number): Promise<void> {
+    // Vérifier que l'utilisateur existe
+    const userToDelete = await this.findOne(id);
+    if (!userToDelete) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Nettoyer toutes les données liées en cascade
+    await this.cleanupUserData(id);
+
+    // Supprimer l'utilisateur
     const [user] = await this.db
       .delete(users)
       .where(eq(users.id, id))
@@ -177,6 +194,125 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+  }
+
+  // Méthode de diagnostic pour voir les données liées à un utilisateur
+  async diagnoseUserDependencies(userId: number): Promise<any> {
+    const userActionsCount = await this.db
+      .select()
+      .from(userActions)
+      .where(eq(userActions.userId, userId));
+
+    const dailyBonusesAsUser = await this.db
+      .select()
+      .from(dailyBonus)
+      .where(eq(dailyBonus.userId, userId));
+
+    const dailyBonusesAsReviewer = await this.db
+      .select()
+      .from(dailyBonus)
+      .where(eq(dailyBonus.reviewedBy, userId));
+
+    const campaignsCreated = await this.db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.createdBy, userId));
+
+    const teamMembers = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.managerId, userId));
+
+    return {
+      userId,
+      dependencies: {
+        userActions: userActionsCount.length,
+        dailyBonusesAsUser: dailyBonusesAsUser.length,
+        dailyBonusesAsReviewer: dailyBonusesAsReviewer.length,
+        campaignsCreated: campaignsCreated.length,
+        teamMembers: teamMembers.length,
+      },
+      details: {
+        userActions: userActionsCount,
+        dailyBonusesAsUser,
+        dailyBonusesAsReviewer,
+        campaignsCreated,
+        teamMembers,
+      },
+    };
+  }
+
+  private async cleanupUserData(userId: number): Promise<void> {
+    console.log(`🧹 Nettoyage des données pour l'utilisateur ${userId}`);
+
+    // Diagnostic avant nettoyage
+    const dependencies = await this.diagnoseUserDependencies(userId);
+    console.log('📊 Dépendances trouvées:', dependencies.dependencies);
+
+    // 1. Supprimer les actions utilisateur
+    const deletedActions = await this.db
+      .delete(userActions)
+      .where(eq(userActions.userId, userId))
+      .returning();
+    console.log(`🗑️ Supprimé ${deletedActions.length} actions utilisateur`);
+
+    // 2. Supprimer les bonus quotidiens (où l'utilisateur est le déclarant)
+    const deletedBonuses = await this.db
+      .delete(dailyBonus)
+      .where(eq(dailyBonus.userId, userId))
+      .returning();
+    console.log(`🗑️ Supprimé ${deletedBonuses.length} bonus quotidiens`);
+
+    // 3. Mettre à null les bonus quotidiens (où l'utilisateur est le revieweur)
+    const updatedBonuses = await this.db
+      .update(dailyBonus)
+      .set({ reviewedBy: null })
+      .where(eq(dailyBonus.reviewedBy, userId))
+      .returning();
+    console.log(
+      `🔄 Mis à jour ${updatedBonuses.length} bonus (reviewer -> null)`,
+    );
+
+    // 4. Transférer ou supprimer les campagnes créées par l'utilisateur
+    const principalManager = await this.db
+      .select()
+      .from(users)
+      .where(and(eq(users.role, 'manager'), isNull(users.managerId)))
+      .limit(1);
+
+    if (principalManager.length > 0) {
+      const transferredCampaigns = await this.db
+        .update(campaigns)
+        .set({ createdBy: principalManager[0].id })
+        .where(eq(campaigns.createdBy, userId))
+        .returning();
+      console.log(
+        `🔄 Transféré ${transferredCampaigns.length} campagnes vers le manager principal (ID: ${principalManager[0].id})`,
+      );
+    }
+
+    // 5. Réassigner les membres d'équipe dont l'utilisateur est le manager
+    if (principalManager.length > 0) {
+      const reassignedMembers = await this.db
+        .update(users)
+        .set({ managerId: principalManager[0].id })
+        .where(eq(users.managerId, userId))
+        .returning();
+      console.log(
+        `🔄 Réassigné ${reassignedMembers.length} membres d'équipe vers le manager principal`,
+      );
+    } else {
+      const orphanedMembers = await this.db
+        .update(users)
+        .set({ managerId: null })
+        .where(eq(users.managerId, userId))
+        .returning();
+      console.log(
+        `🔄 Mis ${orphanedMembers.length} membres d'équipe sans manager`,
+      );
+    }
+
+    console.log(`✅ Nettoyage terminé pour l'utilisateur ${userId}`);
   }
 
   // Team management methods

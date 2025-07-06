@@ -86,6 +86,14 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
+  @Get(':id/dependencies')
+  @ApiOperation({ summary: 'Diagnose user dependencies before deletion' })
+  @ApiResponse({ status: 200, description: 'User dependencies analysis' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  diagnoseDependencies(@Param('id') id: string) {
+    return this.usersService.diagnoseUserDependencies(+id);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
