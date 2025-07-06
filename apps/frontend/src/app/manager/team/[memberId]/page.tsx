@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   Card,
+  CardBody,
   Button,
-  Progress,
   Badge,
+  Progress,
   Modal,
   ModalContent,
   ModalHeader,
@@ -17,16 +18,20 @@ import {
 import {
   ArrowLeftIcon,
   UsersIcon,
-  CalendarIcon,
-  ChartBarIcon,
-  EyeIcon,
   CheckCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  CalendarIcon,
   ChevronDownIcon,
-  ChevronRightIcon,
+  ChevronLeftIcon,
+  EyeIcon,
+  CurrencyEuroIcon,
+  CalendarDaysIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
+import { useUserCampaignBonuses } from '@/hooks';
+import { DailyBonus } from '@/types/daily-bonus';
 
 // Types
 interface User {
@@ -96,6 +101,21 @@ export default function MemberDetailsPage() {
   const [isLoadingProof, setIsLoadingProof] = useState(false);
   const [showPreviousDays, setShowPreviousDays] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  // États pour l'accordéon des bonus
+  const [bonusAccordionOpen, setBonusAccordionOpen] = useState(false);
+  const [selectedBonusProof, setSelectedBonusProof] =
+    useState<DailyBonus | null>(null);
+  const [bonusProofModalOpen, setBonusProofModalOpen] = useState(false);
+  const [bonusProofUrl, setBonusProofUrl] = useState<string | null>(null);
+  const [loadingBonusProof, setLoadingBonusProof] = useState(false);
+
+  // Hook pour les bonus quotidiens - utiliser le hook React Query
+  const {
+    data: memberBonuses = [],
+    isLoading: bonusesLoading,
+    error: bonusesError,
+  } = useUserCampaignBonuses(parseInt(memberId), currentCampaign?.id || 0);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -180,6 +200,81 @@ export default function MemberDetailsPage() {
     }
     setExpandedDays(newExpanded);
   };
+
+  // Fonctions pour les bonus déclarés
+  const getBonusTypeLabel = (type: string) => {
+    switch (type) {
+      case 'basket':
+        return 'Panier';
+      case 'sponsorship':
+        return 'Parrainage';
+      default:
+        return type;
+    }
+  };
+
+  const formatBonusDate = (dateString: string) => {
+    try {
+      let date;
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+      } else if (dateString.includes('-')) {
+        const [year, month, day] = dateString.split('-');
+        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        date = new Date(dateString);
+      }
+
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+
+      return date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Erreur de formatage de date:', error);
+      return dateString;
+    }
+  };
+
+  const handleViewBonusProof = async (bonus: DailyBonus) => {
+    if (!bonus.proofUrl) return;
+
+    setSelectedBonusProof(bonus);
+    setLoadingBonusProof(true);
+    setBonusProofUrl(null);
+
+    try {
+      const response = await ApiClient.get(`/daily-bonus/${bonus.id}/proof`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setBonusProofUrl(data.url);
+        setBonusProofModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la preuve:', error);
+    } finally {
+      setLoadingBonusProof(false);
+    }
+  };
+
+  // Calculer les statistiques des bonus
+  const totalBonusAmount = memberBonuses.reduce(
+    (sum, bonus) => sum + parseFloat(bonus.amount || '0'),
+    0,
+  );
+  const bonusCount = memberBonuses.length;
+  const basketBonusCount = memberBonuses.filter(
+    (b) => b.bonusType === 'basket',
+  ).length;
+  const sponsorshipBonusCount = memberBonuses.filter(
+    (b) => b.bonusType === 'sponsorship',
+  ).length;
 
   if (loading) {
     return (
@@ -273,7 +368,7 @@ export default function MemberDetailsPage() {
         </Card>
 
         {/* Daily Challenges Cards */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 p-6">
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 mb-6 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Défis par jour</h3>
           </div>
@@ -328,7 +423,7 @@ export default function MemberDetailsPage() {
                           showPreviousDays ? (
                             <ChevronDownIcon className="w-4 h-4" />
                           ) : (
-                            <ChevronRightIcon className="w-4 h-4" />
+                            <ChevronLeftIcon className="w-4 h-4" />
                           )
                         }
                       >
@@ -435,7 +530,7 @@ export default function MemberDetailsPage() {
                               {isExpanded ? (
                                 <ChevronDownIcon className="w-4 h-4 text-gray-400" />
                               ) : (
-                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                                <ChevronLeftIcon className="w-4 h-4 text-gray-400" />
                               )}
                             </div>
                           </div>
@@ -472,45 +567,13 @@ export default function MemberDetailsPage() {
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xl">
-                                          {actionTypes.find(
-                                            (t) => t.key === action.type,
-                                          )?.icon || '📋'}
-                                        </span>
-                                        <h5
-                                          className={`font-medium ${
-                                            isPast && !action.completed
-                                              ? 'text-red-700'
-                                              : ''
-                                          }`}
-                                        >
+                                        <h5 className="font-medium text-gray-900">
                                           {action.title}
                                         </h5>
                                       </div>
-                                      <p
-                                        className={`text-sm mb-2 ${
-                                          isPast && !action.completed
-                                            ? 'text-red-600'
-                                            : 'text-gray-600'
-                                        }`}
-                                      >
+                                      <p className="text-sm text-gray-600 mb-3">
                                         {action.description}
                                       </p>
-                                      {action.completed &&
-                                        action.completedAt && (
-                                          <p className="text-sm text-green-600">
-                                            ✅ Complété le{' '}
-                                            {new Date(
-                                              action.completedAt,
-                                            ).toLocaleDateString('fr-FR')}
-                                          </p>
-                                        )}
-                                      {isPast && !action.completed && (
-                                        <p className="text-sm text-red-600">
-                                          ⚠️ Cette action ne peut plus être
-                                          réalisée (date passée)
-                                        </p>
-                                      )}
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
                                       {action.proofUrl &&
@@ -626,6 +689,227 @@ export default function MemberDetailsPage() {
             })()}
           </div>
         </Card>
+
+        {/* Section Accordéon Bonus Déclarés par le FBO */}
+        <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
+          <CardBody className="p-0">
+            <div
+              className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50/50 transition-colors border-b border-gray-100"
+              onClick={() => setBonusAccordionOpen(!bonusAccordionOpen)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <CurrencyEuroIcon className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Bonus Déclarés par {member?.name}
+                    </h3>
+
+                    {/* Version mobile : affichage vertical */}
+                    <div className="sm:hidden">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-amber-600 font-semibold text-lg">
+                          {totalBonusAmount.toFixed(2)}€
+                        </span>
+                        <span className="text-sm text-gray-600">au total</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <span>{bonusCount} bonus</span>
+                        {basketBonusCount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>🛒 {basketBonusCount}</span>
+                          </>
+                        )}
+                        {sponsorshipBonusCount > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>🤝 {sponsorshipBonusCount}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Version desktop : affichage horizontal */}
+                    <div className="hidden sm:flex items-center gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <span className="text-amber-600 font-semibold">
+                          {totalBonusAmount.toFixed(2)}€
+                        </span>
+                        au total
+                      </span>
+                      <span>•</span>
+                      <span>{bonusCount} bonus déclarés</span>
+                      {basketBonusCount > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>🛒 {basketBonusCount} paniers</span>
+                        </>
+                      )}
+                      {sponsorshipBonusCount > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>🤝 {sponsorshipBonusCount} parrainages</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {bonusesLoading && (
+                    <div className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                  )}
+                  {bonusAccordionOpen ? (
+                    <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronLeftIcon className="w-5 h-5 text-gray-500" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {bonusAccordionOpen && (
+              <div className="p-4 sm:p-6 pt-0">
+                {bonusesLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="w-8 h-8 border-3 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                    <p className="text-gray-600 ml-4">
+                      Chargement des bonus...
+                    </p>
+                  </div>
+                ) : bonusesError ? (
+                  <div className="text-center p-8">
+                    <ExclamationTriangleIcon className="w-12 h-12 text-red-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-red-600 mb-2">
+                      Erreur lors du chargement
+                    </h3>
+                    <p className="text-red-500 text-sm">
+                      {bonusesError.message}
+                    </p>
+                  </div>
+                ) : memberBonuses.length === 0 ? (
+                  <div className="text-center p-8">
+                    <CurrencyEuroIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">
+                      Aucun bonus déclaré
+                    </h3>
+                    <p className="text-gray-500">
+                      Ce FBO n'a pas encore déclaré de bonus pour cette
+                      campagne.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {memberBonuses.map((bonus, index) => (
+                      <div key={bonus.id}>
+                        <div className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                          {/* Version mobile : layout vertical */}
+                          <div className="sm:hidden">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <CalendarDaysIcon className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium">
+                                  {formatBonusDate(bonus.bonusDate)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CurrencyEuroIcon className="w-4 h-4 text-green-600" />
+                                <span className="font-semibold text-green-600">
+                                  {bonus.amount}€
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                size="sm"
+                                variant="flat"
+                                color={
+                                  bonus.bonusType === 'basket'
+                                    ? 'primary'
+                                    : 'secondary'
+                                }
+                              >
+                                {getBonusTypeLabel(bonus.bonusType)}
+                              </Badge>
+
+                              {bonus.proofUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  startContent={<EyeIcon className="w-4 h-4" />}
+                                  onPress={() => handleViewBonusProof(bonus)}
+                                  isLoading={
+                                    loadingBonusProof &&
+                                    selectedBonusProof?.id === bonus.id
+                                  }
+                                  className="min-w-0 px-2"
+                                >
+                                  👁️
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Version desktop : layout horizontal */}
+                          <div className="hidden sm:flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <CalendarDaysIcon className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium">
+                                  {formatBonusDate(bonus.bonusDate)}
+                                </span>
+                              </div>
+                              <Badge
+                                size="sm"
+                                variant="flat"
+                                color={
+                                  bonus.bonusType === 'basket'
+                                    ? 'primary'
+                                    : 'secondary'
+                                }
+                              >
+                                {getBonusTypeLabel(bonus.bonusType)}
+                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <CurrencyEuroIcon className="w-4 h-4 text-green-600" />
+                                <span className="font-semibold text-green-600">
+                                  {bonus.amount}€
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {bonus.proofUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  startContent={<EyeIcon className="w-4 h-4" />}
+                                  onPress={() => handleViewBonusProof(bonus)}
+                                  isLoading={
+                                    loadingBonusProof &&
+                                    selectedBonusProof?.id === bonus.id
+                                  }
+                                >
+                                  Voir preuve
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {index < memberBonuses.length - 1 && (
+                          <div className="border-b border-gray-200 my-2" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardBody>
+        </Card>
       </div>
 
       {/* Modal pour afficher la preuve */}
@@ -703,6 +987,71 @@ export default function MemberDetailsPage() {
                 >
                   Ouvrir dans un nouvel onglet
                 </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal pour afficher la preuve des bonus déclarés */}
+      <Modal
+        isOpen={bonusProofModalOpen}
+        onOpenChange={setBonusProofModalOpen}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <PhotoIcon className="w-5 h-5" />
+                  Preuve du bonus
+                </div>
+                {selectedBonusProof && (
+                  <div className="text-sm text-gray-600 font-normal">
+                    {getBonusTypeLabel(selectedBonusProof.bonusType)} •{' '}
+                    {selectedBonusProof.amount}€ •{' '}
+                    {formatBonusDate(selectedBonusProof.bonusDate)}
+                  </div>
+                )}
+              </ModalHeader>
+              <ModalBody>
+                {loadingBonusProof ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="w-8 h-8 border-3 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                  </div>
+                ) : bonusProofUrl ? (
+                  <div className="flex justify-center">
+                    <img
+                      src={bonusProofUrl}
+                      alt="Preuve du bonus"
+                      className="max-w-full h-auto rounded-lg shadow-lg"
+                      style={{ maxHeight: '70vh' }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center p-8">
+                    <PhotoIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      Impossible de charger la preuve
+                    </p>
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button color="primary" variant="light" onPress={onClose}>
+                  Fermer
+                </Button>
+                {bonusProofUrl && (
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    onPress={() => window.open(bonusProofUrl, '_blank')}
+                  >
+                    Ouvrir dans un nouvel onglet
+                  </Button>
+                )}
               </ModalFooter>
             </>
           )}

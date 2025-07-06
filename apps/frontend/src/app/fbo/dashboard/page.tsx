@@ -1,21 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Card,
-  CardHeader,
   CardBody,
   Button,
   Badge,
-  Progress,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
   Input,
-  Counter,
   AuroraBackground,
 } from '@/components/ui';
 import { Chip, useDisclosure, Accordion, AccordionItem } from '@heroui/react';
@@ -24,489 +20,252 @@ import {
   CheckCircleIcon,
   ClockIcon,
   CameraIcon,
-  StarIcon,
-  TrophyIcon,
-  CalendarDaysIcon,
+  CurrencyEuroIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  EyeIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
-import { getUser, getToken, logout } from '@/utils/auth';
-import { useActiveCampaigns } from '@/hooks/useCampaigns';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
-import { useTodayChallenges, useNextChallenge } from '@/hooks/useChallenges';
-import { useChallengeActions } from '@/hooks/useActions';
-import { Challenge, Action, Campaign } from '@/types/campaigns';
-import ConfettiExplosion from 'react-confetti-explosion';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
+// Hooks personnalisés
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useDashboardAnimations } from '@/hooks/useDashboardAnimations';
+import { useBonusActions } from '@/hooks/useBonusActions';
 
-interface UserAction {
-  id: number;
-  userId: number;
-  actionId: number;
-  challengeId: number;
-  completed: boolean;
-  completedAt: string | null;
-  proofUrl: string | null;
-  action?: Action;
-}
+// Composants
+import {
+  DashboardHeader,
+  ProgressSection,
+  NextChallengesSection,
+  StatisticsSection,
+} from '@/components/dashboard';
 
-interface CampaignStats {
-  campaign: {
-    id: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-  };
-  stats: {
-    totalChallenges: number;
-    completedChallenges: number;
-    challengeCompletionRate: number;
-    totalActions: number;
-    completedActions: number;
-    actionCompletionRate: number;
-    totalPointsEarned?: number;
-    maxPossiblePoints?: number;
-    totalEarnedEuros: number;
-    maxPossibleEuros: number;
-  };
-  challengeDetails: Array<{
-    challengeId: number;
-    challengeTitle: string;
-    challengeDate: string;
-    totalActions: number;
-    completedActions: number;
-    isCompleted: boolean;
-    percentage: number;
-    valueInEuro?: string;
-    earnedValue?: number;
-  }>;
-}
-
-interface UserStreaks {
-  currentStreak: number;
-  longestStreak: number;
-  totalActiveDays: number;
-  lastActivityDate: string | null;
-}
-
-interface UserBadge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  earnedAt: string;
-}
-
-const actionTypeConfig = {
-  vente: {
-    label: 'Vente',
-    color: 'success' as const,
-    icon: '💰',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-  },
-  recrutement: {
-    label: 'Recrutement',
-    color: 'primary' as const,
-    icon: '🤝',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-  },
-  reseaux_sociaux: {
-    label: 'Réseaux Sociaux',
-    color: 'secondary' as const,
-    icon: '📱',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-  },
-};
+// Types et utilitaires
+import { Action } from '@/types/dashboard';
+import {
+  isActionCompleted,
+  getUserAction,
+  allTodayActionsCompleted,
+  getBonusTypeLabel,
+  formatBonusDate,
+} from '@/utils/dashboard';
+import { ACTION_TYPE_CONFIG, BONUS_TYPES } from '@/constants/dashboard';
 
 export default function FBODashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userActions, setUserActions] = useState<UserAction[]>([]);
-  const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(
-    null,
-  );
-  const [userStreaks, setUserStreaks] = useState<UserStreaks | null>(null);
-  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isMoneyUpdated, setIsMoneyUpdated] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [nextChallengeAnimated, setNextChallengeAnimated] = useState(false);
-  const [showNextChallengeEmphasis, setShowNextChallengeEmphasis] =
-    useState(false);
-  const [completedActionsCollapsed, setCompletedActionsCollapsed] =
-    useState(true);
-  const previousEarnedAmountRef = useRef<number | null>(null);
-  const previousShouldShowNextRef = useRef<boolean>(false);
+  // Hooks personnalisés pour la logique métier
+  const {
+    user,
+    userActions,
+    loading,
+    activeCampaign,
+    todayChallenge,
+    nextChallenge,
+    challengeActions,
+    nextChallengeActions,
+    earningsData,
+    myBonuses,
+    campaignStats,
+    bonusStats,
+    userStreaks,
+    userBadges,
+    handleLogout,
+    refetchUserActions,
+    refetchGamificationData,
+  } = useDashboardData();
 
-  // TanStack Query hooks
-  const { data: activeCampaigns = [], isLoading: campaignsLoading } =
-    useActiveCampaigns();
-  const { data: todayChallenges = [], isLoading: challengesLoading } =
-    useTodayChallenges();
+  // Hooks pour les animations
+  const {
+    isMobile,
+    isMoneyUpdated,
+    showConfetti,
+    showNextChallengeEmphasis,
+    completedActionsCollapsed,
+    setCompletedActionsCollapsed,
+    triggerNextChallengeAnimation,
+    triggerTestAnimation,
+  } = useDashboardAnimations(earningsData.totalEarnings);
+
+  // Hooks pour les actions de bonus
+  const {
+    bonusModalOpen,
+    bonusType,
+    bonusProofFile,
+    bonusSubmitting,
+    bonusAccordionOpen,
+    selectedBonusProof,
+    bonusProofModalOpen,
+    bonusProofUrl,
+    loadingBonusProof,
+    openBonusModal,
+    closeBonusModal,
+    setBonusProofFile,
+    handleBonusSubmit,
+    setBonusAccordionOpen,
+    handleViewBonusProof,
+    closeBonusProofModal,
+  } = useBonusActions(activeCampaign?.id, triggerTestAnimation);
+
+  // États locaux pour la logique spécifique au composant
+  const [selectedAction, setSelectedAction] = useState<Action | null>(null);
+  const [selectedUserAction, setSelectedUserAction] = useState<any>(null);
+  const [isNextChallenge, setIsNextChallenge] = useState(false);
+  const [actionProofFile, setActionProofFile] = useState<File | null>(null);
+  const [actionProofPreviewUrl, setActionProofPreviewUrl] = useState<
+    string | null
+  >(null);
+  const [bonusProofPreviewUrl, setBonusProofPreviewUrl] = useState<
+    string | null
+  >(null);
+
+  // Modal states
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Nettoyage des URLs de prévisualisation
+  useEffect(() => {
+    if (actionProofFile) {
+      // Nettoyer l'ancienne URL si elle existe
+      if (actionProofPreviewUrl) {
+        URL.revokeObjectURL(actionProofPreviewUrl);
+      }
+      // Créer une nouvelle URL
+      const newUrl = URL.createObjectURL(actionProofFile);
+      setActionProofPreviewUrl(newUrl);
+    } else {
+      // Nettoyer l'URL si le fichier est supprimé
+      if (actionProofPreviewUrl) {
+        URL.revokeObjectURL(actionProofPreviewUrl);
+        setActionProofPreviewUrl(null);
+      }
+    }
+
+    // Cleanup quand le composant se démonte
+    return () => {
+      if (actionProofPreviewUrl) {
+        URL.revokeObjectURL(actionProofPreviewUrl);
+      }
+    };
+  }, [actionProofFile]);
+
+  useEffect(() => {
+    if (bonusProofFile) {
+      // Nettoyer l'ancienne URL si elle existe
+      if (bonusProofPreviewUrl) {
+        URL.revokeObjectURL(bonusProofPreviewUrl);
+      }
+      // Créer une nouvelle URL
+      const newUrl = URL.createObjectURL(bonusProofFile);
+      setBonusProofPreviewUrl(newUrl);
+    } else {
+      // Nettoyer l'URL si le fichier est supprimé
+      if (bonusProofPreviewUrl) {
+        URL.revokeObjectURL(bonusProofPreviewUrl);
+        setBonusProofPreviewUrl(null);
+      }
+    }
+
+    // Cleanup quand le composant se démonte
+    return () => {
+      if (bonusProofPreviewUrl) {
+        URL.revokeObjectURL(bonusProofPreviewUrl);
+      }
+    };
+  }, [bonusProofFile]);
 
   // Derived state
-  const activeCampaign = activeCampaigns[0] || null;
-  const todayChallenge = todayChallenges[0] || null;
+  const shouldShowNextChallenges =
+    allTodayActionsCompleted(challengeActions, userActions) &&
+    nextChallenge &&
+    challengeActions.length > 0;
 
-  // Next challenge hook - only fetch if we have an active campaign
-  const { data: nextChallenge, isLoading: nextChallengeLoading } =
-    useNextChallenge(activeCampaign?.id);
-
-  // Get today's date string
-  const today = new Date().toISOString().split('T')[0];
-
-  const { data: challengeActions = [], isLoading: actionsLoading } =
-    useChallengeActions(todayChallenge?.id || 0);
-
-  // Helper functions moved here to be accessible
-  const isActionCompleted = (action: Action) => {
-    return userActions.some(
-      (userAction) => userAction.actionId === action.id && userAction.completed,
-    );
-  };
-
-  const getUserAction = (action: Action) => {
-    return userActions.find((userAction) => userAction.actionId === action.id);
-  };
-
-  // Check if all today's actions are completed
-  const allTodayActionsCompleted = () => {
-    if (!challengeActions.length) return false;
-    return challengeActions.every((action) => isActionCompleted(action));
-  };
-
-  const shouldShowNextChallenges = allTodayActionsCompleted() && nextChallenge;
-  // Show next challenges only when today's challenge is 100% complete
-
-  // DEBUG: Simplified logging
-  if (nextChallenge || activeCampaign) {
-    console.log('🐛 DEBUG Next Challenges:', {
-      activeCampaign: activeCampaign?.id,
-      nextChallenge: nextChallenge?.id,
-      shouldShow: shouldShowNextChallenges,
-    });
-  }
-
-  const { data: nextChallengeActions = [], isLoading: nextActionsLoading } =
-    useChallengeActions(nextChallenge?.id || 0);
-
-  const loading = campaignsLoading || challengesLoading || actionsLoading;
-  const [selectedAction, setSelectedAction] = useState<{
-    userAction?: UserAction;
-    action: Action;
-  } | null>(null);
-  const [proofUrl, setProofUrl] = useState('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const router = useRouter();
-
+  // Déclencher l'animation des prochains défis quand nécessaire
   useEffect(() => {
-    const userData = getUser();
-    const token = getToken();
+    triggerNextChallengeAnimation(Boolean(shouldShowNextChallenges));
+  }, [shouldShowNextChallenges, triggerNextChallengeAnimation]);
 
-    if (!userData || !token) {
-      router.push('/login');
-      return;
-    }
-
-    if (userData.role !== 'fbo') {
-      router.push('/login');
-      return;
-    }
-
-    setUser(userData);
-  }, [router]);
-
-  // Détecter si on est sur mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640); // 640px = sm breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Fetch user actions and gamification data when campaign/challenge data is available
-  useEffect(() => {
-    if (todayChallenge?.id && user) {
-      fetchUserActionsForChallenge(todayChallenge.id, user);
-    }
-  }, [todayChallenge?.id, user]);
-
-  useEffect(() => {
-    if (activeCampaign?.id && user) {
-      fetchGamificationData(activeCampaign.id, user);
-    }
-  }, [activeCampaign?.id, user]);
-
-  const fetchUserActionsForChallenge = async (
-    challengeId: number,
-    userData?: User,
-  ) => {
-    const currentUser = userData || user;
-
-    if (!currentUser) return;
-
-    try {
-      const response = await ApiClient.get(
-        API_ENDPOINTS.ACTIONS_USER_CHALLENGE(currentUser.id, challengeId),
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserActions(data);
-      }
-    } catch (error) {
-      console.error(
-        'Erreur lors du chargement des actions utilisateur:',
-        error,
-      );
-    }
-  };
-
-  const fetchGamificationData = async (campaignId: number, userData?: User) => {
-    const currentUser = userData || user;
-    if (!currentUser) return;
-
-    try {
-      // Récupérer les statistiques de campagne
-      const campaignStatsResponse = await ApiClient.get(
-        API_ENDPOINTS.ACTIONS_USER_CAMPAIGN_STATS(currentUser.id, campaignId),
-      );
-      if (campaignStatsResponse.ok) {
-        const stats = await campaignStatsResponse.json();
-        console.log('📊 Nouvelles stats reçues:', {
-          oldAmount: campaignStats?.stats.totalEarnedEuros,
-          newAmount: stats.stats.totalEarnedEuros,
-          hasChanged:
-            campaignStats?.stats.totalEarnedEuros !==
-            stats.stats.totalEarnedEuros,
-        });
-        setCampaignStats(stats);
-      }
-
-      // Récupérer les streaks
-      const streaksResponse = await ApiClient.get(
-        API_ENDPOINTS.ACTIONS_USER_STREAKS(currentUser.id),
-      );
-      if (streaksResponse.ok) {
-        const streaks = await streaksResponse.json();
-        setUserStreaks(streaks);
-      }
-
-      // Récupérer les badges
-      const badgesResponse = await ApiClient.get(
-        API_ENDPOINTS.ACTIONS_USER_BADGES(currentUser.id),
-      );
-      if (badgesResponse.ok) {
-        const badges = await badgesResponse.json();
-        setUserBadges(badges);
-      }
-    } catch (error) {
-      console.error(
-        'Erreur lors du chargement des données de gamification:',
-        error,
-      );
-    }
-  };
-
+  // Fonctions de gestion des actions
   const handleCompleteAction = (
     action: Action,
-    userAction?: UserAction,
+    userAction?: any,
     isNextChallenge: boolean = false,
   ) => {
-    setSelectedAction({ action, userAction });
-    setProofUrl(userAction?.proofUrl || '');
-    setProofFile(null);
-
-    // Si c'est une action du prochain défi, on affiche un message différent
-    if (isNextChallenge) {
-      // TODO: Peut-être ajouter un état pour différencier les modals
-    }
-
+    setSelectedAction(action);
+    setSelectedUserAction(userAction);
+    setIsNextChallenge(isNextChallenge);
+    setActionProofFile(null); // Reset du fichier
     onOpen();
   };
 
   const submitCompletion = async () => {
-    if (!selectedAction || !todayChallenge) return;
+    if (!selectedAction || !user) return;
 
-    // Vérifier qu'une preuve est fournie
-    if (!proofFile && !selectedAction.userAction?.proofUrl) {
-      alert('Une preuve est obligatoire pour valider cette action.');
-      return;
-    }
-
-    setSubmitting(true);
     try {
-      const token = getToken();
-      let userActionToUpdate = selectedAction.userAction;
+      const challengeId = isNextChallenge
+        ? nextChallenge?.id
+        : todayChallenge?.id;
 
-      // 1. Create userAction if it doesn't exist
-      if (!userActionToUpdate) {
-        const createResponse = await ApiClient.post(
-          API_ENDPOINTS.USER_ACTIONS,
-          {
-            actionId: selectedAction.action.id,
-            challengeId: todayChallenge.id,
-            completed: false, // Start as not completed
-          },
-        );
-        if (!createResponse.ok) throw new Error('Failed to create user action');
-        userActionToUpdate = await createResponse.json();
+      if (!challengeId) {
+        throw new Error('ID du défi manquant');
       }
 
-      // 2. Upload proof if a file is selected
-      let finalProofUrl = userActionToUpdate?.proofUrl || proofUrl;
-      if (proofFile && userActionToUpdate) {
+      // 1. Créer l'user action
+      const userActionData = {
+        actionId: selectedAction.id,
+        challengeId: challengeId,
+        completed: true,
+      };
+
+      const response = await ApiClient.post('/user-actions', userActionData);
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la création de l'action utilisateur");
+      }
+
+      const userAction = await response.json();
+      console.log('✅ User action créée:', userAction);
+
+      // 2. Upload de la preuve si présente
+      if (actionProofFile && userAction.id) {
         const formData = new FormData();
-        formData.append('file', proofFile);
+        formData.append('file', actionProofFile);
 
-        const uploadResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/user-actions/${userActionToUpdate.id}/proof`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          },
+        const proofResponse = await ApiClient.post(
+          `/user-actions/${userAction.id}/proof`,
+          formData,
         );
 
-        if (!uploadResponse.ok) throw new Error('Failed to upload proof');
-        const uploadData = await uploadResponse.json();
-        finalProofUrl = uploadData.proofUrl;
-      }
-
-      // 3. Mark action as completed
-      if (userActionToUpdate) {
-        const updateResponse = await ApiClient.patch(
-          API_ENDPOINTS.USER_ACTIONS_BY_ID(userActionToUpdate.id),
-          {
-            completed: true,
-            proofUrl: finalProofUrl,
-          },
-        );
-
-        if (!updateResponse.ok) {
-          throw new Error('Erreur lors de la mise à jour');
+        if (!proofResponse.ok) {
+          console.warn(
+            "⚠️ Erreur lors de l'upload de la preuve, mais action créée",
+          );
+        } else {
+          console.log('✅ Preuve uploadée avec succès');
         }
       }
 
-      console.log('🔄 Rafraîchissement des données après action complétée...');
-
-      // Refresh data avec un petit délai pour laisser le temps au backend
-      await fetchUserActionsForChallenge(todayChallenge.id);
-      if (activeCampaign) {
-        // Petit délai pour s'assurer que les stats sont à jour
-        setTimeout(async () => {
-          await fetchGamificationData(activeCampaign.id);
-        }, 500);
-      }
+      setActionProofFile(null); // Reset du fichier
       onClose();
+
+      // Rafraîchir les données
+      refetchUserActions();
+      refetchGamificationData();
     } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
-    } finally {
-      setSubmitting(false);
-      setProofFile(null);
+      console.error("❌ Erreur lors de la completion de l'action:", error);
+      // Afficher l'erreur à l'utilisateur (vous pourriez ajouter un toast ici)
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
-  const completedCount = challengeActions.filter((action) =>
-    isActionCompleted(action),
-  ).length;
-  const totalCount = challengeActions.length;
-  const completionPercentage =
-    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-  // Effet pour détecter les changements de gains et déclencher l'animation
-  useEffect(() => {
-    if (campaignStats?.stats.totalEarnedEuros !== undefined) {
-      const currentAmount = campaignStats.stats.totalEarnedEuros;
-      const previousAmount = previousEarnedAmountRef.current;
-
-      console.log('💰 Détection changement cagnotte:', {
-        currentAmount,
-        previousAmount,
-        hasIncrease: previousAmount !== null && currentAmount > previousAmount,
-        isFirstLoad: previousAmount === null,
+  // Fonction pour soumettre un bonus avec callback de rafraîchissement
+  const handleBonusSubmitWithRefresh = async () => {
+    try {
+      await handleBonusSubmit(() => {
+        // Callback de succès pour rafraîchir les données
+        refetchGamificationData();
       });
-
-      // Si le montant a augmenté ET ce n'est pas le premier chargement
-      if (previousAmount !== null && currentAmount > previousAmount) {
-        console.log(
-          '🎉 Animation déclenchée - montant augmenté de',
-          previousAmount,
-          'à',
-          currentAmount,
-        );
-
-        // Déclencher l'animation
-        setIsMoneyUpdated(true);
-        setShowConfetti(true);
-
-        // Revenir à la normale après 3 secondes
-        setTimeout(() => {
-          setIsMoneyUpdated(false);
-        }, 3000);
-
-        // Arrêter les confettis après 1 seconde
-        setTimeout(() => {
-          setShowConfetti(false);
-        }, 1000);
-      }
-
-      // Mettre à jour la valeur précédente
-      previousEarnedAmountRef.current = currentAmount;
+    } catch (error) {
+      console.error('Erreur lors de la déclaration du bonus:', error);
     }
-  }, [campaignStats?.stats.totalEarnedEuros]);
-
-  // Effet pour animer l'apparition du bloc "prochains défis"
-  useEffect(() => {
-    const currentShouldShow = !!shouldShowNextChallenges;
-    const previousShouldShow = previousShouldShowNextRef.current;
-
-    // Si le bloc prochains défis vient d'apparaître (transition false -> true)
-    if (currentShouldShow && !previousShouldShow && !nextChallengeAnimated) {
-      console.log('🌟 Animation prochains défis déclenchée!');
-
-      // Déclencher l'animation d'emphase
-      setShowNextChallengeEmphasis(true);
-      setNextChallengeAnimated(true);
-
-      // Revenir à la taille normale après 2 secondes
-      setTimeout(() => {
-        setShowNextChallengeEmphasis(false);
-      }, 2000);
-    }
-
-    // Si toutes les actions sont terminées, fermer l'accordéon des actions
-    if (currentShouldShow && challengeActions.length > 0) {
-      setCompletedActionsCollapsed(true);
-    }
-
-    // Mettre à jour la valeur précédente
-    previousShouldShowNextRef.current = currentShouldShow;
-  }, [
-    shouldShowNextChallenges,
-    nextChallengeAnimated,
-    challengeActions.length,
-  ]);
+  };
 
   if (loading) {
     return (
@@ -530,424 +289,41 @@ export default function FBODashboard() {
           speed={0.5}
         />
       </div>
-      {/* Header - Mobile First */}
-      <div className="bg-gradient-to-r from-orange-400 to-amber-400 text-white p-4 sm:p-6 shadow-lg relative z-10">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <SunIcon className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
-              <span className="truncate">
-                Salut {user?.name?.split(' ')[0]} ! ☀️
-              </span>
-              {/* Bouton de test temporaire */}
-              <button
-                onClick={() => {
-                  console.log("🧪 Test manuel de l'animation avec confettis");
-                  setIsMoneyUpdated(true);
-                  setShowConfetti(true);
-                  setTimeout(() => setIsMoneyUpdated(false), 3000);
-                  setTimeout(() => setShowConfetti(false), 1000);
-                }}
-                className="ml-2 text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30 transition-colors"
-                title="Test animation cagnotte"
-              >
-                🎉
-              </button>
-            </h1>
-            <p className="text-orange-100 text-sm sm:text-base">
-              {activeCampaign ? activeCampaign.name : "Tes défis t'attendent"}
-            </p>
-            {todayChallenge && (
-              <div className="flex items-center gap-2 mt-1">
-                <CalendarDaysIcon className="w-4 h-4" />
-                <span className="text-orange-100 text-xs">
-                  Défi du jour : {todayChallenge.title}
-                </span>
-              </div>
-            )}
-          </div>
 
-          {/* Gains de campagne - Hidden on mobile, shown on desktop */}
-          {campaignStats && (
-            <div
-              className={`hidden sm:flex bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 w-auto transition-all duration-700 relative ${
-                isMoneyUpdated
-                  ? 'scale-125 shadow-2xl bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-yellow-300'
-                  : ''
-              }`}
-            >
-              {/* Confettis Desktop */}
-              {showConfetti && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-                  <ConfettiExplosion
-                    particleCount={50}
-                    force={0.6}
-                    duration={2500}
-                    width={800}
-                    colors={[
-                      '#FFC700',
-                      '#FF0000',
-                      '#2E3191',
-                      '#41BBC7',
-                      '#FFD700',
-                      '#32CD32',
-                    ]}
-                  />
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-yellow-200 text-lg transition-all duration-700 ${
-                    isMoneyUpdated ? 'animate-bounce text-3xl' : ''
-                  }`}
-                >
-                  💰
-                </span>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center -space-x-1">
-                      <Counter
-                        value={Math.floor(campaignStats.stats.totalEarnedEuros)}
-                        places={[10, 1]}
-                        fontSize={isMoneyUpdated ? 32 : 24}
-                        padding={4}
-                        gap={0}
-                        textColor="white"
-                        fontWeight={800}
-                        gradientHeight={6}
-                        gradientFrom="transparent"
-                        gradientTo="transparent"
-                      />
-                      <span
-                        className={`text-white font-bold transition-all duration-700 ${
-                          isMoneyUpdated ? 'text-4xl' : 'text-2xl'
-                        }`}
-                      >
-                        .
-                      </span>
-                      <Counter
-                        value={Math.floor(
-                          (campaignStats.stats.totalEarnedEuros * 100) % 100,
-                        )}
-                        places={[10, 1]}
-                        fontSize={isMoneyUpdated ? 32 : 24}
-                        padding={4}
-                        gap={0}
-                        textColor="white"
-                        fontWeight={800}
-                        gradientHeight={6}
-                        gradientFrom="transparent"
-                        gradientTo="transparent"
-                      />
-                    </div>
-                    <span
-                      className={`text-white font-bold transition-all duration-700 ${
-                        isMoneyUpdated ? 'text-4xl' : 'text-2xl'
-                      }`}
-                    >
-                      €
-                    </span>
-                  </div>
-                  <span className="text-orange-100 text-xs">
-                    sur {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
-                    possible
-                  </span>
-                </div>
-                {isMoneyUpdated && (
-                  <div className="absolute -top-2 -right-2">
-                    <div className="text-yellow-300 animate-spin text-2xl">
-                      ⭐
-                    </div>
-                    <div className="absolute top-1 right-1 text-yellow-200 animate-pulse text-lg">
-                      ✨
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile Sticky Cagnotte - Only visible on mobile */}
-      {campaignStats && (
-        <div
-          className={`sm:hidden sticky top-0 z-50 bg-gradient-to-r from-orange-400 to-amber-400 px-4 py-2 shadow-md transition-all duration-700 relative ${
-            isMoneyUpdated
-              ? 'scale-125 shadow-2xl bg-gradient-to-r from-green-400 to-emerald-400 border-b-4 border-yellow-300'
-              : ''
-          }`}
-        >
-          {/* Confettis Mobile */}
-          {showConfetti && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-              <ConfettiExplosion
-                particleCount={40}
-                force={0.5}
-                duration={2000}
-                width={600}
-                colors={[
-                  '#FFC700',
-                  '#FF0000',
-                  '#2E3191',
-                  '#41BBC7',
-                  '#FFD700',
-                  '#32CD32',
-                ]}
-              />
-            </div>
-          )}
-          <div className="flex items-center justify-center gap-2">
-            <span
-              className={`text-yellow-200 text-lg transition-all duration-700 ${
-                isMoneyUpdated ? 'animate-bounce text-3xl' : ''
-              }`}
-            >
-              💰
-            </span>
-            <div className="flex items-center gap-2 text-white">
-              <div className="flex items-center -space-x-1">
-                <Counter
-                  value={Math.floor(campaignStats.stats.totalEarnedEuros)}
-                  places={[10, 1]}
-                  fontSize={isMoneyUpdated ? 28 : 20}
-                  padding={3}
-                  gap={0}
-                  textColor="white"
-                  fontWeight={800}
-                  gradientHeight={6}
-                  gradientFrom="transparent"
-                  gradientTo="transparent"
-                />
-                <span
-                  className={`text-white font-bold transition-all duration-700 ${
-                    isMoneyUpdated ? 'text-3xl' : 'text-xl'
-                  }`}
-                >
-                  .
-                </span>
-                <Counter
-                  value={Math.floor(
-                    (campaignStats.stats.totalEarnedEuros * 100) % 100,
-                  )}
-                  places={[10, 1]}
-                  fontSize={isMoneyUpdated ? 28 : 20}
-                  padding={3}
-                  gap={0}
-                  textColor="white"
-                  fontWeight={800}
-                  gradientHeight={6}
-                  gradientFrom="transparent"
-                  gradientTo="transparent"
-                />
-              </div>
-              <span
-                className={`text-white font-bold transition-all duration-700 ${
-                  isMoneyUpdated ? 'text-3xl' : 'text-xl'
-                }`}
-              >
-                €
-              </span>
-              <span className="text-orange-100 text-xs ml-1">
-                / {campaignStats.stats.maxPossibleEuros.toFixed(2)} €
-              </span>
-            </div>
-            {isMoneyUpdated && (
-              <div className="absolute -top-2 -right-2">
-                <div className="text-yellow-300 animate-spin text-xl">⭐</div>
-                <div className="absolute top-0.5 right-0.5 text-yellow-200 animate-pulse">
-                  ✨
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Header avec gains */}
+      <DashboardHeader
+        user={user}
+        activeCampaign={activeCampaign}
+        todayChallenge={todayChallenge}
+        earningsData={earningsData}
+        isMoneyUpdated={isMoneyUpdated}
+        showConfetti={showConfetti}
+        isMobile={isMobile}
+        triggerTestAnimation={triggerTestAnimation}
+        onLogout={handleLogout}
+      />
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6 relative z-10">
-        {/* Progress Section - Mobile First */}
-        <Card className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2 sm:gap-0">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
-                Actions du défi d'aujourd'hui
-              </h2>
-              <div className="flex items-center gap-2">
-                <TrophyIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-                <span className="text-xs sm:text-sm font-medium text-gray-600">
-                  {completedCount}/{totalCount} actions
-                </span>
-              </div>
-            </div>
+        {/* Section progression */}
+        <ProgressSection
+          challengeActions={challengeActions}
+          userActions={userActions}
+        />
 
-            <Progress
-              value={completionPercentage}
-              className="mb-3 sm:mb-4"
-              aria-label="Progression des actions du défi d'aujourd'hui"
-              classNames={{
-                indicator: 'bg-gradient-to-r from-orange-400 to-amber-400',
-              }}
-            />
-
-            <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-              <span>
-                {completionPercentage === 0
-                  ? "C'est parti ! 🚀"
-                  : completionPercentage < 50
-                    ? 'Continue comme ça ! 🔥'
-                    : completionPercentage < 100
-                      ? 'Tu y es presque ! 💪'
-                      : ''}
-              </span>
-              <span>
-                {Math.round(completionPercentage)}% du défi d'aujourd'hui
-              </span>
-            </div>
-
-            {completionPercentage === 100 && (
-              <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl text-center">
-                <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 mx-auto mb-2" />
-                <p className="text-green-800 font-semibold text-sm sm:text-base">
-                  🎉 Félicitations ! Tu as terminé tous tes défis du jour !
-                </p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Next Challenges Section - Only when all today's actions are completed */}
-        {shouldShowNextChallenges && (
-          <div
-            className={`mb-4 sm:mb-6 transition-all duration-1000 ${
-              showNextChallengeEmphasis
-                ? 'scale-105 shadow-2xl shadow-indigo-300/50 ring-4 ring-indigo-200 animate-pulse'
-                : ''
-            }`}
-          >
-            <Accordion variant="splitted" className="px-0">
-              <AccordionItem
-                key="next-challenge"
-                aria-label="Prochain défi"
-                title={
-                  <div className="flex items-center gap-3">
-                    <CalendarDaysIcon
-                      className={`w-5 h-5 text-indigo-600 ${showNextChallengeEmphasis ? 'animate-bounce' : ''}`}
-                    />
-                    <span
-                      className={`text-lg font-semibold text-indigo-900 ${showNextChallengeEmphasis ? 'text-xl' : ''} transition-all duration-500`}
-                    >
-                      🌟 Prochain défi -{' '}
-                      {new Date(nextChallenge.date).toLocaleDateString('fr-FR')}
-                    </span>
-                    {showNextChallengeEmphasis && (
-                      <span className="text-2xl animate-spin">✨</span>
-                    )}
-                  </div>
-                }
-                className={`bg-gradient-to-br from-indigo-50 to-purple-100 border-0 shadow-lg rounded-lg ${
-                  showNextChallengeEmphasis
-                    ? 'bg-gradient-to-br from-indigo-100 to-purple-200 border-2 border-indigo-300'
-                    : ''
-                } transition-all duration-1000`}
-                classNames={{
-                  trigger: 'py-4 px-6',
-                  content: 'px-6 pb-6',
-                  title: 'text-left',
-                }}
-              >
-                <div className="bg-white/60 rounded-xl p-4 mb-4">
-                  <h3 className="font-semibold text-indigo-800 mb-2 text-sm sm:text-base">
-                    {nextChallenge.title}
-                  </h3>
-                  <p className="text-indigo-700 text-xs sm:text-sm">
-                    {nextChallenge.description}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
-                      💰 {nextChallenge.valueInEuro} €
-                    </span>
-                    <span className="text-xs text-indigo-600">
-                      • Cliquez sur les actions pour les valider à l'avance !
-                    </span>
-                  </div>
-                </div>
-
-                {nextChallengeActions.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-indigo-800 mb-3 text-sm">
-                      Actions à préparer ({nextChallengeActions.length}) :
-                    </h4>
-                    <div className="grid gap-3">
-                      {nextChallengeActions
-                        .sort((a, b) => a.order - b.order)
-                        .map((action) => {
-                          const config = actionTypeConfig[action.type];
-
-                          return (
-                            <div
-                              key={action.id}
-                              className="bg-white/70 rounded-lg p-3 border border-indigo-200 hover:border-indigo-300 transition-all duration-200 cursor-pointer hover:shadow-md"
-                              onClick={() =>
-                                handleCompleteAction(action, undefined, true)
-                              }
-                            >
-                              <div className="flex items-start gap-3">
-                                <span className="text-lg flex-shrink-0">
-                                  {config.icon}
-                                </span>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Chip
-                                      color={config.color}
-                                      variant="flat"
-                                      size="sm"
-                                      className="text-xs"
-                                    >
-                                      {config.label}
-                                    </Chip>
-                                    <span className="text-xs text-gray-500">
-                                      Action {action.order}
-                                    </span>
-                                  </div>
-                                  <h5 className="font-medium text-gray-800 text-sm mb-1">
-                                    {action.title}
-                                  </h5>
-                                  <p className="text-xs text-gray-600 line-clamp-2">
-                                    {action.description}
-                                  </p>
-                                </div>
-                                <div className="flex items-center">
-                                  <CameraIcon className="w-4 h-4 text-gray-400" />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <span className="text-amber-600 text-sm">💡</span>
-                        <div>
-                          <p className="text-xs sm:text-sm text-amber-800 font-medium">
-                            Astuce : Validez vos actions à l'avance !
-                          </p>
-                          <p className="text-xs text-amber-700 mt-1">
-                            Vous pouvez déjà préparer et valider ces actions
-                            avec des preuves. Elles seront comptabilisées le
-                            jour du défi ! 🚀
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </AccordionItem>
-            </Accordion>
-          </div>
+        {/* Section prochains défis */}
+        {shouldShowNextChallenges && nextChallenge && (
+          <NextChallengesSection
+            nextChallenge={nextChallenge}
+            nextChallengeActions={nextChallengeActions}
+            showNextChallengeEmphasis={showNextChallengeEmphasis}
+            onActionClick={(action) =>
+              handleCompleteAction(action, undefined, true)
+            }
+          />
         )}
 
-        {/* Actions Grid - Mobile First */}
-        <div className="grid gap-4 sm:gap-6">
+        {/* Grille des actions */}
+        <div className="grid gap-6 sm:gap-8 mb-6 sm:mb-8">
           {!activeCampaign ? (
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardBody className="text-center p-6 sm:p-8">
@@ -984,7 +360,7 @@ export default function FBODashboard() {
                 </p>
               </CardBody>
             </Card>
-          ) : allTodayActionsCompleted() ? (
+          ) : allTodayActionsCompleted(challengeActions, userActions) ? (
             // Actions terminées - Accordéon fermé par défaut
             <Accordion
               variant="splitted"
@@ -1004,13 +380,9 @@ export default function FBODashboard() {
                 title={
                   <div className="flex items-center gap-3">
                     <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                    <span className="text-lg font-semibold text-green-900">
-                      ✅ Actions du jour terminées ({challengeActions.length}/
-                      {challengeActions.length})
+                    <span className="text-lg font-semibold text-green-800">
+                      ✨ Bravo ! Toutes tes actions du jour sont terminées !
                     </span>
-                    <Badge color="success" variant="flat" className="text-xs">
-                      100%
-                    </Badge>
                   </div>
                 }
                 className="bg-gradient-to-br from-green-50 to-emerald-100 border-0 shadow-lg rounded-lg"
@@ -1024,18 +396,21 @@ export default function FBODashboard() {
                   {challengeActions
                     .sort((a, b) => a.order - b.order)
                     .map((action) => {
-                      const config = actionTypeConfig[action.type];
-                      const userAction = getUserAction(action);
+                      const config = ACTION_TYPE_CONFIG[action.type];
+                      const userAction = getUserAction(action, userActions);
 
                       return (
                         <div
                           key={action.id}
-                          className="bg-white/70 rounded-lg p-4 border border-green-200 shadow-sm"
+                          className="bg-white/70 rounded-lg p-4 border border-green-200"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg flex-shrink-0">
-                              {config.icon}
-                            </span>
+                          <div className="flex items-start gap-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                              <span className="text-lg flex-shrink-0">
+                                {config.icon}
+                              </span>
+                            </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <Chip
@@ -1053,66 +428,66 @@ export default function FBODashboard() {
                               <h5 className="font-medium text-gray-800 text-sm mb-1">
                                 {action.title}
                               </h5>
-                              <div className="flex items-center gap-2 text-green-600 text-xs">
-                                <CheckCircleIcon className="w-3 h-3" />
-                                <span>
-                                  Complété le{' '}
-                                  {userAction?.completedAt
-                                    ? new Date(
-                                        userAction.completedAt,
-                                      ).toLocaleDateString('fr-FR')
-                                    : ''}
-                                </span>
-                              </div>
+                              <p className="text-xs text-gray-600 mb-2">
+                                {action.description}
+                              </p>
+                              {userAction?.completedAt && (
+                                <p className="text-xs text-green-600">
+                                  ✅ Complétée le{' '}
+                                  {new Date(
+                                    userAction.completedAt,
+                                  ).toLocaleDateString('fr-FR')}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
                       );
                     })}
                 </div>
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-600">🎉</span>
-                    <p className="text-sm text-green-800 font-medium">
-                      Félicitations ! Toutes les actions du jour sont terminées
-                      !
-                    </p>
-                  </div>
-                </div>
               </AccordionItem>
             </Accordion>
           ) : (
-            // Actions en cours - Affichage normal avec actions non terminées en premier
-            challengeActions
-              .sort((a, b) => {
-                const aCompleted = isActionCompleted(a);
-                const bCompleted = isActionCompleted(b);
+            // Actions en cours
+            <div className="grid gap-4">
+              {challengeActions
+                .sort((a, b) => a.order - b.order)
+                .map((action) => {
+                  const config = ACTION_TYPE_CONFIG[action.type];
+                  const actionCompleted = isActionCompleted(
+                    action,
+                    userActions,
+                  );
+                  const userAction = getUserAction(action, userActions);
 
-                // Si une action est terminée et l'autre non, mettre la non terminée en premier
-                if (aCompleted && !bCompleted) return 1;
-                if (!aCompleted && bCompleted) return -1;
+                  return (
+                    <Card
+                      key={action.id}
+                      className={`transition-all duration-200 cursor-pointer hover:shadow-lg ${
+                        actionCompleted
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+                          : 'bg-white/80 backdrop-blur-sm hover:bg-white/90'
+                      }`}
+                      isPressable
+                      onPress={() => handleCompleteAction(action, userAction)}
+                    >
+                      <CardBody className="p-4 sm:p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex items-center gap-2">
+                            {actionCompleted ? (
+                              <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                            ) : (
+                              <div className="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center">
+                                <span className="w-3 h-3 bg-gray-300 rounded-full"></span>
+                              </div>
+                            )}
+                            <span className="text-2xl flex-shrink-0">
+                              {config.icon}
+                            </span>
+                          </div>
 
-                // Si même statut (toutes deux terminées ou non terminées), trier par ordre
-                return a.order - b.order;
-              })
-              .map((action) => {
-                const config = actionTypeConfig[action.type];
-                const userAction = getUserAction(action);
-                const completed = isActionCompleted(action);
-
-                return (
-                  <Card
-                    key={action.id}
-                    className={`${config.bgColor} ${config.borderColor} border-2 shadow-lg transition-all duration-200 hover:shadow-xl ${completed ? 'opacity-75' : ''}`}
-                  >
-                    <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2">
-                      <div className="flex flex-col sm:flex-row justify-between items-start w-full gap-3 sm:gap-0">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <span className="text-xl sm:text-2xl flex-shrink-0">
-                            {config.icon}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <Chip
                                 color={config.color}
                                 variant="flat"
@@ -1124,226 +499,460 @@ export default function FBODashboard() {
                               <span className="text-xs text-gray-500">
                                 Action {action.order}
                               </span>
+                              {actionCompleted && (
+                                <Badge color="success" variant="flat" size="sm">
+                                  ✅ Terminée
+                                </Badge>
+                              )}
                             </div>
-                            <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-2">
+
+                            <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-2">
                               {action.title}
                             </h3>
+                            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed mb-3">
+                              {action.description}
+                            </p>
+
+                            {actionCompleted && userAction?.completedAt && (
+                              <p className="text-xs text-green-600 mb-2">
+                                ✅ Complétée le{' '}
+                                {new Date(
+                                  userAction.completedAt,
+                                ).toLocaleDateString('fr-FR')}
+                              </p>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CameraIcon className="w-4 h-4 text-gray-400" />
+                                <span className="text-xs text-gray-500">
+                                  {actionCompleted
+                                    ? 'Preuve envoyée'
+                                    : 'Photo requise'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        {completed && (
-                          <Badge
-                            color="success"
-                            variant="flat"
-                            className="text-xs w-fit"
-                          >
-                            <CheckCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                            Terminé
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardBody className="pt-0 p-4 sm:p-6 sm:pt-0">
-                      <p className="text-gray-600 mb-4 text-sm sm:text-base line-clamp-3">
-                        {action.description}
-                      </p>
-
-                      {completed ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                          <span className="text-xs sm:text-sm">
-                            Complété le{' '}
-                            {userAction?.completedAt
-                              ? new Date(
-                                  userAction.completedAt,
-                                ).toLocaleDateString('fr-FR')
-                              : ''}
-                          </span>
-                        </div>
-                      ) : (
-                        <Button
-                          onPress={() =>
-                            handleCompleteAction(action, userAction)
-                          }
-                          className="bg-gradient-to-r from-orange-400 to-amber-400 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
-                          startContent={<CameraIcon className="w-4 h-4" />}
-                          size="sm"
-                        >
-                          <span className="hidden sm:inline">
-                            Marquer comme terminé
-                          </span>
-                          <span className="sm:hidden">Terminé</span>
-                        </Button>
-                      )}
-                    </CardBody>
-                  </Card>
-                );
-              })
+                      </CardBody>
+                    </Card>
+                  );
+                })}
+            </div>
           )}
         </div>
 
-        {/* Gamification Section - Mobile First */}
-        {campaignStats && userStreaks && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 sm:mt-8">
-            {/* Campaign Progress Card */}
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-lg">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-blue-900">
-                    🏆 {campaignStats.campaign.name}
-                  </h3>
-                  <TrophyIcon className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-center mb-2">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {campaignStats.stats.completedChallenges}
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      défis complétés sur {campaignStats.stats.totalChallenges}
-                    </div>
-                  </div>
-                  <Progress
-                    value={campaignStats.stats.challengeCompletionRate}
-                    size="sm"
-                    aria-label="Progression des défis de la campagne"
-                    classNames={{
-                      indicator: 'bg-gradient-to-r from-blue-400 to-indigo-500',
-                    }}
-                  />
-                  <div className="flex justify-between text-xs text-blue-600">
-                    <span>
-                      💰 {campaignStats.stats.totalEarnedEuros.toFixed(2)} €
-                    </span>
-                    <span>
-                      {Math.round(campaignStats.stats.challengeCompletionRate)}%
-                      global
-                    </span>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+        {/* Section Bonus */}
+        {activeCampaign && (
+          <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+            <CardBody className="p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
+                💰 Déclarer un Bonus
+              </h3>
+              <p className="text-gray-600 text-sm mb-6">
+                Gagne des bonus supplémentaires en déclarant tes parrainages et
+                dépôts de panier !
+              </p>
 
-            {/* Streaks Card */}
-            <Card className="bg-gradient-to-br from-orange-50 to-red-100 border-0 shadow-lg">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-orange-900">
-                    Séries
-                  </h3>
-                  <span className="text-lg">🔥</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {userStreaks.currentStreak}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Button
+                  className={`bg-gradient-to-r ${BONUS_TYPES.sponsorship.color} text-white h-14 justify-start pl-4 pr-6`}
+                  size="lg"
+                  onPress={() => openBonusModal('sponsorship')}
+                >
+                  <span className="text-2xl mr-3">
+                    {BONUS_TYPES.sponsorship.icon}
+                  </span>
+                  <div className="text-left">
+                    <div className="font-semibold text-sm">
+                      Déclarer un {BONUS_TYPES.sponsorship.label}
                     </div>
-                    <div className="text-xs text-orange-700">
-                      jours consécutifs
+                    <div className="text-xs opacity-80">
+                      +{BONUS_TYPES.sponsorship.amount}€ bonus
                     </div>
                   </div>
-                  <div className="flex justify-between text-xs text-orange-600">
-                    <span>Record: {userStreaks.longestStreak}</span>
-                    <span>Actif: {userStreaks.totalActiveDays}j</span>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+                </Button>
 
-            {/* Badges Card */}
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-100 border-0 shadow-lg sm:col-span-2 lg:col-span-1">
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-purple-900">
-                    Badges
-                  </h3>
-                  <StarIcon className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {userBadges.length > 0 ? (
-                    userBadges.slice(0, 4).map((badge) => (
-                      <div
-                        key={badge.id}
-                        className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1"
-                        title={badge.description}
-                      >
-                        <span className="text-sm">{badge.icon}</span>
-                        <span className="text-xs font-medium text-purple-800 hidden sm:inline">
-                          {badge.name}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-purple-600 text-center w-full">
-                      Complète tes premières actions pour gagner des badges ! 🎯
+                <Button
+                  className={`bg-gradient-to-r ${BONUS_TYPES.basket.color} text-white h-14 justify-start pl-4 pr-6`}
+                  size="lg"
+                  onPress={() => openBonusModal('basket')}
+                >
+                  <span className="text-2xl mr-3">
+                    {BONUS_TYPES.basket.icon}
+                  </span>
+                  <div className="text-left">
+                    <div className="font-semibold text-sm">
+                      Déclarer un {BONUS_TYPES.basket.label}
                     </div>
-                  )}
-                  {userBadges.length > 4 && (
-                    <div className="flex items-center gap-1 bg-white/60 rounded-full px-2 py-1">
-                      <span className="text-xs font-medium text-purple-800">
-                        +{userBadges.length - 4}
-                      </span>
+                    <div className="text-xs opacity-80">
+                      +{BONUS_TYPES.basket.amount}€ bonus
                     </div>
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+                  </div>
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
         )}
+
+        {/* Section Accordéon Bonus Déclarés */}
+        {activeCampaign && (
+          <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+            <CardBody className="p-0">
+              <div
+                className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50/50 transition-colors border-b border-gray-100"
+                onClick={() => setBonusAccordionOpen(!bonusAccordionOpen)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <CurrencyEuroIcon className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Mes Bonus Déclarés
+                      </h3>
+
+                      {/* Affichage des stats des bonus */}
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <span className="text-amber-600 font-semibold">
+                            {earningsData.totalBonusAmount.toFixed(2)}€
+                          </span>
+                          au total
+                        </span>
+                        <span>•</span>
+                        <span>{myBonuses.length} bonus déclarés</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {bonusAccordionOpen ? (
+                      <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronLeftIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {bonusAccordionOpen && (
+                <div className="p-4 sm:p-6 pt-0">
+                  {myBonuses.length === 0 ? (
+                    <div className="text-center p-8">
+                      <CurrencyEuroIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-600 mb-2">
+                        Aucun bonus déclaré
+                      </h3>
+                      <p className="text-gray-500">
+                        Vous n'avez pas encore déclaré de bonus pour cette
+                        campagne.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {myBonuses.map((bonus) => (
+                        <div
+                          key={bonus.id}
+                          className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <span className="text-lg">
+                                {bonus.bonusType === 'basket' ? '🛒' : '🤝'}
+                              </span>
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {getBonusTypeLabel(bonus.bonusType)}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {formatBonusDate(bonus.bonusDate)}
+                                </div>
+                              </div>
+                              <Badge color="success" variant="flat">
+                                +{bonus.amount}€
+                              </Badge>
+                            </div>
+
+                            {bonus.proofUrl && (
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                startContent={<EyeIcon className="w-4 h-4" />}
+                                onPress={() => handleViewBonusProof(bonus)}
+                                isLoading={
+                                  loadingBonusProof &&
+                                  selectedBonusProof?.id === bonus.id
+                                }
+                              >
+                                Voir
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Section Statistiques dans un accordéon */}
+        <StatisticsSection
+          campaignStats={campaignStats}
+          userStreaks={userStreaks}
+          userBadges={userBadges}
+        />
       </div>
 
-      {/* Completion Modal - Mobile First */}
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
+      {/* Modal de completion d'action */}
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader className="text-lg sm:text-xl font-semibold p-4 sm:p-6">
-            Confirmer l'action ✨
+          <ModalHeader className="pb-2">
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedAction?.title}
+              </h2>
+              <p className="text-sm text-gray-700 font-normal mt-1">
+                {selectedAction?.description}
+              </p>
+            </div>
           </ModalHeader>
-          <ModalBody className="p-4 sm:p-6 pt-0">
-            <p className="text-gray-600 mb-4 text-sm sm:text-base">
-              Super ! Tu as terminé :{' '}
-              <strong>{selectedAction?.action.title}</strong>
-            </p>
-            <Input
-              type="file"
-              label="Preuve (photo, vidéo) *"
-              placeholder="Choisir un fichier"
-              onChange={(e) =>
-                setProofFile(e.target.files ? e.target.files[0] : null)
-              }
-              variant="bordered"
-              description="Une preuve est obligatoire pour valider cette action"
-              size="sm"
-              required
-            />
-            {proofFile && (
-              <div className="mt-2 p-2 bg-gray-50 rounded-md border">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Fichier sélectionné :</span>{' '}
-                  {proofFile.name}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Taille : {(proofFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
+          <ModalBody>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-800 font-medium">
+                {selectedUserAction?.completed
+                  ? 'Cette action a déjà été complétée. Vous pouvez voir ou modifier la preuve envoyée.'
+                  : 'Téléchargez une photo comme preuve de completion de cette action.'}
+              </p>
+
+              <div>
+                <input
+                  ref={(input) => {
+                    if (input) {
+                      (window as any).actionFileInput = input;
+                    }
+                  }}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setActionProofFile(e.target.files?.[0] || null)
+                  }
+                  className="hidden"
+                />
+                <Button
+                  variant="bordered"
+                  onPress={() => (window as any).actionFileInput?.click()}
+                  startContent={<CameraIcon className="w-4 h-4" />}
+                  className="w-full justify-center h-12 text-gray-700 border-gray-300 hover:border-gray-400"
+                >
+                  Choisir une photo de preuve
+                </Button>
               </div>
-            )}
+
+              {actionProofFile && (
+                <div className="mt-2 space-y-3">
+                  <div className="flex items-center gap-2 bg-green-50 text-green-800 p-2 rounded-lg border border-green-200">
+                    <CheckIcon className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium">
+                      Fichier sélectionné : {actionProofFile.name}
+                    </span>
+                  </div>
+                  {/* Miniature de l'image */}
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <img
+                        src={actionProofPreviewUrl || ''}
+                        alt="Aperçu de la preuve"
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-xs opacity-0 hover:opacity-100 transition-opacity duration-200">
+                          Aperçu
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedUserAction?.proofUrl && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-900 font-medium">
+                    ✅ Une preuve a déjà été envoyée pour cette action.
+                  </p>
+                </div>
+              )}
+            </div>
           </ModalBody>
-          <ModalFooter className="p-4 sm:p-6 pt-0">
+          <ModalFooter>
             <Button
-              variant="flat"
+              variant="light"
               onPress={onClose}
-              disabled={submitting}
-              size="sm"
-              className="w-full sm:w-auto"
+              className="text-gray-700 font-medium"
             >
               Annuler
             </Button>
             <Button
-              className="bg-gradient-to-r from-orange-400 to-amber-400 text-white w-full sm:w-auto"
+              color="primary"
               onPress={submitCompletion}
-              isLoading={submitting}
-              size="sm"
-              isDisabled={!proofFile && !selectedAction?.userAction?.proofUrl}
+              className="font-medium"
             >
-              Confirmer 🎉
+              {selectedUserAction?.completed ? 'Mettre à jour' : 'Valider'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de déclaration de bonus */}
+      <Modal isOpen={bonusModalOpen} onClose={closeBonusModal} size="lg">
+        <ModalContent>
+          <ModalHeader className="pb-2">
+            <h2 className="text-xl font-bold text-gray-900">
+              Déclarer un {bonusType ? getBonusTypeLabel(bonusType) : 'Bonus'}
+            </h2>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-800 font-medium">
+                Téléchargez une photo comme preuve de votre{' '}
+                {bonusType
+                  ? getBonusTypeLabel(bonusType).toLowerCase()
+                  : 'bonus'}
+                .
+              </p>
+
+              <div>
+                <input
+                  ref={(input) => {
+                    if (input) {
+                      (window as any).bonusFileInput = input;
+                    }
+                  }}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setBonusProofFile(e.target.files?.[0] || null)
+                  }
+                  className="hidden"
+                />
+                <Button
+                  variant="bordered"
+                  onPress={() => (window as any).bonusFileInput?.click()}
+                  startContent={<CameraIcon className="w-4 h-4" />}
+                  className="w-full justify-center h-12 text-gray-700 border-gray-300 hover:border-gray-400"
+                >
+                  Choisir une photo de preuve
+                </Button>
+              </div>
+
+              {bonusProofFile && (
+                <div className="mt-2 space-y-3">
+                  <div className="flex items-center gap-2 bg-green-50 text-green-800 p-2 rounded-lg border border-green-200">
+                    <CheckIcon className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium">
+                      Fichier sélectionné : {bonusProofFile.name}
+                    </span>
+                  </div>
+                  {/* Miniature de l'image */}
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <img
+                        src={bonusProofPreviewUrl || ''}
+                        alt="Aperçu de la preuve"
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-xs opacity-0 hover:opacity-100 transition-opacity duration-200">
+                          Aperçu
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {bonusType && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-900 font-medium">
+                    💰 Ce bonus vous rapportera +
+                    {bonusType === 'sponsorship' ? '5' : '1'}€
+                  </p>
+                </div>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={closeBonusModal}
+              className="text-gray-700 font-medium"
+            >
+              Annuler
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleBonusSubmitWithRefresh}
+              isLoading={bonusSubmitting}
+              isDisabled={!bonusProofFile}
+              className="font-medium"
+            >
+              Déclarer le bonus
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de visualisation de preuve de bonus */}
+      <Modal
+        isOpen={bonusProofModalOpen}
+        onClose={closeBonusProofModal}
+        size="2xl"
+      >
+        <ModalContent>
+          <ModalHeader className="pb-2">
+            <h2 className="text-xl font-bold text-gray-900">
+              Preuve de{' '}
+              {selectedBonusProof
+                ? getBonusTypeLabel(selectedBonusProof.bonusType)
+                : 'Bonus'}
+            </h2>
+          </ModalHeader>
+          <ModalBody>
+            {bonusProofUrl ? (
+              <div className="text-center">
+                <img
+                  src={bonusProofUrl}
+                  alt="Preuve de bonus"
+                  className="max-w-full max-h-96 mx-auto rounded-lg shadow-lg"
+                />
+                {selectedBonusProof && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-800 font-medium text-center">
+                      {getBonusTypeLabel(selectedBonusProof.bonusType)} déclaré
+                      le {formatBonusDate(selectedBonusProof.bonusDate)} -{' '}
+                      {selectedBonusProof.amount}€
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-8">
+                <div className="w-16 h-16 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-800 font-medium">
+                  Chargement de la preuve...
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              onPress={closeBonusProofModal}
+              className="text-gray-700 font-medium"
+            >
+              Fermer
             </Button>
           </ModalFooter>
         </ModalContent>
