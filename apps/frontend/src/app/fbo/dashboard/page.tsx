@@ -69,6 +69,9 @@ export default function FBODashboard() {
     bonusStats,
     userStreaks,
     userBadges,
+    campaignsLoading,
+    challengesLoading,
+    bonusesLoading,
     handleLogout,
     refetchUserActions,
     refetchGamificationData,
@@ -84,7 +87,10 @@ export default function FBODashboard() {
     setCompletedActionsCollapsed,
     triggerNextChallengeAnimation,
     triggerTestAnimation,
-  } = useDashboardAnimations(earningsData.totalEarnings);
+  } = useDashboardAnimations(
+    earningsData.totalEarnings,
+    loading || campaignsLoading || challengesLoading || bonusesLoading,
+  );
 
   // Hooks pour les actions de bonus
   const {

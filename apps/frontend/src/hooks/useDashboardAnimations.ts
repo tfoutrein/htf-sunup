@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { ANIMATION_DURATIONS } from '@/constants/dashboard';
 
-export const useDashboardAnimations = (totalEarnings: number) => {
+export const useDashboardAnimations = (
+  totalEarnings: number,
+  isLoading: boolean = false,
+) => {
   // États pour les animations
   const [isMobile, setIsMobile] = useState(false);
   const [isMoneyUpdated, setIsMoneyUpdated] = useState(false);
@@ -15,6 +18,7 @@ export const useDashboardAnimations = (totalEarnings: number) => {
   // Refs pour détecter les changements
   const previousEarnedAmountRef = useRef<number | null>(null);
   const previousShouldShowNextRef = useRef<boolean>(false);
+  const isInitializedRef = useRef<boolean>(false);
 
   // Détection mobile
   useEffect(() => {
@@ -29,19 +33,33 @@ export const useDashboardAnimations = (totalEarnings: number) => {
 
   // Animation des gains
   useEffect(() => {
-    if (totalEarnings !== undefined) {
+    if (totalEarnings !== undefined && !isLoading) {
       const currentAmount = totalEarnings;
       const previousAmount = previousEarnedAmountRef.current;
 
       console.log('💰 Détection changement cagnotte:', {
         currentAmount,
         previousAmount,
+        isLoading,
+        isInitialized: isInitializedRef.current,
         hasIncrease: previousAmount !== null && currentAmount > previousAmount,
         isFirstLoad: previousAmount === null,
       });
 
-      // Si le montant a augmenté ET ce n'est pas le premier chargement
-      if (previousAmount !== null && currentAmount > previousAmount) {
+      // Si c'est la première initialisation avec des données chargées, on marque comme initialisé sans animation
+      if (!isInitializedRef.current && previousAmount === null) {
+        console.log("🔄 Initialisation des données - pas d'animation");
+        previousEarnedAmountRef.current = currentAmount;
+        isInitializedRef.current = true;
+        return;
+      }
+
+      // Si le montant a augmenté ET que nous sommes initialisés ET pas en chargement
+      if (
+        isInitializedRef.current &&
+        previousAmount !== null &&
+        currentAmount > previousAmount
+      ) {
         console.log(
           '🎉 Animation déclenchée - montant augmenté de',
           previousAmount,
@@ -64,10 +82,12 @@ export const useDashboardAnimations = (totalEarnings: number) => {
         }, ANIMATION_DURATIONS.CONFETTI);
       }
 
-      // Mettre à jour la valeur précédente
-      previousEarnedAmountRef.current = currentAmount;
+      // Mettre à jour la valeur précédente seulement si initialisé
+      if (isInitializedRef.current) {
+        previousEarnedAmountRef.current = currentAmount;
+      }
     }
-  }, [totalEarnings]);
+  }, [totalEarnings, isLoading]);
 
   // Animation pour l'apparition du bloc "prochains défis"
   const triggerNextChallengeAnimation = (shouldShowNextChallenges: boolean) => {
