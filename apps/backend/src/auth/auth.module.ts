@@ -8,6 +8,19 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { UsersModule } from '../users/users.module';
 
+// Créer la liste des providers conditionnellement
+const createProviders = () => {
+  const baseProviders: any[] = [AuthService, LocalStrategy, JwtStrategy];
+
+  // N'ajouter FacebookStrategy que si Facebook est activé
+  const isFacebookEnabled = process.env.FACEBOOK_AUTH_ENABLED === 'true';
+  if (isFacebookEnabled) {
+    baseProviders.push(FacebookStrategy);
+  }
+
+  return baseProviders;
+};
+
 @Module({
   imports: [
     UsersModule,
@@ -17,7 +30,7 @@ import { UsersModule } from '../users/users.module';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, FacebookStrategy],
+  providers: createProviders(),
   controllers: [AuthController],
   exports: [AuthService],
 })

@@ -488,7 +488,7 @@ export class UsersService {
     await this.remove(memberId);
   }
 
-  private async isMemberInTeam(
+  public async isMemberInTeam(
     memberId: number,
     managerId: number,
   ): Promise<boolean> {

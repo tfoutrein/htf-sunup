@@ -353,8 +353,8 @@ export class ActionsService {
   }
 
   async getTeamProgress(managerId: number): Promise<any[]> {
-    // Get team members for this manager using the updated logic
-    const teamMembers = await this.usersService.getTeamMembers(managerId);
+    // Get team members for this manager using the updated logic - récupérer toute la hiérarchie
+    const teamMembers = await this.usersService.getFullTeamList(managerId);
 
     const activeCampaign = await this.db.db
       .select()
@@ -710,7 +710,8 @@ export class ActionsService {
       );
     }
 
-    const teamMembers = await this.usersService.getTeamMembers(managerId);
+    // Utiliser getFullTeamList pour récupérer TOUTE la hiérarchie, pas juste les rapports directs
+    const teamMembers = await this.usersService.getFullTeamList(managerId);
 
     const campaignChallenges = await this.db.db
       .select()
