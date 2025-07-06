@@ -2,7 +2,16 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 const postgres = require('postgres');
 import * as bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
-import { users, campaigns, challenges, actions, userActions } from './schema';
+import { sql } from 'drizzle-orm';
+import {
+  users,
+  campaigns,
+  challenges,
+  actions,
+  userActions,
+  dailyBonus,
+  campaignBonusConfig,
+} from './schema';
 
 const connectionString =
   process.env.DATABASE_URL ||
@@ -133,6 +142,77 @@ async function seed() {
       { userId: fbo2.id, actionId: action3.id, challengeId: challenge.id },
     ]);
 
+    // Create bonus configuration for the campaign
+    const [bonusConfig] = await db
+      .insert(campaignBonusConfig)
+      .values({
+        campaignId: campaign.id,
+        basketBonusAmount: '2.50',
+        sponsorshipBonusAmount: '10.00',
+      })
+      .returning();
+
+    // Create some sample daily bonuses with different dates and types
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    await db.insert(dailyBonus).values([
+      // FBO1 bonuses
+      {
+        userId: fbo1.id,
+        campaignId: campaign.id,
+        bonusDate: threeDaysAgo.toISOString().split('T')[0],
+        bonusType: 'basket',
+        amount: '2.50',
+        status: 'pending',
+        proofUrl: null, // Pas de preuve encore
+      },
+      {
+        userId: fbo1.id,
+        campaignId: campaign.id,
+        bonusDate: yesterday.toISOString().split('T')[0],
+        bonusType: 'sponsorship',
+        amount: '10.00',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=Preuve+Parrainage', // URL de test
+      },
+      {
+        userId: fbo1.id,
+        campaignId: campaign.id,
+        bonusDate: today,
+        bonusType: 'basket',
+        amount: '2.50',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/10B981/FFFFFF?text=Preuve+Panier', // URL de test
+      },
+
+      // FBO2 bonuses
+      {
+        userId: fbo2.id,
+        campaignId: campaign.id,
+        bonusDate: yesterday.toISOString().split('T')[0],
+        bonusType: 'basket',
+        amount: '2.50',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/F59E0B/FFFFFF?text=Preuve+Panier+FBO2',
+      },
+      {
+        userId: fbo2.id,
+        campaignId: campaign.id,
+        bonusDate: today,
+        bonusType: 'sponsorship',
+        amount: '10.00',
+        status: 'pending',
+        proofUrl: null, // Pas de preuve encore
+      },
+    ]);
+
     console.log('✅ Seed completed successfully!');
     console.log(`Created:
     - 1 Manager Principal: ${principalManager.email}
@@ -142,6 +222,8 @@ async function seed() {
     - 1 Challenge for ${today}
     - 3 Actions for today's challenge
     - 6 UserActions (assignments)
+    - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
+    - 5 Daily bonuses (with and without proofs)
     `);
   } catch (error) {
     console.error('❌ Seed failed:', error);

@@ -11,6 +11,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { StorageModule } from './storage/storage.module';
 import { AccessRequestsModule } from './access-requests/access-requests.module';
+import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AccessRequestsModule } from './access-requests/access-requests.module';
     ChallengesModule,
     StorageModule,
     AccessRequestsModule,
+    DailyBonusModule,
   ],
   controllers: [AppController],
   providers: [AppService],

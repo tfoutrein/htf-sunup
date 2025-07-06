@@ -116,6 +116,46 @@ export const accessRequests = pgTable('access_requests', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Campaign Bonus Configuration - Manager-configurable bonus amounts per campaign
+export const campaignBonusConfig = pgTable('campaign_bonus_config', {
+  id: serial('id').primaryKey(),
+  campaignId: integer('campaign_id')
+    .notNull()
+    .references(() => campaigns.id),
+  basketBonusAmount: decimal('basket_bonus_amount', { precision: 10, scale: 2 })
+    .notNull()
+    .default('1.00'), // Montant en euros pour un panier
+  sponsorshipBonusAmount: decimal('sponsorship_bonus_amount', {
+    precision: 10,
+    scale: 2,
+  })
+    .notNull()
+    .default('5.00'), // Montant en euros pour un parrainage
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Daily Bonus - FBO daily bonus declarations
+export const dailyBonus = pgTable('daily_bonus', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  campaignId: integer('campaign_id')
+    .notNull()
+    .references(() => campaigns.id),
+  bonusDate: date('bonus_date').notNull(), // Date de déclaration du bonus
+  bonusType: varchar('bonus_type', { length: 50 }).notNull(), // 'basket' | 'sponsorship'
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(), // Montant du bonus
+  proofUrl: varchar('proof_url', { length: 500 }), // URL de la preuve photo
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'approved' | 'rejected'
+  reviewedBy: integer('reviewed_by').references(() => users.id), // Manager qui a validé
+  reviewedAt: timestamp('reviewed_at'),
+  reviewComment: text('review_comment'), // Commentaire du manager
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -127,6 +167,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   userActions: many(userActions),
   accessRequests: many(accessRequests),
   reviewedAccessRequests: many(accessRequests),
+  dailyBonuses: many(dailyBonus),
+  reviewedDailyBonuses: many(dailyBonus),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -135,6 +177,8 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
     references: [users.id],
   }),
   challenges: many(challenges),
+  bonusConfig: one(campaignBonusConfig),
+  dailyBonuses: many(dailyBonus),
 }));
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
@@ -180,6 +224,31 @@ export const accessRequestsRelations = relations(accessRequests, ({ one }) => ({
   }),
 }));
 
+export const campaignBonusConfigRelations = relations(
+  campaignBonusConfig,
+  ({ one }) => ({
+    campaign: one(campaigns, {
+      fields: [campaignBonusConfig.campaignId],
+      references: [campaigns.id],
+    }),
+  }),
+);
+
+export const dailyBonusRelations = relations(dailyBonus, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyBonus.userId],
+    references: [users.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [dailyBonus.campaignId],
+    references: [campaigns.id],
+  }),
+  reviewer: one(users, {
+    fields: [dailyBonus.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -193,3 +262,7 @@ export type UserAction = typeof userActions.$inferSelect;
 export type NewUserAction = typeof userActions.$inferInsert;
 export type AccessRequest = typeof accessRequests.$inferSelect;
 export type NewAccessRequest = typeof accessRequests.$inferInsert;
+export type CampaignBonusConfig = typeof campaignBonusConfig.$inferSelect;
+export type NewCampaignBonusConfig = typeof campaignBonusConfig.$inferInsert;
+export type DailyBonus = typeof dailyBonus.$inferSelect;
+export type NewDailyBonus = typeof dailyBonus.$inferInsert;
