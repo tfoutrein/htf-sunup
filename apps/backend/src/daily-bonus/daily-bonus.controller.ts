@@ -53,9 +53,11 @@ export class DailyBonusController {
     @Body() createDailyBonusDto: CreateDailyBonusDto,
     @Request() req,
   ) {
-    // Seuls les FBO peuvent créer des bonus
-    if (req.user.role !== 'fbo') {
-      throw new ForbiddenException('Seuls les FBO peuvent déclarer des bonus');
+    // Les FBO et les managers peuvent créer des bonus
+    if (req.user.role !== 'fbo' && req.user.role !== 'manager') {
+      throw new ForbiddenException(
+        'Seuls les FBO et les managers peuvent déclarer des bonus',
+      );
     }
 
     return this.dailyBonusService.create({
