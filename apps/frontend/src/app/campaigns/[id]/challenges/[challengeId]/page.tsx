@@ -305,13 +305,25 @@ function ChallengeEditPageContent() {
       return;
     }
 
+    // Calculer la position correcte pour les nouvelles actions
+    let actionOrder: number;
+    if (editingActionIndex !== null) {
+      // Modification d'une action existante - garder la position existante
+      actionOrder =
+        actions[editingActionIndex]?.order || editingActionIndex + 1;
+    } else {
+      // Nouvelle action - trouver la première position libre
+      const usedPositions = actions.map((a) => a.order || 0);
+      actionOrder = 1;
+      while (usedPositions.includes(actionOrder) && actionOrder <= 6) {
+        actionOrder++;
+      }
+    }
+
     const newAction: Partial<Action> = {
       ...actionFormData,
       type: actionFormData.type as 'vente' | 'recrutement' | 'reseaux_sociaux',
-      order:
-        editingActionIndex !== null
-          ? editingActionIndex + 1
-          : actions.length + 1,
+      order: actionOrder,
     };
 
     if (editingActionIndex !== null) {

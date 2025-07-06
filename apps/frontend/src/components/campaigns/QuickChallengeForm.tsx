@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Challenge, Action } from '@/types/campaigns';
 import { useCreateChallenge, useUpdateChallenge } from '@/hooks/useChallenges';
-import { useCreateAction } from '@/hooks/useActions';
+import { useCreateAction, useChallengeActions } from '@/hooks/useActions';
 import {
   Button,
   Input,
@@ -47,15 +47,20 @@ export default function QuickChallengeForm({
   const [showingActionForm, setShowingActionForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // TanStack Query mutations
+  // TanStack Query hooks
   const createChallengeMutation = useCreateChallenge();
   const updateChallengeMutation = useUpdateChallenge();
   const createActionMutation = useCreateAction();
 
+  // Récupérer les actions existantes si on édite un défi
+  const { data: existingActions = [], isLoading: existingActionsLoading } =
+    useChallengeActions(challenge?.id);
+
   const loading =
     createChallengeMutation.isPending ||
     updateChallengeMutation.isPending ||
-    createActionMutation.isPending;
+    createActionMutation.isPending ||
+    existingActionsLoading;
 
   const actionTypes = [
     { key: 'vente', label: 'Vente', icon: '💰' },
@@ -70,8 +75,22 @@ export default function QuickChallengeForm({
         description: challenge.description || '',
         valueInEuro: challenge.valueInEuro || '0.50',
       });
-      // TODO: Load existing actions if editing
-      setActions([]);
+      // Charger les actions existantes lors de l'édition
+      if (existingActions.length > 0) {
+        const formattedActions = existingActions.map((action) => ({
+          id: action.id,
+          type: action.type,
+          title: action.title,
+          description: action.description,
+          order: action.order,
+          challengeId: action.challengeId,
+          createdAt: action.createdAt,
+          updatedAt: action.updatedAt,
+        }));
+        setActions(formattedActions);
+      } else {
+        setActions([]);
+      }
     } else {
       setFormData({
         title: '',
@@ -83,7 +102,7 @@ export default function QuickChallengeForm({
     setEditingActionIndex(null);
     setShowingActionForm(false);
     setError(null);
-  }, [challenge, isOpen]);
+  }, [challenge, isOpen, existingActions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,16 +182,22 @@ export default function QuickChallengeForm({
       setActions((prev) =>
         prev.map((action, index) =>
           index === editingActionIndex
-            ? { ...actionData, order: editingActionIndex + 1 }
+            ? { ...actionData, order: action.order || editingActionIndex + 1 }
             : action,
         ),
       );
     } else {
-      // Ajouter une nouvelle action
+      // Ajouter une nouvelle action - calculer la première position libre
+      const usedPositions = actions.map((a) => a.order || 0);
+      let nextPosition = 1;
+      while (usedPositions.includes(nextPosition) && nextPosition <= 6) {
+        nextPosition++;
+      }
+
       const newAction: Partial<Action> = {
         ...actionData,
         type: actionData.type as 'vente' | 'recrutement' | 'reseaux_sociaux',
-        order: actions.length + 1,
+        order: nextPosition,
       };
       setActions((prev) => [...prev, newAction]);
     }
