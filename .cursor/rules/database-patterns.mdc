@@ -1,6 +1,5 @@
 ---
-description:
-globs:
+description: When dealing with database
 alwaysApply: false
 ---
 # HTF Sunup - Patterns Base de Données
