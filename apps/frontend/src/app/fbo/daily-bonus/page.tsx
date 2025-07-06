@@ -15,6 +15,7 @@ import {
   DailyBonusList,
   DailyBonusStats,
 } from '@/components/daily-bonus';
+import { AuroraBackground } from '@/components/ui';
 
 export default function DailyBonusPage() {
   const router = useRouter();
@@ -27,8 +28,21 @@ export default function DailyBonusPage() {
 
   if (campaignsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#FFA500', '#FFD700', '#FF6347']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
@@ -42,8 +56,21 @@ export default function DailyBonusPage() {
 
   if (!activeCampaign) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#FFA500', '#FFD700', '#FF6347']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="light"
@@ -54,7 +81,7 @@ export default function DailyBonusPage() {
             </Button>
           </div>
 
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm">
             <CardBody className="text-center p-8">
               <CurrencyEuroIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -72,8 +99,21 @@ export default function DailyBonusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen relative p-4">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#FFA500', '#FFD700', '#FF6347']}
+          blend={0.4}
+          amplitude={1.0}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 z-10"></div>
+
+      <div className="max-w-6xl mx-auto relative z-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -109,7 +149,7 @@ export default function DailyBonusPage() {
         {/* Form Modal */}
         {showForm && (
           <div className="mb-6">
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <h3 className="text-lg font-semibold">
                   Créer un nouveau bonus
@@ -130,7 +170,7 @@ export default function DailyBonusPage() {
         {!showForm && (
           <div className="space-y-6">
             {/* Tabs */}
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm">
               <CardBody className="p-0">
                 <Tabs
                   selectedKey={activeTab}

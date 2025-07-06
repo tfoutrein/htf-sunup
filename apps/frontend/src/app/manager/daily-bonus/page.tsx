@@ -36,6 +36,7 @@ import {
 } from '@/hooks';
 import { DailyBonus } from '@/types/daily-bonus';
 import { BONUS_TYPE_CONFIG, BONUS_STATUS_CONFIG } from '@/types/daily-bonus';
+import { AuroraBackground } from '@/components/ui';
 
 export default function ManagerDailyBonusPage() {
   const router = useRouter();
@@ -110,8 +111,21 @@ export default function ManagerDailyBonusPage() {
 
   if (campaignsLoading || bonusesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-center">
               <Spinner size="lg" color="primary" />
@@ -125,8 +139,21 @@ export default function ManagerDailyBonusPage() {
 
   if (!activeCampaign) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
           <div className="flex items-center gap-4 mb-6">
             <Button
               variant="light"
@@ -137,7 +164,7 @@ export default function ManagerDailyBonusPage() {
             </Button>
           </div>
 
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm">
             <CardBody className="text-center p-8">
               <CurrencyEuroIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -155,8 +182,21 @@ export default function ManagerDailyBonusPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">

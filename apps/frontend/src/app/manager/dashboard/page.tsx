@@ -9,6 +9,7 @@ import {
   Button,
   Badge,
   Progress,
+  AuroraBackground,
 } from '@/components/ui';
 import { Chip } from '@heroui/react';
 import { campaignService } from '@/services/campaigns';
@@ -521,8 +522,21 @@ export default function ManagerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen relative flex items-center justify-center">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+        <div className="text-center relative z-20">
           <UsersIcon className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
           <p className="text-gray-600">Chargement de votre équipe...</p>
         </div>
@@ -531,9 +545,22 @@ export default function ManagerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+    <div className="min-h-screen relative">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+          blend={0.4}
+          amplitude={1.0}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 shadow-lg relative z-20">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -552,7 +579,7 @@ export default function ManagerDashboard() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 relative z-20">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {/* Bloc consolidé d'équipe */}

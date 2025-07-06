@@ -18,6 +18,7 @@ import {
   useDisclosure,
   Progress,
   Switch,
+  AuroraBackground,
 } from '@/components/ui';
 import { Tabs, Tab } from '@heroui/react';
 
@@ -28,8 +29,21 @@ export default function ComponentsDemo() {
   const [progress, setProgress] = useState(65);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen relative p-8">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#FF4500', '#FF6B00', '#FFD700']}
+          blend={0.4}
+          amplitude={1.0}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+      <div className="max-w-7xl mx-auto relative z-20">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-4">

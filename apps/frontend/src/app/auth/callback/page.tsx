@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { setToken, setUser } from '@/utils/auth';
-import { Spinner } from '@/components/ui';
+import { Spinner, AuroraBackground } from '@/components/ui';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -60,13 +60,26 @@ export default function AuthCallbackPage() {
       // No token, redirect to login
       router.push('/login?error=no-token');
     }
-  }, [router, searchParams, refetchUser, invalidateAuth]);
+  }, [searchParams, router, refetchUser, invalidateAuth]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <Spinner size="lg" />
-        <p className="mt-4 text-gray-600">Finalisation de la connexion...</p>
+    <div className="min-h-screen relative flex items-center justify-center px-4">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#FF4500', '#FF6B00', '#FFD700']}
+          blend={0.6}
+          amplitude={1.2}
+          speed={1.0}
+        />
+      </div>
+
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+      <div className="text-center relative z-20">
+        <Spinner size="lg" color="warning" />
+        <p className="mt-4 text-gray-600">Connexion en cours...</p>
       </div>
     </div>
   );

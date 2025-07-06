@@ -275,8 +275,21 @@ export default function FBODashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen relative flex items-center justify-center">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#FFA500', '#FFD700', '#FF6347', '#FF4500']}
+            amplitude={0.3}
+            blend={0.8}
+            speed={0.5}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+        <div className="text-center relative z-20">
           <SunIcon className="w-12 h-12 text-orange-400 animate-pulse mx-auto mb-4" />
           <p className="text-gray-600">Chargement de tes défis...</p>
         </div>

@@ -2,12 +2,12 @@
 
 import { usePathname } from 'next/navigation';
 
-const AURORA_PAGES = ['/', '/login', '/fbo/dashboard'];
-
+// Aurora activée sur toutes les pages de l'application
 export function useAuroraPages() {
   const pathname = usePathname();
 
-  const isAuroraPage = AURORA_PAGES.includes(pathname);
+  // L'Aurora est maintenant disponible sur toutes les pages
+  const isAuroraPage = true;
 
-  return { isAuroraPage, auroraPages: AURORA_PAGES };
+  return { isAuroraPage, auroraPages: ['*'] };
 }

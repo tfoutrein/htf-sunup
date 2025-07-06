@@ -21,6 +21,7 @@ import {
   Divider,
 } from '@heroui/react';
 import { Avatar } from '@/components/ui/Avatar';
+import { AuroraBackground } from '@/components/ui';
 import {
   UsersIcon,
   PencilIcon,
@@ -517,7 +518,10 @@ export default function TeamManagementPage() {
     return (
       <div className="space-y-3">
         {filteredTeamList.map((member) => (
-          <Card key={member.id} className="p-3 sm:p-4">
+          <Card
+            key={member.id}
+            className="p-3 sm:p-4 bg-white/80 backdrop-blur-sm"
+          >
             {/* Desktop layout */}
             <div className="hidden md:flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -673,8 +677,21 @@ export default function TeamManagementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen relative flex items-center justify-center">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+        <div className="text-center relative z-20">
           <UsersIcon className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
           <p className="text-gray-600">Chargement de l'équipe...</p>
         </div>
@@ -683,8 +700,21 @@ export default function TeamManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="min-h-screen relative">
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0">
+        <AuroraBackground
+          colorStops={['#3B82F6', '#6366F1', '#8B5CF6']}
+          blend={0.4}
+          amplitude={1.0}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 z-10"></div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-20">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
             Gestion d'équipe
@@ -695,7 +725,7 @@ export default function TeamManagementPage() {
         </div>
 
         <div className="mb-6">
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
                 <div className="flex items-center gap-2">

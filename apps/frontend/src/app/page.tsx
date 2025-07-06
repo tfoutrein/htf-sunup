@@ -25,8 +25,21 @@ export default function Home() {
   // Show loading spinner while checking authentication
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100 flex items-center justify-center px-4">
-        <div className="text-center">
+      <div className="min-h-screen relative flex items-center justify-center px-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#FF4500', '#FF6B00', '#FFD700']}
+            blend={0.6}
+            amplitude={1.2}
+            speed={1.0}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 z-10"></div>
+
+        <div className="text-center relative z-20">
           <Spinner size="lg" color="warning" />
           <p className="mt-4 text-gray-600">Redirection en cours...</p>
         </div>
