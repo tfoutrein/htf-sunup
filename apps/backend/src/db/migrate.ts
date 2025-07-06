@@ -1,6 +1,6 @@
-const { drizzle } = require('drizzle-orm/postgres-js');
+const { drizzle: drizzleMigrate } = require('drizzle-orm/postgres-js');
 const { migrate } = require('drizzle-orm/postgres-js/migrator');
-const pgClient = require('postgres');
+const pgMigrateClient = require('postgres');
 const path = require('path');
 
 async function runMigrations() {
@@ -13,11 +13,11 @@ async function runMigrations() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = pgClient(connectionString, {
+  const sql = pgMigrateClient(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
-  const db = drizzle(sql);
+  const db = drizzleMigrate(sql);
 
   try {
     console.log('🚀 Running database migrations...');

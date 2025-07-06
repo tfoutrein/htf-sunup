@@ -1,5 +1,5 @@
-const { drizzle } = require('drizzle-orm/postgres-js');
-const pgClient = require('postgres');
+const { drizzle: drizzleFixProofs } = require('drizzle-orm/postgres-js');
+const pgFixProofsClient = require('postgres');
 
 async function fixProofsTable() {
   const connectionString = process.env.DATABASE_URL;
@@ -13,7 +13,7 @@ async function fixProofsTable() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = pgClient(connectionString, {
+  const sql = pgFixProofsClient(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });

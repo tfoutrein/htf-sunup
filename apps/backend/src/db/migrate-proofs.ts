@@ -1,5 +1,5 @@
-const { drizzle: drizzleMigrate } = require('drizzle-orm/postgres-js');
-const pgMigrateLib = require('postgres');
+const { drizzle: drizzleMigrateProofs } = require('drizzle-orm/postgres-js');
+const pgMigrateProofsLib = require('postgres');
 
 async function migrateExistingProofs() {
   const connectionString =
@@ -10,7 +10,7 @@ async function migrateExistingProofs() {
   const isLocalDatabase =
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
-  const sql = pgMigrateLib(connectionString, {
+  const sql = pgMigrateProofsLib(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
