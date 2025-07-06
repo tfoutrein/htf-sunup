@@ -58,13 +58,23 @@ interface Action {
   title: string;
   description: string;
   type: string;
-  completed: boolean;
+  completed?: boolean;
   completedAt?: string;
   proofUrl?: string;
   userActionId?: number;
+  proofsCount?: number;
+  hasProofs?: boolean;
 }
 
 interface DailyChallenge {
+  date: string;
+  dayNumber: number;
+  isToday: boolean;
+  completed: boolean;
+  actions: Action[];
+}
+
+interface EnrichedDailyChallenge {
   date: string;
   dayNumber: number;
   isToday: boolean;
@@ -77,6 +87,13 @@ interface MemberDetails {
   completedChallenges: number;
   totalChallenges: number;
   dailyChallenges: DailyChallenge[];
+}
+
+interface EnrichedMemberDetails {
+  overallProgress: number;
+  completedChallenges: number;
+  totalChallenges: number;
+  dailyChallenges: EnrichedDailyChallenge[];
 }
 
 const actionTypes = [
@@ -118,7 +135,7 @@ export default function MemberDetailsPage() {
   // États pour les données enrichies avec preuves
   const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
   const [enrichedMemberDetails, setEnrichedMemberDetails] =
-    useState<MemberDetails | null>(null);
+    useState<EnrichedMemberDetails | null>(null);
 
   // Hook pour les bonus quotidiens - utiliser le hook React Query
   const {

@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import { useProofs } from './useProofs';
-
-export interface ActionWithProofCount {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  completed: boolean;
-  completedAt?: string;
-  userActionId?: number;
-  proofsCount: number;
-  hasProofs: boolean;
-}
+import type { ActionWithProofCount } from '@/types/campaigns';
 
 export interface UseActionProofsReturn {
   // Enrichissement des actions avec le comptage de preuves

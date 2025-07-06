@@ -49,6 +49,14 @@ export interface CampaignWithChallenges extends Campaign {
   challenges: Challenge[];
 }
 
+export interface ActionWithProofCount extends Action {
+  userActionId?: number;
+  completed?: boolean;
+  completedAt?: string;
+  proofsCount: number;
+  hasProofs: boolean;
+}
+
 export interface ChallengeWithActions extends Challenge {
   actions: Action[];
 }
