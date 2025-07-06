@@ -9,17 +9,17 @@ import { challengeKeys } from './useChallenges';
 export const actionKeys = {
   all: ['actions'] as const,
   lists: () => [...actionKeys.all, 'list'] as const,
-  list: (challengeId: number) =>
+  list: (challengeId: number | undefined) =>
     [...actionKeys.lists(), { challengeId }] as const,
   details: () => [...actionKeys.all, 'detail'] as const,
   detail: (id: number) => [...actionKeys.details(), id] as const,
 };
 
 // Queries
-export function useChallengeActions(challengeId: number) {
+export function useChallengeActions(challengeId: number | undefined) {
   return useQuery({
     queryKey: actionKeys.list(challengeId),
-    queryFn: () => campaignService.getChallengeActions(challengeId),
+    queryFn: () => campaignService.getChallengeActions(challengeId!),
     enabled: !!challengeId,
     staleTime: 30 * 1000, // 30 seconds
   });
