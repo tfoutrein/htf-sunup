@@ -152,6 +152,15 @@
 - [x] **Feedback utilisateur** - Toasts et indicateurs de chargement
 - [x] **Navigation intuitive** - Menu adaptatif selon les rôles
 
+### 🔄 7.3 Système de Release Notes (NOUVELLE FEATURE)
+
+- [ ] **Modèle de données version** - Schema pour stocker les versions et release notes
+- [ ] **Release notes simplifiées** - Contenu accessible et parlant pour les utilisateurs
+- [ ] **Popup de nouvelle version** - Modal automatique à l'accueil pour les nouveautés
+- [ ] **Tracking utilisateur** - Système pour marquer les versions vues par utilisateur
+- [ ] **Menu d'accès historique** - Élément de navigation pour consulter les release notes
+- [ ] **Gestion côté développement** - Processus de création lors des releases
+
 ---
 
 ## 🔧 EPIC 8: Outils de Développement & Maintenance

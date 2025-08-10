@@ -13,6 +13,7 @@ import { StorageModule } from './storage/storage.module';
 
 import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
 import { ProofsModule } from './proofs/proofs.module';
+import { AppVersionsModule } from './app-versions/app-versions.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ProofsModule } from './proofs/proofs.module';
     StorageModule,
     DailyBonusModule,
     ProofsModule,
+    AppVersionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

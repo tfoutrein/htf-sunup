@@ -140,6 +140,18 @@ export function Navigation() {
                     </>
                   )}
 
+                  {/* Release Notes - Accessible à tous */}
+                  <Link href="/release-notes">
+                    <Button
+                      variant={isActive('/release-notes') ? 'flat' : 'light'}
+                      color={isActive('/release-notes') ? 'warning' : 'default'}
+                      size="sm"
+                      className="font-medium"
+                    >
+                      📝 Nouveautés
+                    </Button>
+                  </Link>
+
                   {/* Aurora Toggle - Only on Aurora pages */}
                   {isAuroraPage && (
                     <div className="flex items-center space-x-2">
@@ -355,6 +367,20 @@ export function Navigation() {
                         </Link>
                       </>
                     )}
+
+                    {/* Release Notes */}
+                    <Link href="/release-notes" onClick={closeMenu}>
+                      <Button
+                        variant={isActive('/release-notes') ? 'flat' : 'light'}
+                        color={
+                          isActive('/release-notes') ? 'warning' : 'default'
+                        }
+                        size="sm"
+                        className="w-full justify-start font-medium"
+                      >
+                        📝 Nouveautés
+                      </Button>
+                    </Link>
 
                     <Button
                       variant="light"

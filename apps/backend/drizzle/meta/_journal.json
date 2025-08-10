@@ -57,6 +57,13 @@
       "when": 1751821406781,
       "tag": "0007_busy_veda",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1754841019189,
+      "tag": "0008_brave_songbird",
+      "breakpoints": true
     }
   ]
 }
