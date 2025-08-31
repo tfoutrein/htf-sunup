@@ -258,20 +258,32 @@ export class CampaignValidationService {
     userId: number,
     campaignId: number,
   ): Promise<number> {
-    // Gains des défis (actions complétées)
+    // Gains des défis complets (un défi est complet si toutes ses actions sont complétées)
     const challengeEarnings = await this.db
       .select({
-        totalValue: sql<number>`COALESCE(SUM(${challenges.valueInEuro}), 0)`,
+        challengeId: challenges.id,
+        valueInEuro: challenges.valueInEuro,
+        totalActions: sql<number>`COUNT(${userActions.id})`,
+        completedActions: sql<number>`COUNT(CASE WHEN ${userActions.completed} = true THEN 1 END)`,
       })
-      .from(userActions)
-      .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
-      .where(
+      .from(challenges)
+      .leftJoin(
+        userActions,
         and(
+          eq(userActions.challengeId, challenges.id),
           eq(userActions.userId, userId),
-          eq(challenges.campaignId, campaignId),
-          eq(userActions.completed, true),
         ),
+      )
+      .where(eq(challenges.campaignId, campaignId))
+      .groupBy(challenges.id, challenges.valueInEuro)
+      .having(
+        sql`COUNT(${userActions.id}) > 0 AND COUNT(${userActions.id}) = COUNT(CASE WHEN ${userActions.completed} = true THEN 1 END)`,
       );
+
+    // Calculer le total des défis complets
+    const challengeTotal = challengeEarnings.reduce((sum, challenge) => {
+      return sum + Number(challenge.valueInEuro);
+    }, 0);
 
     // Gains des bonus quotidiens
     const bonusEarnings = await this.db
@@ -287,7 +299,6 @@ export class CampaignValidationService {
         ),
       );
 
-    const challengeTotal = challengeEarnings[0]?.totalValue || 0;
     const bonusTotal = bonusEarnings[0]?.totalAmount || 0;
 
     return Number(challengeTotal) + Number(bonusTotal);
@@ -308,23 +319,29 @@ export class CampaignValidationService {
       .from(challenges)
       .where(eq(challenges.campaignId, campaignId));
 
-    // Nombre de défis complétés par l'utilisateur
-    const completedChallenges = await this.db
+    // Nombre de défis complétés (un défi est complet si toutes ses actions sont complétées)
+    const challengeCompletion = await this.db
       .select({
-        count: sql<number>`COUNT(DISTINCT ${userActions.challengeId})`,
+        challengeId: challenges.id,
+        totalActions: sql<number>`COUNT(${userActions.id})`,
+        completedActions: sql<number>`COUNT(CASE WHEN ${userActions.completed} = true THEN 1 END)`,
       })
-      .from(userActions)
-      .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
-      .where(
+      .from(challenges)
+      .leftJoin(
+        userActions,
         and(
+          eq(userActions.challengeId, challenges.id),
           eq(userActions.userId, userId),
-          eq(challenges.campaignId, campaignId),
-          eq(userActions.completed, true),
         ),
+      )
+      .where(eq(challenges.campaignId, campaignId))
+      .groupBy(challenges.id)
+      .having(
+        sql`COUNT(${userActions.id}) > 0 AND COUNT(${userActions.id}) = COUNT(CASE WHEN ${userActions.completed} = true THEN 1 END)`,
       );
 
     return {
-      completedChallenges: completedChallenges[0]?.count || 0,
+      completedChallenges: challengeCompletion.length,
       totalChallenges: totalChallenges[0]?.count || 0,
     };
   }
