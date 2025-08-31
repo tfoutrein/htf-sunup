@@ -15,3 +15,7 @@ export * from './useAuth';
 export * from './useDashboardData';
 export * from './useDashboardAnimations';
 export * from './useBonusActions';
+
+// Version management hooks
+export * from './useAppVersions';
+export * from './useReleaseNotesPopup';

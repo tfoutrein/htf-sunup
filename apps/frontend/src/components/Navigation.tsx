@@ -5,11 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
-import { Switch } from '@/components/ui';
 import { LogoDisplay } from '@/components/ui/LogoDisplay';
 import { useAuth } from '@/hooks/useAuth';
-import { useAurora } from '@/contexts/AuroraContext';
-import { useAuroraPages } from '@/hooks/useAuroraPages';
 import { useLogo } from '@/contexts/LogoContext';
 
 export function Navigation() {
@@ -17,8 +14,6 @@ export function Navigation() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isLoading, logout } = useAuth();
-  const { isAuroraEnabled, toggleAurora } = useAurora();
-  const { isAuroraPage } = useAuroraPages();
   const { logoChoice } = useLogo();
 
   const getDashboardLink = () => {
@@ -140,22 +135,21 @@ export function Navigation() {
                     </>
                   )}
 
-                  {/* Aurora Toggle - Only on Aurora pages */}
-                  {isAuroraPage && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">🌟</span>
-                      <Switch
-                        isSelected={isAuroraEnabled}
-                        onValueChange={toggleAurora}
-                        size="sm"
-                        color="warning"
-                        aria-label="Activer/désactiver l'animation Aurora"
-                      />
-                    </div>
-                  )}
-
                   {/* User Menu */}
                   <div className="flex items-center space-x-3 ml-4">
+                    {/* Release Notes - Discret à côté du profil */}
+                    <Link href="/release-notes" title="Notes de version">
+                      <Button
+                        variant="light"
+                        color="default"
+                        size="sm"
+                        isIconOnly
+                        className="text-gray-400 hover:text-gray-600 opacity-50 hover:opacity-80"
+                      >
+                        📝
+                      </Button>
+                    </Link>
+
                     <Link href="/profile">
                       <div className="flex items-center space-x-2 cursor-pointer hover:bg-orange-50 rounded-lg px-2 py-1 transition-colors duration-200">
                         <Avatar
@@ -207,20 +201,6 @@ export function Navigation() {
                       Connexion
                     </Button>
                   </Link>
-
-                  {/* Aurora Toggle - Only on Aurora pages */}
-                  {isAuroraPage && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">🌟</span>
-                      <Switch
-                        isSelected={isAuroraEnabled}
-                        onValueChange={toggleAurora}
-                        size="sm"
-                        color="warning"
-                        aria-label="Activer/désactiver l'animation Aurora"
-                      />
-                    </div>
-                  )}
                 </>
               ))}
           </div>
@@ -356,6 +336,18 @@ export function Navigation() {
                       </>
                     )}
 
+                    {/* Release Notes - Discret */}
+                    <Link href="/release-notes" onClick={closeMenu}>
+                      <Button
+                        variant="light"
+                        color="default"
+                        size="sm"
+                        className="w-full justify-start font-normal text-gray-600 opacity-75 hover:opacity-100"
+                      >
+                        📝 Notes de version
+                      </Button>
+                    </Link>
+
                     <Button
                       variant="light"
                       color="danger"
@@ -390,27 +382,6 @@ export function Navigation() {
                     </Link>
                   </>
                 ))}
-
-              {/* Aurora Toggle for Mobile - Only on Aurora pages */}
-              {isAuroraPage && (
-                <div className="border-t border-orange-200 pt-3 mt-2">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm">🌟</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        Animation
-                      </span>
-                    </div>
-                    <Switch
-                      isSelected={isAuroraEnabled}
-                      onValueChange={toggleAurora}
-                      size="sm"
-                      color="warning"
-                      aria-label="Activer/désactiver l'animation Aurora"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}

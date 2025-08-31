@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { Navigation } from '@/components/Navigation';
 import { ToastWrapper } from '@/components/ToastWrapper';
+import { ReleaseNotesProvider } from '@/components/ReleaseNotesProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
           <Navigation />
           {children}
           <ToastWrapper />
+          <ReleaseNotesProvider />
         </Providers>
       </body>
     </html>

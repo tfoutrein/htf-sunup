@@ -154,6 +154,34 @@ export const proofs = pgTable('proofs', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// App Versions table - For release notes and version tracking
+export const appVersions = pgTable('app_versions', {
+  id: serial('id').primaryKey(),
+  version: varchar('version', { length: 20 }).notNull().unique(), // e.g., "1.2.0"
+  title: varchar('title', { length: 255 }).notNull(), // e.g., "Nouvelles fonctionnalités d'été"
+  releaseDate: date('release_date').notNull(),
+  isActive: boolean('is_active').notNull().default(true), // Si cette version est active
+  isMajor: boolean('is_major').notNull().default(false), // Si c'est une version majeure
+  shortDescription: text('short_description').notNull(), // Description courte pour la popup
+  fullReleaseNotes: text('full_release_notes'), // Release notes complètes (optionnel)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// User Version Tracking - Track which versions users have seen
+export const userVersionTracking = pgTable('user_version_tracking', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  versionId: integer('version_id')
+    .notNull()
+    .references(() => appVersions.id, { onDelete: 'cascade' }),
+  hasSeenPopup: boolean('has_seen_popup').notNull().default(false), // Si l'utilisateur a vu la popup
+  seenAt: timestamp('seen_at'), // Quand l'utilisateur l'a vue
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -165,6 +193,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   userActions: many(userActions),
   dailyBonuses: many(dailyBonus),
   reviewedDailyBonuses: many(dailyBonus),
+  versionTracking: many(userVersionTracking),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -247,6 +276,24 @@ export const proofsRelations = relations(proofs, ({ one }) => ({
   }),
 }));
 
+export const appVersionsRelations = relations(appVersions, ({ many }) => ({
+  userTracking: many(userVersionTracking),
+}));
+
+export const userVersionTrackingRelations = relations(
+  userVersionTracking,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userVersionTracking.userId],
+      references: [users.id],
+    }),
+    version: one(appVersions, {
+      fields: [userVersionTracking.versionId],
+      references: [appVersions.id],
+    }),
+  }),
+);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -264,3 +311,7 @@ export type DailyBonus = typeof dailyBonus.$inferSelect;
 export type NewDailyBonus = typeof dailyBonus.$inferInsert;
 export type Proof = typeof proofs.$inferSelect;
 export type NewProof = typeof proofs.$inferInsert;
+export type AppVersion = typeof appVersions.$inferSelect;
+export type NewAppVersion = typeof appVersions.$inferInsert;
+export type UserVersionTracking = typeof userVersionTracking.$inferSelect;
+export type NewUserVersionTracking = typeof userVersionTracking.$inferInsert;
