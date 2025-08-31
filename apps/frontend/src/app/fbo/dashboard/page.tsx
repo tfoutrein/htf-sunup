@@ -43,6 +43,7 @@ import {
   NextChallengesSection,
   StatisticsSection,
 } from '@/components/dashboard';
+import { CampaignValidationStatus } from '@/components/CampaignValidationStatus';
 
 // Types et utilitaires
 import { Action } from '@/types/dashboard';
@@ -361,6 +362,16 @@ export default function FBODashboard() {
           challengeActions={challengeActions}
           userActions={userActions}
         />
+
+        {/* Statut de validation de campagne */}
+        {activeCampaign && (
+          <div className="mb-6 sm:mb-8">
+            <CampaignValidationStatus
+              campaignId={activeCampaign.id}
+              campaignName={activeCampaign.name}
+            />
+          </div>
+        )}
 
         {/* Section prochains défis */}
         {shouldShowNextChallenges && nextChallenge && (

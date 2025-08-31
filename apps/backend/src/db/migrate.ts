@@ -532,6 +532,162 @@ async function runMigrations() {
       }
     }
 
+    // Appliquer les migrations Drizzle automatiquement
+    console.log('🔍 Checking Drizzle migration status...');
+
+    try {
+      // Vérifier si les tables des nouvelles migrations existent
+      const appVersionsExists = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'app_versions'
+        );
+      `;
+
+      const campaignValidationsExists = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'campaign_validations'
+        );
+      `;
+
+      // Vérifier si la colonne status existe dans campaign_validations
+      const statusColumnExists = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'campaign_validations'
+          AND column_name = 'status'
+        );
+      `;
+
+      if (
+        !appVersionsExists[0].exists ||
+        !campaignValidationsExists[0].exists ||
+        !statusColumnExists[0].exists
+      ) {
+        console.log('📝 Applying missing Drizzle migrations...');
+
+        // Importer et utiliser le migrator Drizzle
+        const {
+          migrate: drizzleMigrate,
+        } = require('drizzle-orm/postgres-js/migrator');
+        const { drizzle } = require('drizzle-orm/postgres-js');
+
+        const drizzleDb = drizzle(sql);
+        await drizzleMigrate(drizzleDb, { migrationsFolder });
+        console.log('✅ Drizzle migrations applied successfully');
+      } else {
+        console.log('✅ All Drizzle migrations already applied');
+      }
+    } catch (drizzleError) {
+      console.log(
+        '⚠️ Drizzle migration error (continuing with manual checks):',
+        drizzleError.message,
+      );
+
+      // Re-vérifier l'existence des tables pour le fallback
+      const appVersionsExistsFallback = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'app_versions'
+        );
+      `;
+
+      const campaignValidationsExistsFallback = await sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'campaign_validations'
+        );
+      `;
+
+      // Fallback: créer manuellement les tables manquantes
+      if (!appVersionsExistsFallback[0].exists) {
+        console.log('📝 Creating app_versions table manually...');
+        await sql`
+          CREATE TABLE IF NOT EXISTS "app_versions" (
+            "id" serial PRIMARY KEY NOT NULL,
+            "version" varchar(20) NOT NULL,
+            "title" varchar(255) NOT NULL,
+            "release_date" date NOT NULL,
+            "is_active" boolean DEFAULT true NOT NULL,
+            "is_major" boolean DEFAULT false NOT NULL,
+            "short_description" text NOT NULL,
+            "full_release_notes" text,
+            "created_at" timestamp DEFAULT now() NOT NULL,
+            "updated_at" timestamp DEFAULT now() NOT NULL,
+            CONSTRAINT "app_versions_version_unique" UNIQUE("version")
+          );
+        `;
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS "user_version_tracking" (
+            "id" serial PRIMARY KEY NOT NULL,
+            "user_id" integer NOT NULL,
+            "version_id" integer NOT NULL,
+            "has_seen_popup" boolean DEFAULT false NOT NULL,
+            "seen_at" timestamp,
+            "created_at" timestamp DEFAULT now() NOT NULL
+          );
+        `;
+
+        await sql`
+          ALTER TABLE "user_version_tracking" 
+          ADD CONSTRAINT "user_version_tracking_user_id_users_id_fk" 
+          FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+        `;
+
+        await sql`
+          ALTER TABLE "user_version_tracking" 
+          ADD CONSTRAINT "user_version_tracking_version_id_app_versions_id_fk" 
+          FOREIGN KEY ("version_id") REFERENCES "public"."app_versions"("id") ON DELETE cascade ON UPDATE no action;
+        `;
+
+        console.log('✅ App versions tables created manually');
+      }
+
+      if (!campaignValidationsExistsFallback[0].exists) {
+        console.log('📝 Creating campaign_validations table manually...');
+        await sql`
+          CREATE TABLE IF NOT EXISTS "campaign_validations" (
+            "id" serial PRIMARY KEY NOT NULL,
+            "user_id" integer NOT NULL,
+            "campaign_id" integer NOT NULL,
+            "is_validated" boolean DEFAULT false NOT NULL,
+            "validated_by" integer,
+            "validated_at" timestamp,
+            "comment" text,
+            "created_at" timestamp DEFAULT now() NOT NULL,
+            "updated_at" timestamp DEFAULT now() NOT NULL
+          );
+        `;
+
+        await sql`
+          ALTER TABLE "campaign_validations" 
+          ADD CONSTRAINT "campaign_validations_user_id_users_id_fk" 
+          FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+        `;
+
+        await sql`
+          ALTER TABLE "campaign_validations" 
+          ADD CONSTRAINT "campaign_validations_campaign_id_campaigns_id_fk" 
+          FOREIGN KEY ("campaign_id") REFERENCES "public"."campaigns"("id") ON DELETE cascade ON UPDATE no action;
+        `;
+
+        await sql`
+          ALTER TABLE "campaign_validations" 
+          ADD CONSTRAINT "campaign_validations_validated_by_users_id_fk" 
+          FOREIGN KEY ("validated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+        `;
+
+        console.log('✅ Campaign validations table created manually');
+      }
+    }
+
     // Vérification finale des colonnes legacy
     console.log('🔍 Checking for legacy schema updates...');
 

@@ -11,7 +11,7 @@ import {
   Progress,
   AuroraBackground,
 } from '@/components/ui';
-import { Chip } from '@heroui/react';
+import { Chip, Tabs, Tab } from '@heroui/react';
 import { campaignService } from '@/services/campaigns';
 import { Campaign, UserAction } from '@/types/campaigns';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
@@ -26,6 +26,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { PieChart, Pie, Cell } from 'recharts';
+import { CampaignValidationSection } from '@/components/CampaignValidationSection';
 
 interface User {
   id: number;
@@ -679,7 +680,7 @@ export default function ManagerDashboard() {
           <CardHeader className="p-4 border-b dark:border-gray-700">
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-lg font-semibold">Aperçu de la campagne</h3>
+                <h3 className="text-lg font-semibold">Gestion de campagne</h3>
                 {currentCampaign && (
                   <div className="mt-1 flex items-center gap-2">
                     <Chip color="primary" variant="flat" size="sm">
@@ -700,179 +701,201 @@ export default function ManagerDashboard() {
                   </div>
                 )}
               </div>
-
-              {/* Filter */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <FunnelIcon className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600 font-medium">
-                    Filtrer par rôle :
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant={roleFilter === 'all' ? 'solid' : 'flat'}
-                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                      roleFilter === 'all'
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onPress={() => setRoleFilter('all')}
-                  >
-                    Tous ({teamMembers.length})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={roleFilter === 'manager' ? 'solid' : 'flat'}
-                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                      roleFilter === 'manager'
-                        ? 'bg-purple-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onPress={() => setRoleFilter('manager')}
-                  >
-                    Managers ({teamStats.managers})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={roleFilter === 'fbo' ? 'solid' : 'flat'}
-                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                      roleFilter === 'fbo'
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onPress={() => setRoleFilter('fbo')}
-                  >
-                    FBOs ({teamStats.fbos})
-                  </Button>
-                </div>
-              </div>
             </div>
           </CardHeader>
-          <CardBody className="p-4 sm:p-6 pt-0">
-            {filteredMembers.length > 0 ? (
-              <div className="space-y-3 sm:space-y-4">
-                {filteredMembers.map((member) => {
-                  const progressData = teamProgress.find(
-                    (p) => p.userId === member.id,
-                  );
-                  const roleInfo = getRoleInfo(member.role);
+          <CardBody className="p-0">
+            <Tabs aria-label="Gestion de campagne" className="w-full">
+              <Tab key="overview" title="Aperçu de la campagne">
+                <div className="p-4 sm:p-6">
+                  {/* Filter */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                    <div className="flex items-center gap-2">
+                      <FunnelIcon className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 font-medium">
+                        Filtrer par rôle :
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant={roleFilter === 'all' ? 'solid' : 'flat'}
+                        className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                          roleFilter === 'all'
+                            ? 'bg-blue-500 text-white shadow-lg'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                        onPress={() => setRoleFilter('all')}
+                      >
+                        Tous ({teamMembers.length})
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={roleFilter === 'manager' ? 'solid' : 'flat'}
+                        className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                          roleFilter === 'manager'
+                            ? 'bg-purple-500 text-white shadow-lg'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                        onPress={() => setRoleFilter('manager')}
+                      >
+                        Managers ({teamStats.managers})
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={roleFilter === 'fbo' ? 'solid' : 'flat'}
+                        className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                          roleFilter === 'fbo'
+                            ? 'bg-blue-500 text-white shadow-lg'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                        onPress={() => setRoleFilter('fbo')}
+                      >
+                        FBOs ({teamStats.fbos})
+                      </Button>
+                    </div>
+                  </div>
 
-                  return (
-                    <div
-                      key={member.id}
-                      className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer"
-                      onClick={() => handleMemberClick(member)}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {/* Team Members List */}
+                  {filteredMembers.length > 0 ? (
+                    <div className="space-y-3 sm:space-y-4">
+                      {filteredMembers.map((member) => {
+                        const progressData = teamProgress.find(
+                          (p) => p.userId === member.id,
+                        );
+                        const roleInfo = getRoleInfo(member.role);
+
+                        return (
                           <div
-                            className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${roleInfo.color} rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base flex-shrink-0 relative`}
+                            key={member.id}
+                            className="bg-white/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                            onClick={() => handleMemberClick(member)}
                           >
-                            {member.name.charAt(0)}
-                            {/* Indicateur de rapport direct/indirect */}
-                            {member.isDirectReport === false && (
-                              <div
-                                className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"
-                                title="Rapport indirect"
-                              />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium text-gray-800 text-sm sm:text-base truncate">
-                                {member.name}
-                              </h4>
-                              <div
-                                className={`px-2 py-1 rounded-full ${roleInfo.bgColor} flex items-center gap-1`}
-                              >
-                                {roleInfo.icon}
-                                <span
-                                  className={`text-xs font-medium ${roleInfo.textColor}`}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${roleInfo.color} rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base flex-shrink-0 relative`}
                                 >
-                                  {roleInfo.label}
-                                </span>
-                              </div>
-                              {member.isDirectReport === false && (
-                                <div className="px-2 py-1 rounded-full bg-orange-100 flex items-center gap-1">
-                                  <ChevronRightIcon className="w-3 h-3 text-orange-600" />
-                                  <span className="text-xs font-medium text-orange-800">
-                                    Indirect
-                                  </span>
+                                  {member.name.charAt(0)}
+                                  {/* Indicateur de rapport direct/indirect */}
+                                  {member.isDirectReport === false && (
+                                    <div
+                                      className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"
+                                      title="Rapport indirect"
+                                    />
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <p className="text-xs sm:text-sm text-gray-500 truncate">
-                              {member.email}
-                            </p>
-                            {member.isDirectReport === false &&
-                              member.managerName && (
-                                <p className="text-xs text-orange-600 truncate mt-1">
-                                  via {member.managerName}
-                                </p>
-                              )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-4">
-                          <div className="text-right">
-                            <p className="text-xs sm:text-sm text-gray-500">
-                              Progression
-                            </p>
-                            <p className="font-semibold text-sm sm:text-base">
-                              {progressData?.campaignProgress?.progressPercentage?.toFixed(
-                                0,
-                              ) || '0'}
-                              %
-                            </p>
-                          </div>
-                          <ChevronRightIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-                        </div>
-                      </div>
-
-                      {progressData?.campaignProgress &&
-                      progressData?.campaignProgress.dailyChallenges ? (
-                        <div className="relative mt-2">
-                          <div className="flex w-full h-3 space-x-1">
-                            {progressData?.campaignProgress.dailyChallenges.map(
-                              (challenge) => {
-                                const { color, label } =
-                                  getChallengeStatus(challenge);
-                                return (
-                                  <div
-                                    key={challenge.challengeId}
-                                    className={`relative flex-1 rounded-full transition-all duration-300 ${color}`}
-                                    title={`Jour ${challenge.dayNumber} - ${label}: ${challenge.completedActions}/${challenge.totalActions} actions`}
-                                  >
-                                    {challenge.isToday && (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="w-1.5 h-1.5 bg-white rounded-full ring-1 ring-black/20"></div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-medium text-gray-800 text-sm sm:text-base truncate">
+                                      {member.name}
+                                    </h4>
+                                    <div
+                                      className={`px-2 py-1 rounded-full ${roleInfo.bgColor} flex items-center gap-1`}
+                                    >
+                                      {roleInfo.icon}
+                                      <span
+                                        className={`text-xs font-medium ${roleInfo.textColor}`}
+                                      >
+                                        {roleInfo.label}
+                                      </span>
+                                    </div>
+                                    {member.isDirectReport === false && (
+                                      <div className="px-2 py-1 rounded-full bg-orange-100 flex items-center gap-1">
+                                        <ChevronRightIcon className="w-3 h-3 text-orange-600" />
+                                        <span className="text-xs font-medium text-orange-800">
+                                          Indirect
+                                        </span>
                                       </div>
                                     )}
                                   </div>
-                                );
-                              },
+                                  <p className="text-xs sm:text-sm text-gray-500 truncate">
+                                    {member.email}
+                                  </p>
+                                  {member.isDirectReport === false &&
+                                    member.managerName && (
+                                      <p className="text-xs text-orange-600 truncate mt-1">
+                                        via {member.managerName}
+                                      </p>
+                                    )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 sm:gap-4">
+                                <div className="text-right">
+                                  <p className="text-xs sm:text-sm text-gray-500">
+                                    Progression
+                                  </p>
+                                  <p className="font-semibold text-sm sm:text-base">
+                                    {progressData?.campaignProgress?.progressPercentage?.toFixed(
+                                      0,
+                                    ) || '0'}
+                                    %
+                                  </p>
+                                </div>
+                                <ChevronRightIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+                              </div>
+                            </div>
+
+                            {progressData?.campaignProgress &&
+                            progressData?.campaignProgress.dailyChallenges ? (
+                              <div className="relative mt-2">
+                                <div className="flex w-full h-3 space-x-1">
+                                  {progressData?.campaignProgress.dailyChallenges.map(
+                                    (challenge) => {
+                                      const { color, label } =
+                                        getChallengeStatus(challenge);
+                                      return (
+                                        <div
+                                          key={challenge.challengeId}
+                                          className={`relative flex-1 rounded-full transition-all duration-300 ${color}`}
+                                          title={`Jour ${challenge.dayNumber} - ${label}: ${challenge.completedActions}/${challenge.totalActions} actions`}
+                                        >
+                                          {challenge.isToday && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                              <div className="w-1.5 h-1.5 bg-white rounded-full ring-1 ring-black/20"></div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    },
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center text-gray-500 py-4">
+                                Aucune donnée de campagne pour ce membre.
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500 py-4">
-                          Aucune donnée de campagne pour ce membre.
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  {roleFilter === 'all'
-                    ? "Aucun membre dans l'équipe pour le moment."
-                    : `Aucun ${roleFilter === 'manager' ? 'manager' : 'FBO'} dans l'équipe pour le moment.`}
-                </p>
-              </div>
-            )}
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">
+                        {roleFilter === 'all'
+                          ? "Aucun membre dans l'équipe pour le moment."
+                          : `Aucun ${roleFilter === 'manager' ? 'manager' : 'FBO'} dans l'équipe pour le moment.`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Tab>
+
+              <Tab key="validation" title="Validation de la campagne">
+                <div className="p-4 sm:p-6">
+                  {currentCampaign ? (
+                    <CampaignValidationSection
+                      campaignId={currentCampaign.id}
+                      campaignName={currentCampaign.name}
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Aucune campagne active</p>
+                    </div>
+                  )}
+                </div>
+              </Tab>
+            </Tabs>
           </CardBody>
         </Card>
       </div>

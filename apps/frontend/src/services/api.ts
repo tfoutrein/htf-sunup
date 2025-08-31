@@ -158,4 +158,7 @@ export const API_ENDPOINTS = {
   DAILY_BONUS_CONFIG: '/daily-bonus/config',
   DAILY_BONUS_CONFIG_BY_CAMPAIGN: (campaignId: number) =>
     `/daily-bonus/config?campaignId=${campaignId}`,
+
+  // Campaign Validation
+  CAMPAIGN_VALIDATION: '/campaign-validation',
 } as const;

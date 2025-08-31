@@ -64,6 +64,20 @@
       "when": 1754841019189,
       "tag": "0008_brave_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1756652250724,
+      "tag": "0009_daily_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1756654711661,
+      "tag": "0010_perpetual_magneto",
+      "breakpoints": true
     }
   ]
 }

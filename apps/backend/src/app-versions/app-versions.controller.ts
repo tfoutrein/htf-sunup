@@ -61,7 +61,7 @@ export class AppVersionsController {
   @ApiOperation({ summary: 'Get unseen versions for current user' })
   @ApiResponse({ status: 200, description: 'List of unseen versions' })
   getUnseenVersions(@Req() req: any) {
-    return this.appVersionsService.getUnseenVersionsForUser(req.user.userId);
+    return this.appVersionsService.getUnseenVersionsForUser(req.user.id);
   }
 
   @Get('unseen/latest')
@@ -71,9 +71,7 @@ export class AppVersionsController {
     description: 'Latest unseen version or null if all seen',
   })
   getLatestUnseenVersion(@Req() req: any) {
-    return this.appVersionsService.getLatestUnseenVersionForUser(
-      req.user.userId,
-    );
+    return this.appVersionsService.getLatestUnseenVersionForUser(req.user.id);
   }
 
   @Post('mark-seen')
@@ -84,7 +82,7 @@ export class AppVersionsController {
     @Body() markVersionSeenDto: MarkVersionSeenDto,
   ) {
     return this.appVersionsService.markVersionAsSeen(
-      req.user.userId,
+      req.user.id,
       markVersionSeenDto.versionId,
     );
   }
