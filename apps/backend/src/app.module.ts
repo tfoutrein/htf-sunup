@@ -14,6 +14,7 @@ import { StorageModule } from './storage/storage.module';
 import { DailyBonusModule } from './daily-bonus/daily-bonus.module';
 import { ProofsModule } from './proofs/proofs.module';
 import { AppVersionsModule } from './app-versions/app-versions.module';
+import { CampaignValidationModule } from './campaign-validation/campaign-validation.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AppVersionsModule } from './app-versions/app-versions.module';
     DailyBonusModule,
     ProofsModule,
     AppVersionsModule,
+    CampaignValidationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

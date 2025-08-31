@@ -19,3 +19,7 @@ export * from './useBonusActions';
 // Version management hooks
 export * from './useAppVersions';
 export * from './useReleaseNotesPopup';
+
+// Campaign validation hooks
+export * from './useCampaignValidation';
+export * from './useMyCampaignValidation';

@@ -8,8 +8,16 @@ import {
   integer,
   date,
   decimal,
+  pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// Enum for campaign validation status
+export const validationStatusEnum = pgEnum('validation_status', [
+  'pending',
+  'approved',
+  'rejected',
+]);
 
 // Users table with roles and manager relationship
 export const users = pgTable('users', {
@@ -182,6 +190,23 @@ export const userVersionTracking = pgTable('user_version_tracking', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Campaign Validations - Manager validation of FBO campaigns
+export const campaignValidations = pgTable('campaign_validations', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }), // FBO being validated
+  campaignId: integer('campaign_id')
+    .notNull()
+    .references(() => campaigns.id, { onDelete: 'cascade' }), // Campaign being validated
+  status: validationStatusEnum('status').notNull().default('pending'), // Validation status
+  validatedBy: integer('validated_by').references(() => users.id), // Manager who validated (nullable if not validated yet)
+  validatedAt: timestamp('validated_at'), // When validation occurred
+  comment: text('comment'), // Optional validation comment
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -194,6 +219,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   dailyBonuses: many(dailyBonus),
   reviewedDailyBonuses: many(dailyBonus),
   versionTracking: many(userVersionTracking),
+  campaignValidations: many(campaignValidations),
+  validatedCampaigns: many(campaignValidations),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
@@ -204,6 +231,7 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
   challenges: many(challenges),
   bonusConfig: one(campaignBonusConfig),
   dailyBonuses: many(dailyBonus),
+  validations: many(campaignValidations),
 }));
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
@@ -294,6 +322,24 @@ export const userVersionTrackingRelations = relations(
   }),
 );
 
+export const campaignValidationsRelations = relations(
+  campaignValidations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [campaignValidations.userId],
+      references: [users.id],
+    }),
+    campaign: one(campaigns, {
+      fields: [campaignValidations.campaignId],
+      references: [campaigns.id],
+    }),
+    validator: one(users, {
+      fields: [campaignValidations.validatedBy],
+      references: [users.id],
+    }),
+  }),
+);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -315,3 +361,5 @@ export type AppVersion = typeof appVersions.$inferSelect;
 export type NewAppVersion = typeof appVersions.$inferInsert;
 export type UserVersionTracking = typeof userVersionTracking.$inferSelect;
 export type NewUserVersionTracking = typeof userVersionTracking.$inferInsert;
+export type CampaignValidation = typeof campaignValidations.$inferSelect;
+export type NewCampaignValidation = typeof campaignValidations.$inferInsert;
