@@ -152,14 +152,14 @@
 - [x] **Feedback utilisateur** - Toasts et indicateurs de chargement
 - [x] **Navigation intuitive** - Menu adaptatif selon les rôles
 
-### 🔄 7.3 Système de Release Notes (NOUVELLE FEATURE)
+### ✅ 7.3 Système de Release Notes (TERMINÉ)
 
-- [ ] **Modèle de données version** - Schema pour stocker les versions et release notes
-- [ ] **Release notes simplifiées** - Contenu accessible et parlant pour les utilisateurs
-- [ ] **Popup de nouvelle version** - Modal automatique à l'accueil pour les nouveautés
-- [ ] **Tracking utilisateur** - Système pour marquer les versions vues par utilisateur
-- [ ] **Menu d'accès historique** - Élément de navigation pour consulter les release notes
-- [ ] **Gestion côté développement** - Processus de création lors des releases
+- [x] **Modèle de données version** - Schema PostgreSQL avec tables app_versions et user_version_tracking
+- [x] **Release notes simplifiées** - Contenu accessible avec formatage Markdown
+- [x] **Popup de nouvelle version** - Modal automatique 2s après chargement pour les nouveautés
+- [x] **Tracking utilisateur** - API complète pour marquer les versions vues par utilisateur
+- [x] **Menu d'accès historique** - Icône 📝 dans navigation pour consulter les release notes
+- [x] **Gestion côté développement** - API CRUD complète et données de seed intégrées
 
 ---
 
@@ -212,7 +212,7 @@
 - **Tests** : Tests E2E et validation des endpoints
 - **Déploiement** : Production Render.com stable
 
-### ✅ **FRONTEND (90% TERMINÉ)**
+### ✅ **FRONTEND (95% TERMINÉ)**
 
 - **Architecture** : Next.js 14 avec TanStack Query
 - **Interfaces principales** : Dashboards FBO et Manager complets
@@ -220,6 +220,7 @@
 - **Système de preuves** : Upload et visualisation multiples
 - **Design** : Mobile-first avec HeroUI et animations
 - **État management** : Hooks optimisés et cache intelligent
+- **Release notes** : Système complet avec popup automatique et historique
 
 ### 🔄 **FONCTIONNALITÉS MANQUANTES (5%)**
 
@@ -263,5 +264,5 @@
 
 ---
 
-_Dernière mise à jour : 10 août 2025_  
-_Version : 1.0.0 - État : 92% Complete_
+_Dernière mise à jour : 31 août 2025_  
+_Version : 1.2.0 - État : 95% Complete_

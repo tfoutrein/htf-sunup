@@ -11,6 +11,7 @@ import {
   userActions,
   dailyBonus,
   campaignBonusConfig,
+  appVersions,
 } from './schema';
 
 const connectionString =
@@ -28,7 +29,10 @@ async function seed() {
     await db.delete(userActions);
     await db.delete(actions);
     await db.delete(challenges);
+    await db.delete(dailyBonus);
+    await db.delete(campaignBonusConfig);
     await db.delete(campaigns);
+    await db.delete(appVersions);
     // Ne pas supprimer les users qui existent déjà
 
     // Récupérer les utilisateurs existants
@@ -213,6 +217,84 @@ async function seed() {
       },
     ]);
 
+    // Seed App Versions (Release Notes)
+    console.log('📝 Seeding app versions...');
+    await db.insert(appVersions).values([
+      {
+        version: '1.2.0',
+        title: 'Nouveau système de bonus quotidiens',
+        releaseDate: '2025-08-10',
+        isActive: true,
+        isMajor: true,
+        shortDescription:
+          '🎉 Nouvelle fonctionnalité : Déclarez vos paniers et parrainages quotidiens ! Système de validation par vos managers et suivi de vos gains en temps réel.',
+        fullReleaseNotes: `## 🎉 Nouvelles fonctionnalités
+
+- **Bonus quotidiens** : Déclarez facilement vos paniers et parrainages du jour
+- **Upload de preuves** : Photos et vidéos pour valider vos bonus auprès de votre manager
+- **Validation manager** : Workflow complet d'approbation des bonus par vos managers
+- **Compteur de gains** : Suivez vos euros gagnés en temps réel avec des animations fun
+
+## ✨ Améliorations
+
+- Interface plus fluide et responsive sur mobile
+- Animations et effets visuels améliorés pour une expérience plus engageante
+- Performance optimisée pour un chargement plus rapide
+
+## 🐛 Corrections
+
+- Correction des problèmes de synchronisation des données
+- Amélioration de la stabilité générale de l'application`,
+      },
+      {
+        version: '1.1.0',
+        title: 'Système de preuves multiples',
+        releaseDate: '2025-07-25',
+        isActive: true,
+        isMajor: false,
+        shortDescription:
+          "📸 Vous pouvez maintenant uploader plusieurs photos et vidéos pour vos actions ! Visionneuse améliorée et gestion d'erreurs optimisée.",
+        fullReleaseNotes: `## 📸 Nouvelles fonctionnalités
+
+- **Upload multiple** : Ajoutez plusieurs photos/vidéos par action
+- **Visionneuse améliorée** : Navigation fluide entre vos preuves
+- **Gestion d'erreurs** : Messages plus clairs en cas de problème
+
+## 🔧 Améliorations techniques
+
+- Optimisation du stockage des fichiers
+- Amélioration de la vitesse d'upload
+- Interface plus intuitive`,
+      },
+      {
+        version: '1.0.0',
+        title: "Lancement des défis d'été HTF",
+        releaseDate: '2025-07-01',
+        isActive: true,
+        isMajor: true,
+        shortDescription:
+          "🚀 Bienvenue dans l'application des défis d'été ! Découvrez vos défis quotidiens, validez vos actions et suivez vos gains.",
+        fullReleaseNotes: `## 🚀 Lancement officiel
+
+Bienvenue dans l'application des défis d'été de la Happy Team Factory !
+
+## 🎯 Fonctionnalités principales
+
+- **Défis quotidiens** : Découvrez chaque jour vos nouveaux défis
+- **Actions variées** : Vente, recrutement, réseaux sociaux
+- **Suivi des gains** : Compteur en temps réel de vos euros gagnés
+- **Interface summer** : Design décontracté avec effets Aurora
+
+## 👥 Pour les managers
+
+- **Dashboard équipe** : Vue d'ensemble de votre équipe
+- **Gestion des campagnes** : Créez et planifiez vos défis
+- **Calendrier interactif** : Organisation visuelle des challenges
+
+Bon été et bons défis ! 🌞`,
+      },
+    ]);
+
     console.log('✅ Seed completed successfully!');
     console.log(`Created:
     - 1 Manager Principal: ${principalManager.email}
@@ -224,6 +306,7 @@ async function seed() {
     - 6 UserActions (assignments)
     - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
     - 5 Daily bonuses (with and without proofs)
+    - 3 App versions (Release notes: v1.0.0, v1.1.0, v1.2.0)
     `);
   } catch (error) {
     console.error('❌ Seed failed:', error);

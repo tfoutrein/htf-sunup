@@ -11,7 +11,7 @@ export class AppVersionsService {
 
   // Créer une nouvelle version (pour le développement)
   async create(createAppVersionDto: CreateAppVersionDto) {
-    const [version] = await this.db
+    const [version] = await this.db.db
       .insert(schema.appVersions)
       .values({
         version: createAppVersionDto.version,
@@ -29,7 +29,7 @@ export class AppVersionsService {
 
   // Récupérer toutes les versions (ordonnées par date de release desc)
   async findAll() {
-    return await this.db
+    return await this.db.db
       .select()
       .from(schema.appVersions)
       .orderBy(desc(schema.appVersions.releaseDate));
@@ -37,7 +37,7 @@ export class AppVersionsService {
 
   // Récupérer les versions actives
   async findActive() {
-    return await this.db
+    return await this.db.db
       .select()
       .from(schema.appVersions)
       .where(eq(schema.appVersions.isActive, true))
@@ -46,7 +46,7 @@ export class AppVersionsService {
 
   // Récupérer une version par son ID
   async findOne(id: number) {
-    const [version] = await this.db
+    const [version] = await this.db.db
       .select()
       .from(schema.appVersions)
       .where(eq(schema.appVersions.id, id));
@@ -60,7 +60,7 @@ export class AppVersionsService {
 
   // Récupérer la dernière version active
   async findLatest() {
-    const [latest] = await this.db
+    const [latest] = await this.db.db
       .select()
       .from(schema.appVersions)
       .where(eq(schema.appVersions.isActive, true))
@@ -72,7 +72,7 @@ export class AppVersionsService {
 
   // Vérifier si un utilisateur a vu une version spécifique
   async hasUserSeenVersion(userId: number, versionId: number) {
-    const [tracking] = await this.db
+    const [tracking] = await this.db.db
       .select()
       .from(schema.userVersionTracking)
       .where(
@@ -89,7 +89,7 @@ export class AppVersionsService {
   // Marquer une version comme vue par un utilisateur
   async markVersionAsSeen(userId: number, versionId: number) {
     // Vérifier si l'entrée existe déjà
-    const [existingTracking] = await this.db
+    const [existingTracking] = await this.db.db
       .select()
       .from(schema.userVersionTracking)
       .where(
@@ -101,7 +101,7 @@ export class AppVersionsService {
 
     if (existingTracking) {
       // Mettre à jour l'entrée existante
-      const [updated] = await this.db
+      const [updated] = await this.db.db
         .update(schema.userVersionTracking)
         .set({
           hasSeenPopup: true,
@@ -118,7 +118,7 @@ export class AppVersionsService {
       return updated;
     } else {
       // Créer une nouvelle entrée
-      const [created] = await this.db
+      const [created] = await this.db.db
         .insert(schema.userVersionTracking)
         .values({
           userId,
@@ -138,7 +138,7 @@ export class AppVersionsService {
     const activeVersions = await this.findActive();
 
     // Récupérer les versions déjà vues par l'utilisateur
-    const seenVersions = await this.db
+    const seenVersions = await this.db.db
       .select({
         versionId: schema.userVersionTracking.versionId,
       })
@@ -164,7 +164,7 @@ export class AppVersionsService {
 
   // Mettre à jour une version
   async update(id: number, updateAppVersionDto: UpdateAppVersionDto) {
-    const [updated] = await this.db
+    const [updated] = await this.db.db
       .update(schema.appVersions)
       .set(updateAppVersionDto)
       .where(eq(schema.appVersions.id, id))
@@ -179,7 +179,7 @@ export class AppVersionsService {
 
   // Supprimer une version
   async remove(id: number) {
-    const [deleted] = await this.db
+    const [deleted] = await this.db.db
       .delete(schema.appVersions)
       .where(eq(schema.appVersions.id, id))
       .returning();

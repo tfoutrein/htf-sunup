@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMarkVersionSeen } from './useAppVersions';
-import { getLatestUnseenVersion } from '../data/release-notes';
-import { versionTrackingService } from '../utils/versionTracking';
+import {
+  useMarkVersionSeen,
+  useLatestUnseenAppVersion,
+} from './useAppVersions';
 import type { AppVersion } from '../types/app-versions';
 
 export const useReleaseNotesPopup = () => {
@@ -11,23 +12,15 @@ export const useReleaseNotesPopup = () => {
   const [currentVersion, setCurrentVersion] = useState<AppVersion | null>(null);
   const markVersionSeenMutation = useMarkVersionSeen();
 
-  // Pour le développement, utiliser les données mockées
-  // En production, utiliser useLatestUnseenAppVersion() hook
+  // Utiliser l'API réelle pour récupérer la dernière version non vue
+  const { data: unseenVersion, isLoading, error } = useLatestUnseenAppVersion();
+
   useEffect(() => {
     const checkForNewVersion = () => {
-      // Temporairement utiliser les données mockées pour le développement
-      const unseenVersion = getLatestUnseenVersion();
-
-      if (unseenVersion) {
-        // Vérifier si l'utilisateur a déjà vu cette version
-        const hasSeenVersion = versionTrackingService.hasSeenVersion(
-          unseenVersion.version,
-        );
-
-        if (!hasSeenVersion) {
-          setCurrentVersion(unseenVersion);
-          setIsOpen(true);
-        }
+      // Si on a une version non vue et qu'elle n'est pas déjà affichée
+      if (unseenVersion && !isLoading && !error) {
+        setCurrentVersion(unseenVersion);
+        setIsOpen(true);
       }
     };
 
@@ -35,18 +28,14 @@ export const useReleaseNotesPopup = () => {
     const timer = setTimeout(checkForNewVersion, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [unseenVersion, isLoading, error]);
 
   const markAsSeen = async () => {
     if (!currentVersion) return;
 
     try {
-      // En production, utiliser l'API
-      // await markVersionSeenMutation.mutateAsync(currentVersion.id);
-
-      // Pour le développement, utiliser le service de tracking
-      versionTrackingService.markVersionAsSeen(currentVersion.version);
-
+      // Utiliser l'API pour marquer la version comme vue
+      await markVersionSeenMutation.mutateAsync(currentVersion.id);
       setIsOpen(false);
     } catch (error) {
       console.error('Erreur lors du marquage de la version comme vue:', error);
