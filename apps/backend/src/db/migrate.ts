@@ -26,10 +26,8 @@ async function runMigrations() {
     console.log('🚀 Running Drizzle migrations...');
 
     // Déterminer le dossier de migrations
-    const migrationsFolder =
-      process.env.NODE_ENV === 'production'
-        ? path.resolve(__dirname, '../../dist/drizzle')
-        : path.resolve(__dirname, '../../drizzle');
+    // En production, __dirname = dist/src/db, donc ../../drizzle = dist/drizzle
+    const migrationsFolder = path.resolve(__dirname, '../../drizzle');
 
     console.log('📁 Migrations folder:', migrationsFolder);
 
