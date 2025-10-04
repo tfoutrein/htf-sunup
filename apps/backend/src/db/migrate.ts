@@ -15,7 +15,9 @@ async function runMigrations() {
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
 
-  const sql = postgres(connectionString, {
+  // @ts-ignore - postgres package has CommonJS/ESM interop issues
+  const postgresConnect = postgres.default || postgres;
+  const sql = postgresConnect(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
