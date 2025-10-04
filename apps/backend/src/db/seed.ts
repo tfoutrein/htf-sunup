@@ -33,46 +33,104 @@ async function seed() {
     await db.delete(campaignBonusConfig);
     await db.delete(campaigns);
     await db.delete(appVersions);
-    // Ne pas supprimer les users qui existent déjà
+    await db.delete(users); // Supprimer aussi les users pour repartir de zéro
 
-    // Récupérer les utilisateurs existants
-    const existingUsers = await db.select().from(users);
-    const allManagers = existingUsers.filter((u) => u.role === 'manager');
-    const fbos = existingUsers.filter((u) => u.role === 'fbo');
+    console.log('👥 Creating test users...');
 
-    if (allManagers.length === 0 || fbos.length === 0) {
-      throw new Error('Utilisateurs manquants dans la base de données');
-    }
+    // Hash du mot de passe "password123" pour tous les utilisateurs de test
+    const hashedPassword = await bcrypt.hash('password123', 10);
 
-    // Le premier manager sera le manager principal (ex-marraine)
-    const principalManager = allManagers[0];
-    const otherManagers = allManagers.slice(1);
+    // Créer le manager principal (ex-marraine)
+    const [principalManager] = await db
+      .insert(users)
+      .values({
+        name: 'Marraine Principale',
+        email: 'marraine@test.com',
+        password: hashedPassword,
+        role: 'manager',
+      })
+      .returning();
 
-    // Utiliser les managers existants
-    const manager1 = otherManagers[0];
-    const manager2 = otherManagers[1];
-    const manager3 = otherManagers[2];
+    // Créer les autres managers
+    const [manager1] = await db
+      .insert(users)
+      .values({
+        name: 'Manager Aurelia',
+        email: 'aurelia@test.com',
+        password: hashedPassword,
+        role: 'manager',
+        managerId: principalManager.id, // Aurelia est sous la marraine
+      })
+      .returning();
 
-    // Assigner les FBO existants aux managers
-    const fbo1 = fbos[0];
-    const fbo2 = fbos[1];
-    const fbo3 = fbos[2];
+    const [manager2] = await db
+      .insert(users)
+      .values({
+        name: 'Manager Sophie',
+        email: 'sophie@test.com',
+        password: hashedPassword,
+        role: 'manager',
+        managerId: principalManager.id,
+      })
+      .returning();
 
-    // Mettre à jour les manager_id des FBO
-    await db
-      .update(users)
-      .set({ managerId: manager1.id })
-      .where(eq(users.id, fbo1.id));
-    await db
-      .update(users)
-      .set({ managerId: manager1.id })
-      .where(eq(users.id, fbo2.id));
-    if (fbo3) {
-      await db
-        .update(users)
-        .set({ managerId: manager2.id })
-        .where(eq(users.id, fbo3.id));
-    }
+    const [manager3] = await db
+      .insert(users)
+      .values({
+        name: 'Manager Julie',
+        email: 'julie@test.com',
+        password: hashedPassword,
+        role: 'manager',
+        managerId: principalManager.id,
+      })
+      .returning();
+
+    // Créer les FBOs (3 sous Aurelia, 1 sous Sophie)
+    const [fbo1] = await db
+      .insert(users)
+      .values({
+        name: 'Marie Martin',
+        email: 'marie@test.com',
+        password: hashedPassword,
+        role: 'fbo',
+        managerId: manager1.id,
+      })
+      .returning();
+
+    const [fbo2] = await db
+      .insert(users)
+      .values({
+        name: 'Laura Dupont',
+        email: 'laura@test.com',
+        password: hashedPassword,
+        role: 'fbo',
+        managerId: manager1.id,
+      })
+      .returning();
+
+    const [fbo3] = await db
+      .insert(users)
+      .values({
+        name: 'Emma Bernard',
+        email: 'emma@test.com',
+        password: hashedPassword,
+        role: 'fbo',
+        managerId: manager1.id,
+      })
+      .returning();
+
+    const [fbo4] = await db
+      .insert(users)
+      .values({
+        name: 'Chloé Petit',
+        email: 'chloe@test.com',
+        password: hashedPassword,
+        role: 'fbo',
+        managerId: manager2.id,
+      })
+      .returning();
+
+    console.log('✅ Test users created successfully!');
 
     // Create a sample campaign
     const [campaign] = await db
@@ -144,6 +202,12 @@ async function seed() {
       { userId: fbo2.id, actionId: action1.id, challengeId: challenge.id },
       { userId: fbo2.id, actionId: action2.id, challengeId: challenge.id },
       { userId: fbo2.id, actionId: action3.id, challengeId: challenge.id },
+      { userId: fbo3.id, actionId: action1.id, challengeId: challenge.id },
+      { userId: fbo3.id, actionId: action2.id, challengeId: challenge.id },
+      { userId: fbo3.id, actionId: action3.id, challengeId: challenge.id },
+      { userId: fbo4.id, actionId: action1.id, challengeId: challenge.id },
+      { userId: fbo4.id, actionId: action2.id, challengeId: challenge.id },
+      { userId: fbo4.id, actionId: action3.id, challengeId: challenge.id },
     ]);
 
     // Create bonus configuration for the campaign
@@ -214,6 +278,30 @@ async function seed() {
         amount: '10.00',
         status: 'pending',
         proofUrl: null, // Pas de preuve encore
+      },
+
+      // FBO3 bonuses
+      {
+        userId: fbo3.id,
+        campaignId: campaign.id,
+        bonusDate: today,
+        bonusType: 'basket',
+        amount: '2.50',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/8B5CF6/FFFFFF?text=Preuve+Panier+FBO3',
+      },
+
+      // FBO4 bonuses (sous Sophie)
+      {
+        userId: fbo4.id,
+        campaignId: campaign.id,
+        bonusDate: today,
+        bonusType: 'sponsorship',
+        amount: '10.00',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/EC4899/FFFFFF?text=Preuve+Parrainage+FBO4',
       },
     ]);
 
@@ -296,18 +384,38 @@ Bon été et bons défis ! 🌞`,
     ]);
 
     console.log('✅ Seed completed successfully!');
-    console.log(`Created:
-    - 1 Manager Principal: ${principalManager.email}
-    - 3 Managers: ${manager1 ? manager1.email : 'N/A'}, ${manager2 ? manager2.email : 'N/A'}, ${manager3 ? manager3.email : 'N/A'}
-    - 3 FBOs: ${fbo1.email}, ${fbo2.email}, ${fbo3.email}
-    - 1 Campaign: ${campaign.name}
-    - 1 Challenge for ${today}
-    - 3 Actions for today's challenge
-    - 6 UserActions (assignments)
-    - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
-    - 5 Daily bonuses (with and without proofs)
-    - 3 App versions (Release notes: v1.0.0, v1.1.0, v1.2.0)
-    `);
+    console.log(`
+📊 Seed Summary:
+================
+
+👥 Users:
+  - 1 Manager Principal: ${principalManager.email} (password123)
+  - 3 Managers: 
+    * ${manager1.email} (sous ${principalManager.name})
+    * ${manager2.email} (sous ${principalManager.name})
+    * ${manager3.email} (sous ${principalManager.name})
+  - 4 FBOs: 
+    * ${fbo1.email} (sous ${manager1.name})
+    * ${fbo2.email} (sous ${manager1.name})
+    * ${fbo3.email} (sous ${manager1.name})
+    * ${fbo4.email} (sous ${manager2.name})
+
+🎯 Campaign & Challenges:
+  - 1 Campaign: ${campaign.name}
+  - 1 Challenge for ${today}
+  - 3 Actions per challenge
+  - 12 UserActions (4 FBOs × 3 actions)
+
+💰 Bonuses:
+  - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
+  - 7 Daily bonuses (various dates and types for all 4 FBOs)
+
+📱 App Versions:
+  - 3 Release notes (v1.0.0, v1.1.0, v1.2.0)
+
+🔑 Login Info:
+  All users have password: password123
+`);
   } catch (error) {
     console.error('❌ Seed failed:', error);
   } finally {
