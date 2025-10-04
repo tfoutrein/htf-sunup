@@ -48,6 +48,7 @@ async function seed() {
         email: 'marraine@test.com',
         password: hashedPassword,
         role: 'manager',
+        authProvider: 'local',
       })
       .returning();
 
@@ -59,6 +60,7 @@ async function seed() {
         email: 'aurelia@test.com',
         password: hashedPassword,
         role: 'manager',
+        authProvider: 'local',
         managerId: principalManager.id, // Aurelia est sous la marraine
       })
       .returning();
@@ -70,6 +72,7 @@ async function seed() {
         email: 'sophie@test.com',
         password: hashedPassword,
         role: 'manager',
+        authProvider: 'local',
         managerId: principalManager.id,
       })
       .returning();
@@ -81,6 +84,7 @@ async function seed() {
         email: 'julie@test.com',
         password: hashedPassword,
         role: 'manager',
+        authProvider: 'local',
         managerId: principalManager.id,
       })
       .returning();
@@ -93,6 +97,7 @@ async function seed() {
         email: 'marie@test.com',
         password: hashedPassword,
         role: 'fbo',
+        authProvider: 'local',
         managerId: manager1.id,
       })
       .returning();
@@ -104,6 +109,7 @@ async function seed() {
         email: 'laura@test.com',
         password: hashedPassword,
         role: 'fbo',
+        authProvider: 'local',
         managerId: manager1.id,
       })
       .returning();
@@ -115,6 +121,7 @@ async function seed() {
         email: 'emma@test.com',
         password: hashedPassword,
         role: 'fbo',
+        authProvider: 'local',
         managerId: manager1.id,
       })
       .returning();
@@ -126,6 +133,7 @@ async function seed() {
         email: 'chloe@test.com',
         password: hashedPassword,
         role: 'fbo',
+        authProvider: 'local',
         managerId: manager2.id,
       })
       .returning();
