@@ -11,7 +11,6 @@
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
 
 async function syncMigrations() {
   const connectionString =
@@ -24,9 +23,10 @@ async function syncMigrations() {
     connectionString.includes('localhost') ||
     connectionString.includes('127.0.0.1');
 
-  // @ts-ignore - postgres package has CommonJS/ESM interop issues
-  const postgresConnect = postgres.default || postgres;
-  const sql = postgresConnect(connectionString, {
+  // Use require directly for CommonJS compatibility in production
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const postgres = require('postgres');
+  const sql = postgres(connectionString, {
     max: 1,
     ssl: isLocalDatabase ? false : 'require',
   });
