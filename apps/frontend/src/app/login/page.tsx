@@ -253,6 +253,9 @@ export default function LoginPage() {
                 <h3 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2 sm:mb-3">
                   🔧 Comptes de test (dev only)
                 </h3>
+                <div className="text-xs text-blue-600 mb-3 bg-blue-100 p-2 rounded">
+                  💡 Mot de passe universel : <span className="font-mono font-bold">password</span>
+                </div>
                 <div className="space-y-2">
                   {/* Marraine */}
                   <div className="grid grid-cols-2 gap-2">
@@ -266,7 +269,7 @@ export default function LoginPage() {
                       }}
                       className="text-left text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded transition-colors"
                     >
-                      👑 Marraine (Aurélia)
+                      👑 Marraine (Aurelia)
                     </button>
                     <button
                       onClick={() =>
@@ -283,18 +286,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'jeromine@htf.com',
+                          email: 'manager1@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded transition-colors"
                     >
-                      👥 Manager (Jéromine)
+                      👥 Manager 1
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('jeromine@htf.com', 'password')
+                        handleQuickLogin('manager1@htf.com', 'password')
                       }
                       className="text-xs bg-blue-200 hover:bg-blue-300 text-blue-900 px-2 py-1 rounded font-medium transition-colors"
                     >
@@ -306,18 +309,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'gaelle@htf.com',
+                          email: 'manager2@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded transition-colors"
                     >
-                      👥 Manager (Gaëlle)
+                      👥 Manager 2
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('gaelle@htf.com', 'password')
+                        handleQuickLogin('manager2@htf.com', 'password')
                       }
                       className="text-xs bg-blue-200 hover:bg-blue-300 text-blue-900 px-2 py-1 rounded font-medium transition-colors"
                     >
@@ -329,18 +332,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'audrey@htf.com',
+                          email: 'manager3@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded transition-colors"
                     >
-                      👥 Manager (Audrey)
+                      👥 Manager 3
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('audrey@htf.com', 'password')
+                        handleQuickLogin('manager3@htf.com', 'password')
                       }
                       className="text-xs bg-blue-200 hover:bg-blue-300 text-blue-900 px-2 py-1 rounded font-medium transition-colors"
                     >
@@ -353,18 +356,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'marie@htf.com',
+                          email: 'fbo1@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded transition-colors"
                     >
-                      🎯 FBO (Marie)
+                      🎯 FBO 1
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('marie@htf.com', 'password')
+                        handleQuickLogin('fbo1@htf.com', 'password')
                       }
                       className="text-xs bg-green-200 hover:bg-green-300 text-green-900 px-2 py-1 rounded font-medium transition-colors"
                     >
@@ -376,18 +379,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'pierre@htf.com',
+                          email: 'fbo2@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded transition-colors"
                     >
-                      🎯 FBO (Pierre)
+                      🎯 FBO 2
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('pierre@htf.com', 'password')
+                        handleQuickLogin('fbo2@htf.com', 'password')
                       }
                       className="text-xs bg-green-200 hover:bg-green-300 text-green-900 px-2 py-1 rounded font-medium transition-colors"
                     >
@@ -399,18 +402,18 @@ export default function LoginPage() {
                     <button
                       onClick={() => {
                         setFormData({
-                          email: 'sophie@htf.com',
+                          email: 'fbo3@htf.com',
                           password: 'password',
                         });
                         setError('');
                       }}
                       className="text-left text-xs bg-green-100 hover:bg-green-200 text-green-800 px-2 py-1 rounded transition-colors"
                     >
-                      🎯 FBO (Sophie)
+                      🎯 FBO 3
                     </button>
                     <button
                       onClick={() =>
-                        handleQuickLogin('sophie@htf.com', 'password')
+                        handleQuickLogin('fbo3@htf.com', 'password')
                       }
                       className="text-xs bg-green-200 hover:bg-green-300 text-green-900 px-2 py-1 rounded font-medium transition-colors"
                     >
