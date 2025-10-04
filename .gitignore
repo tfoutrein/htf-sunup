@@ -57,3 +57,7 @@ coverage/
 
 # Docker
 .dockerignore
+
+# Backups (données sensibles de production)
+backups/
+*.sql

@@ -1,0 +1,64 @@
+[36m
+🚀 HTF Sunup - API Performance Test
+[0m
+[34m============================================================[0m
+
+[36mTesting:[0m Health Check
+[34mURL:[0m http://localhost:3001/api/
+[34mStatus:[0m [32m200[0m
+[34mDuration:[0m [32m30.71ms[0m
+[31mError:[0m Unexpected token 'H', "Hello Worl"... is not valid JSON
+
+[36mTesting:[0m Get All Campaigns
+[34mURL:[0m http://localhost:3001/api/campaigns
+[34mStatus:[0m [33m401[0m
+[34mDuration:[0m [32m3.53ms[0m
+[31mError:[0m {"message":"Unauthorized","statusCode":401}...
+
+[36mTesting:[0m Get Active Campaigns
+[34mURL:[0m http://localhost:3001/api/campaigns/active
+[34mStatus:[0m [33m401[0m
+[34mDuration:[0m [32m1.69ms[0m
+[31mError:[0m {"message":"Unauthorized","statusCode":401}...
+
+[36mTesting:[0m Get All Managers (Public)
+[34mURL:[0m http://localhost:3001/api/public/users/managers
+[34mStatus:[0m [32m200[0m
+[34mDuration:[0m [32m4.89ms[0m
+[34mResponse Size:[0m 0.97 KB
+[34mItems Count:[0m 3
+[33m
+⚠️  Skipping authenticated tests (no TEST_TOKEN provided)[0m
+[33m   Set TEST_TOKEN environment variable to test authenticated endpoints[0m
+[34m
+============================================================[0m
+[36m
+📊 Performance Summary
+[0m
+[34mTotal Tests:[0m 4
+[32mSuccessful:[0m 1
+[31mFailed:[0m 3
+
+[34mResponse Times:[0m
+  Average: [32m4.89ms[0m
+  Min: [32m4.89ms[0m
+  Max: [32m4.89ms[0m
+
+[33mSlowest Endpoints:[0m
+  1. Get All Managers (Public): [33m4.89ms[0m
+
+[32mFastest Endpoints:[0m
+  1. Get All Managers (Public): [32m4.89ms[0m
+
+[31mFailed Tests:[0m
+  - Health Check: Unexpected token 'H', "Hello Worl"... is not valid JSON
+  - Get All Campaigns: Status 401
+  - Get Active Campaigns: Status 401
+[34m
+============================================================[0m
+[36m
+💡 Recommendations
+[0m
+[32m✅ All endpoints are performing well![0m
+
+

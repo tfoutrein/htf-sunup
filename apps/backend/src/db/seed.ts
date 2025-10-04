@@ -19,10 +19,63 @@ const connectionString =
   'postgresql://postgres:postgres@localhost:5432/htf_sunup_db';
 
 async function seed() {
+  // 🚨 PROTECTION CRITIQUE : Ne JAMAIS exécuter le seed en production
+  // Override explicite pour tests intentionnels (à utiliser avec EXTRÊME prudence)
+  const forceSeed = process.env.FORCE_SEED === 'true';
+
+  // Détection précise de la production :
+  // 1. NODE_ENV explicitement en production
+  // 2. URL complète de la base de production Render (hostname complet)
+  const isProductionDatabase =
+    process.env.NODE_ENV === 'production' ||
+    connectionString.includes(
+      'dpg-d1b8fsadbo4c73c9ier0-a.oregon-postgres.render.com',
+    );
+
+  if (isProductionDatabase && !forceSeed) {
+    console.error('');
+    console.error('🚨 ============================================');
+    console.error('🚨 ERREUR CRITIQUE : SEED BLOQUÉ EN PRODUCTION');
+    console.error('🚨 ============================================');
+    console.error('');
+    console.error('❌ Le seed ne peut PAS être exécuté en production.');
+    console.error('❌ Il supprimerait tous les utilisateurs réels !');
+    console.error('');
+    console.error('💡 Le seed est réservé au développement local.');
+    console.error('💡 En production, les utilisateurs existent déjà.');
+    console.error('');
+    console.error('🔒 Environnement détecté: PRODUCTION');
+    console.error(`🔒 DATABASE_URL: ${connectionString.substring(0, 50)}...`);
+    console.error('');
+    console.error('💡 Pour forcer (DANGER): FORCE_SEED=true pnpm db:seed');
+    console.error('');
+    process.exit(1);
+  }
+
+  if (forceSeed && isProductionDatabase) {
+    console.warn('');
+    console.warn('⚠️  ============================================');
+    console.warn('⚠️  ATTENTION : FORCE SEED ACTIVÉ EN PRODUCTION');
+    console.warn('⚠️  ============================================');
+    console.warn('');
+    console.warn('⚠️  FORCE_SEED=true détecté.');
+    console.warn("⚠️  Le seed va s'exécuter malgré la détection production.");
+    console.warn('⚠️  Toutes les données seront SUPPRIMÉES !');
+    console.warn('');
+    console.warn('⏳ Attente de 5 secondes pour annulation (Ctrl+C)...');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    console.warn('');
+  }
+
   const sql = postgres(connectionString);
   const db = drizzle(sql);
 
   console.log('🌱 Starting HTF SunUp MVP seed...');
+  console.log(
+    '⚠️  ATTENTION: Le seed va supprimer toutes les données existantes !',
+  );
+  console.log(`📍 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  console.log('');
 
   try {
     // Clear existing data in correct order (respecting foreign keys)
@@ -33,46 +86,97 @@ async function seed() {
     await db.delete(campaignBonusConfig);
     await db.delete(campaigns);
     await db.delete(appVersions);
-    // Ne pas supprimer les users qui existent déjà
+    await db.delete(users); // Supprimer aussi les users pour repartir de zéro
 
-    // Récupérer les utilisateurs existants
-    const existingUsers = await db.select().from(users);
-    const allManagers = existingUsers.filter((u) => u.role === 'manager');
-    const fbos = existingUsers.filter((u) => u.role === 'fbo');
+    console.log('👥 Creating test users...');
 
-    if (allManagers.length === 0 || fbos.length === 0) {
-      throw new Error('Utilisateurs manquants dans la base de données');
-    }
+    // Hash du mot de passe "password" pour tous les utilisateurs de test
+    const hashedPassword = await bcrypt.hash('password', 10);
 
-    // Le premier manager sera le manager principal (ex-marraine)
-    const principalManager = allManagers[0];
-    const otherManagers = allManagers.slice(1);
+    // Créer Aurelia (marraine principale)
+    const [principalManager] = await db
+      .insert(users)
+      .values({
+        name: 'Aurelia',
+        email: 'aurelia@htf.com',
+        password: hashedPassword,
+        role: 'manager',
+        authProvider: 'local',
+      })
+      .returning();
 
-    // Utiliser les managers existants
-    const manager1 = otherManagers[0];
-    const manager2 = otherManagers[1];
-    const manager3 = otherManagers[2];
+    // Créer les autres managers
+    const [manager1] = await db
+      .insert(users)
+      .values({
+        name: 'Manager 1',
+        email: 'manager1@htf.com',
+        password: hashedPassword,
+        role: 'manager',
+        authProvider: 'local',
+      })
+      .returning();
 
-    // Assigner les FBO existants aux managers
-    const fbo1 = fbos[0];
-    const fbo2 = fbos[1];
-    const fbo3 = fbos[2];
+    const [manager2] = await db
+      .insert(users)
+      .values({
+        name: 'Manager 2',
+        email: 'manager2@htf.com',
+        password: hashedPassword,
+        role: 'manager',
+        authProvider: 'local',
+      })
+      .returning();
 
-    // Mettre à jour les manager_id des FBO
-    await db
-      .update(users)
-      .set({ managerId: manager1.id })
-      .where(eq(users.id, fbo1.id));
-    await db
-      .update(users)
-      .set({ managerId: manager1.id })
-      .where(eq(users.id, fbo2.id));
-    if (fbo3) {
-      await db
-        .update(users)
-        .set({ managerId: manager2.id })
-        .where(eq(users.id, fbo3.id));
-    }
+    const [manager3] = await db
+      .insert(users)
+      .values({
+        name: 'Manager 3',
+        email: 'manager3@htf.com',
+        password: hashedPassword,
+        role: 'manager',
+        authProvider: 'local',
+      })
+      .returning();
+
+    // Créer les FBOs
+    const [fbo1] = await db
+      .insert(users)
+      .values({
+        name: 'FBO 1',
+        email: 'fbo1@htf.com',
+        password: hashedPassword,
+        role: 'fbo',
+        authProvider: 'local',
+        managerId: manager3.id, // FBO 1 sous Manager 3
+      })
+      .returning();
+
+    const [fbo2] = await db
+      .insert(users)
+      .values({
+        name: 'FBO 2',
+        email: 'fbo2@htf.com',
+        password: hashedPassword,
+        role: 'fbo',
+        authProvider: 'local',
+        managerId: manager3.id, // FBO 2 sous Manager 3
+      })
+      .returning();
+
+    const [fbo3] = await db
+      .insert(users)
+      .values({
+        name: 'FBO 3',
+        email: 'fbo3@htf.com',
+        password: hashedPassword,
+        role: 'fbo',
+        authProvider: 'local',
+        managerId: manager2.id, // FBO 3 sous Manager 2
+      })
+      .returning();
+
+    console.log('✅ Test users created successfully!');
 
     // Create a sample campaign
     const [campaign] = await db
@@ -215,6 +319,18 @@ async function seed() {
         status: 'pending',
         proofUrl: null, // Pas de preuve encore
       },
+
+      // FBO3 bonuses
+      {
+        userId: fbo3.id,
+        campaignId: campaign.id,
+        bonusDate: today,
+        bonusType: 'basket',
+        amount: '2.50',
+        status: 'pending',
+        proofUrl:
+          'https://via.placeholder.com/400x300/8B5CF6/FFFFFF?text=Preuve+Panier+FBO3',
+      },
     ]);
 
     // Seed App Versions (Release Notes)
@@ -296,18 +412,37 @@ Bon été et bons défis ! 🌞`,
     ]);
 
     console.log('✅ Seed completed successfully!');
-    console.log(`Created:
-    - 1 Manager Principal: ${principalManager.email}
-    - 3 Managers: ${manager1 ? manager1.email : 'N/A'}, ${manager2 ? manager2.email : 'N/A'}, ${manager3 ? manager3.email : 'N/A'}
-    - 3 FBOs: ${fbo1.email}, ${fbo2.email}, ${fbo3.email}
-    - 1 Campaign: ${campaign.name}
-    - 1 Challenge for ${today}
-    - 3 Actions for today's challenge
-    - 6 UserActions (assignments)
-    - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
-    - 5 Daily bonuses (with and without proofs)
-    - 3 App versions (Release notes: v1.0.0, v1.1.0, v1.2.0)
-    `);
+    console.log(`
+📊 Seed Summary:
+================
+
+👥 Users:
+  - 1 Manager Principal (Marraine): ${principalManager.email} (password)
+  - 3 Managers: 
+    * ${manager1.email}
+    * ${manager2.email}
+    * ${manager3.email}
+  - 3 FBOs: 
+    * ${fbo1.email} (sous ${manager3.name})
+    * ${fbo2.email} (sous ${manager3.name})
+    * ${fbo3.email} (sous ${manager2.name})
+
+🎯 Campaign & Challenges:
+  - 1 Campaign: ${campaign.name}
+  - 1 Challenge for ${today}
+  - 3 Actions per challenge
+  - 6 UserActions (2 FBOs × 3 actions)
+
+💰 Bonuses:
+  - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
+  - 6 Daily bonuses (various dates and types)
+
+📱 App Versions:
+  - 3 Release notes (v1.0.0, v1.1.0, v1.2.0)
+
+🔑 Login Info:
+  All users have password: password
+`);
   } catch (error) {
     console.error('❌ Seed failed:', error);
   } finally {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -20,6 +21,11 @@ import { CampaignValidationModule } from './campaign-validation/campaign-validat
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300, // 5 minutes par défaut
+      max: 100, // 100 entrées max en cache
     }),
     DatabaseModule,
     UsersModule,

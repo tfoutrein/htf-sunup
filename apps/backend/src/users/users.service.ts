@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import { DATABASE_CONNECTION } from '../db/database.module';
 import {
@@ -368,30 +368,30 @@ export class UsersService {
   }
 
   async getAllMembers(): Promise<any[]> {
-    const fboMembers = await this.db
-      .select()
+    // Optimisation: Utiliser un JOIN au lieu de N+1 queries
+    const result = await this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        managerId: users.managerId,
+        profilePicture: users.profilePicture,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        password: users.password,
+        authProvider: users.authProvider,
+        facebookId: users.facebookId,
+        facebookAccessToken: users.facebookAccessToken,
+        // Joindre le nom du manager directement
+        managerName: sql<string>`COALESCE(manager.name, 'Aucun')`,
+      })
       .from(users)
-      .where(eq(users.role, 'fbo'));
+      .leftJoin(sql`users as manager`, sql`manager.id = ${users.managerId}`)
+      .where(eq(users.role, 'fbo'))
+      .orderBy(users.name);
 
-    const membersWithManager = await Promise.all(
-      fboMembers.map(async (member) => {
-        let managerName = 'Aucun';
-
-        if (member.managerId) {
-          const manager = await this.findOne(member.managerId);
-          if (manager) {
-            managerName = manager.name;
-          }
-        }
-
-        return {
-          ...member,
-          managerName,
-        };
-      }),
-    );
-
-    return membersWithManager;
+    return result;
   }
 
   // Advanced team management for hierarchy
