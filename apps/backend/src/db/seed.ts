@@ -19,10 +19,39 @@ const connectionString =
   'postgresql://postgres:postgres@localhost:5432/htf_sunup_db';
 
 async function seed() {
+  // 🚨 PROTECTION CRITIQUE : Ne JAMAIS exécuter le seed en production
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    connectionString.includes('render.com') ||
+    connectionString.includes('htf_sunup_postgres');
+
+  if (isProduction) {
+    console.error('');
+    console.error('🚨 ============================================');
+    console.error('🚨 ERREUR CRITIQUE : SEED BLOQUÉ EN PRODUCTION');
+    console.error('🚨 ============================================');
+    console.error('');
+    console.error('❌ Le seed ne peut PAS être exécuté en production.');
+    console.error('❌ Il supprimerait tous les utilisateurs réels !');
+    console.error('');
+    console.error('💡 Le seed est réservé au développement local.');
+    console.error('💡 En production, les utilisateurs existent déjà.');
+    console.error('');
+    console.error('🔒 Environnement détecté: PRODUCTION');
+    console.error(`🔒 DATABASE_URL: ${connectionString.substring(0, 50)}...`);
+    console.error('');
+    process.exit(1);
+  }
+
   const sql = postgres(connectionString);
   const db = drizzle(sql);
 
   console.log('🌱 Starting HTF SunUp MVP seed...');
+  console.log(
+    '⚠️  ATTENTION: Le seed va supprimer toutes les données existantes !',
+  );
+  console.log(`📍 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  console.log('');
 
   try {
     // Clear existing data in correct order (respecting foreign keys)
