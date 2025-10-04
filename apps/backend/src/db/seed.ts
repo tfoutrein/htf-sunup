@@ -37,15 +37,15 @@ async function seed() {
 
     console.log('👥 Creating test users...');
 
-    // Hash du mot de passe "password123" pour tous les utilisateurs de test
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    // Hash du mot de passe "password" pour tous les utilisateurs de test
+    const hashedPassword = await bcrypt.hash('password', 10);
 
-    // Créer le manager principal (ex-marraine)
+    // Créer Aurelia (marraine principale)
     const [principalManager] = await db
       .insert(users)
       .values({
-        name: 'Marraine Principale',
-        email: 'marraine@test.com',
+        name: 'Aurelia',
+        email: 'aurelia@htf.com',
         password: hashedPassword,
         role: 'manager',
         authProvider: 'local',
@@ -56,85 +56,70 @@ async function seed() {
     const [manager1] = await db
       .insert(users)
       .values({
-        name: 'Manager Aurelia',
-        email: 'aurelia@test.com',
+        name: 'Manager 1',
+        email: 'manager1@htf.com',
         password: hashedPassword,
         role: 'manager',
         authProvider: 'local',
-        managerId: principalManager.id, // Aurelia est sous la marraine
       })
       .returning();
 
     const [manager2] = await db
       .insert(users)
       .values({
-        name: 'Manager Sophie',
-        email: 'sophie@test.com',
+        name: 'Manager 2',
+        email: 'manager2@htf.com',
         password: hashedPassword,
         role: 'manager',
         authProvider: 'local',
-        managerId: principalManager.id,
       })
       .returning();
 
     const [manager3] = await db
       .insert(users)
       .values({
-        name: 'Manager Julie',
-        email: 'julie@test.com',
+        name: 'Manager 3',
+        email: 'manager3@htf.com',
         password: hashedPassword,
         role: 'manager',
         authProvider: 'local',
-        managerId: principalManager.id,
       })
       .returning();
 
-    // Créer les FBOs (3 sous Aurelia, 1 sous Sophie)
+    // Créer les FBOs
     const [fbo1] = await db
       .insert(users)
       .values({
-        name: 'Marie Martin',
-        email: 'marie@test.com',
+        name: 'FBO 1',
+        email: 'fbo1@htf.com',
         password: hashedPassword,
         role: 'fbo',
         authProvider: 'local',
-        managerId: manager1.id,
+        managerId: manager3.id, // FBO 1 sous Manager 3
       })
       .returning();
 
     const [fbo2] = await db
       .insert(users)
       .values({
-        name: 'Laura Dupont',
-        email: 'laura@test.com',
+        name: 'FBO 2',
+        email: 'fbo2@htf.com',
         password: hashedPassword,
         role: 'fbo',
         authProvider: 'local',
-        managerId: manager1.id,
+        managerId: manager3.id, // FBO 2 sous Manager 3
       })
       .returning();
 
     const [fbo3] = await db
       .insert(users)
       .values({
-        name: 'Emma Bernard',
-        email: 'emma@test.com',
+        name: 'FBO 3',
+        email: 'fbo3@htf.com',
         password: hashedPassword,
         role: 'fbo',
         authProvider: 'local',
-        managerId: manager1.id,
-      })
-      .returning();
-
-    const [fbo4] = await db
-      .insert(users)
-      .values({
-        name: 'Chloé Petit',
-        email: 'chloe@test.com',
-        password: hashedPassword,
-        role: 'fbo',
-        authProvider: 'local',
-        managerId: manager2.id,
+        managerId: manager2.id, // FBO 3 sous Manager 2
       })
       .returning();
 
@@ -210,12 +195,6 @@ async function seed() {
       { userId: fbo2.id, actionId: action1.id, challengeId: challenge.id },
       { userId: fbo2.id, actionId: action2.id, challengeId: challenge.id },
       { userId: fbo2.id, actionId: action3.id, challengeId: challenge.id },
-      { userId: fbo3.id, actionId: action1.id, challengeId: challenge.id },
-      { userId: fbo3.id, actionId: action2.id, challengeId: challenge.id },
-      { userId: fbo3.id, actionId: action3.id, challengeId: challenge.id },
-      { userId: fbo4.id, actionId: action1.id, challengeId: challenge.id },
-      { userId: fbo4.id, actionId: action2.id, challengeId: challenge.id },
-      { userId: fbo4.id, actionId: action3.id, challengeId: challenge.id },
     ]);
 
     // Create bonus configuration for the campaign
@@ -298,18 +277,6 @@ async function seed() {
         status: 'pending',
         proofUrl:
           'https://via.placeholder.com/400x300/8B5CF6/FFFFFF?text=Preuve+Panier+FBO3',
-      },
-
-      // FBO4 bonuses (sous Sophie)
-      {
-        userId: fbo4.id,
-        campaignId: campaign.id,
-        bonusDate: today,
-        bonusType: 'sponsorship',
-        amount: '10.00',
-        status: 'pending',
-        proofUrl:
-          'https://via.placeholder.com/400x300/EC4899/FFFFFF?text=Preuve+Parrainage+FBO4',
       },
     ]);
 
@@ -397,32 +364,31 @@ Bon été et bons défis ! 🌞`,
 ================
 
 👥 Users:
-  - 1 Manager Principal: ${principalManager.email} (password123)
+  - 1 Manager Principal (Marraine): ${principalManager.email} (password)
   - 3 Managers: 
-    * ${manager1.email} (sous ${principalManager.name})
-    * ${manager2.email} (sous ${principalManager.name})
-    * ${manager3.email} (sous ${principalManager.name})
-  - 4 FBOs: 
-    * ${fbo1.email} (sous ${manager1.name})
-    * ${fbo2.email} (sous ${manager1.name})
-    * ${fbo3.email} (sous ${manager1.name})
-    * ${fbo4.email} (sous ${manager2.name})
+    * ${manager1.email}
+    * ${manager2.email}
+    * ${manager3.email}
+  - 3 FBOs: 
+    * ${fbo1.email} (sous ${manager3.name})
+    * ${fbo2.email} (sous ${manager3.name})
+    * ${fbo3.email} (sous ${manager2.name})
 
 🎯 Campaign & Challenges:
   - 1 Campaign: ${campaign.name}
   - 1 Challenge for ${today}
   - 3 Actions per challenge
-  - 12 UserActions (4 FBOs × 3 actions)
+  - 6 UserActions (2 FBOs × 3 actions)
 
 💰 Bonuses:
   - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
-  - 7 Daily bonuses (various dates and types for all 4 FBOs)
+  - 6 Daily bonuses (various dates and types)
 
 📱 App Versions:
   - 3 Release notes (v1.0.0, v1.1.0, v1.2.0)
 
 🔑 Login Info:
-  All users have password: password123
+  All users have password: password
 `);
   } catch (error) {
     console.error('❌ Seed failed:', error);
