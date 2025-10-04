@@ -20,12 +20,19 @@ const connectionString =
 
 async function seed() {
   // 🚨 PROTECTION CRITIQUE : Ne JAMAIS exécuter le seed en production
-  const isProduction =
-    process.env.NODE_ENV === 'production' ||
-    connectionString.includes('render.com') ||
-    connectionString.includes('htf_sunup_postgres');
+  // Override explicite pour tests intentionnels (à utiliser avec EXTRÊME prudence)
+  const forceSeed = process.env.FORCE_SEED === 'true';
 
-  if (isProduction) {
+  // Détection précise de la production :
+  // 1. NODE_ENV explicitement en production
+  // 2. URL complète de la base de production Render (hostname complet)
+  const isProductionDatabase =
+    process.env.NODE_ENV === 'production' ||
+    connectionString.includes(
+      'dpg-d1b8fsadbo4c73c9ier0-a.oregon-postgres.render.com',
+    );
+
+  if (isProductionDatabase && !forceSeed) {
     console.error('');
     console.error('🚨 ============================================');
     console.error('🚨 ERREUR CRITIQUE : SEED BLOQUÉ EN PRODUCTION');
@@ -40,7 +47,24 @@ async function seed() {
     console.error('🔒 Environnement détecté: PRODUCTION');
     console.error(`🔒 DATABASE_URL: ${connectionString.substring(0, 50)}...`);
     console.error('');
+    console.error('💡 Pour forcer (DANGER): FORCE_SEED=true pnpm db:seed');
+    console.error('');
     process.exit(1);
+  }
+
+  if (forceSeed && isProductionDatabase) {
+    console.warn('');
+    console.warn('⚠️  ============================================');
+    console.warn('⚠️  ATTENTION : FORCE SEED ACTIVÉ EN PRODUCTION');
+    console.warn('⚠️  ============================================');
+    console.warn('');
+    console.warn('⚠️  FORCE_SEED=true détecté.');
+    console.warn("⚠️  Le seed va s'exécuter malgré la détection production.");
+    console.warn('⚠️  Toutes les données seront SUPPRIMÉES !');
+    console.warn('');
+    console.warn('⏳ Attente de 5 secondes pour annulation (Ctrl+C)...');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    console.warn('');
   }
 
   const sql = postgres(connectionString);
