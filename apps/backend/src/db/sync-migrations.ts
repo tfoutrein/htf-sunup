@@ -10,8 +10,8 @@
  * Exécution : Automatique lors du déploiement (start:prod)
  */
 
-const { drizzle } = require('drizzle-orm/postgres-js');
-const postgres = require('postgres');
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
 async function syncMigrations() {
   const connectionString =
@@ -135,17 +135,13 @@ async function syncMigrations() {
   }
 }
 
-// Vérifier si le script est exécuté directement
-if (require.main === module) {
-  syncMigrations()
-    .then(() => {
-      console.log('✅ Synchronisation terminée');
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error('❌ Erreur fatale:', err);
-      process.exit(1);
-    });
-}
-
-module.exports = { syncMigrations };
+// Exécuter le script si appelé directement
+syncMigrations()
+  .then(() => {
+    console.log('✅ Synchronisation terminée');
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('❌ Erreur fatale:', err);
+    process.exit(1);
+  });
