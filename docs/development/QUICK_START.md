@@ -158,9 +158,9 @@ curl -X POST http://localhost:3001/api/auth/login \
 
 ## 📚 Documentation Complète
 
-- **Plan MVP** : [docs/MVP_PLAN.md](./docs/MVP_PLAN.md)
-- **Documentation API** : [docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)
-- **README** : [README.md](./README.md)
+- **Plan MVP** : [MVP_PLAN.md](../../MVP_PLAN.md)
+- **Documentation API** : [API_DOCUMENTATION.md](../api/API_DOCUMENTATION.md)
+- **README** : [README.md](../../README.md)
 
 ## 🚀 Déploiement
 
@@ -170,7 +170,7 @@ Le projet est prêt pour le déploiement :
 - Backend : Render
 - Base de données : PostgreSQL sur Render
 
-Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les détails.
+Voir [DEPLOYMENT.md](../deployment/DEPLOYMENT.md) pour les détails.
 
 ---
 
