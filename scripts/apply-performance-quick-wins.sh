@@ -306,3 +306,5 @@ print_info "Pour tester les performances après optimisations:"
 echo "  node scripts/test-api-performance.js"
 echo ""
 
+
+

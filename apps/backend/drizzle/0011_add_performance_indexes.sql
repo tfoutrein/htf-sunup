@@ -91,3 +91,4 @@ BEGIN
   RAISE NOTICE 'Statistics updated for all tables';
 END $$;
 
+
