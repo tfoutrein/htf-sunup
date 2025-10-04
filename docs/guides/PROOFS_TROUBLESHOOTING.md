@@ -186,13 +186,13 @@ Si les problèmes persistent :
 
 Pour un nettoyage complet des campagnes archivées et de leurs preuves associées :
 
-- [Guide de suppression des campagnes archivées](ARCHIVED_CAMPAIGNS_CLEANUP_GUIDE.md) - Nettoyage sécurisé avec scripts dédiés
+- [Guide de suppression des campagnes archivées](./ARCHIVED_CAMPAIGNS_CLEANUP_GUIDE.md) - Nettoyage sécurisé avec scripts dédiés
 
 ## 📚 Ressources Supplémentaires
 
-- [Documentation API](docs/API_DOCUMENTATION.md) - Endpoints des preuves
-- [Guide de démarrage rapide](QUICK_START.md) - Configuration de base
-- [Architecture du projet](docs/MVP_PLAN.md) - Vue d'ensemble du système
+- [Documentation API](../api/API_DOCUMENTATION.md) - Endpoints des preuves
+- [Guide de démarrage rapide](../development/QUICK_START.md) - Configuration de base
+- [Architecture du projet](../../MVP_PLAN.md) - Vue d'ensemble du système
 
 ---
 

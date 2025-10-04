@@ -161,10 +161,13 @@ UserActions (id, user_id, action_id, challenge_id, completed, proof_url)
 
 Le seed crée automatiquement :
 
-- **1 Manager Principal** : aurelia@htf.com (mot de passe: `password`)
-- **3 Managers** : jeromine@htf.com, gaelle@htf.com, audrey@htf.com
-- **3 FBO** : marie@htf.com, pierre@htf.com, sophie@htf.com
+- **1 Marraine** : aurelia@htf.com (mot de passe: `password`)
+- **3 Managers** : manager1@htf.com, manager2@htf.com, manager3@htf.com
+- **3 FBO** : fbo1@htf.com, fbo2@htf.com, fbo3@htf.com
 - **1 Campagne active** : "Les défis de l'été de la Happy Team"
+
+> 💡 **Connexion rapide** : En mode développement, des boutons de connexion rapide sont disponibles directement sur la page de login. Voir [COMPTES_TEST_LOCAL.md](COMPTES_TEST_LOCAL.md) pour plus de détails.
+
 - **1 Défi** pour aujourd'hui avec 3 actions
 
 ## 🔄 API Backend ✅ **COMPLÈTE**
@@ -364,18 +367,20 @@ Dans la modal de completion d'action, l'utilisateur peut :
 Utilisez les comptes de test créés par le seed :
 
 ```bash
-# Manager Principal (gestion globale)
+# Marraine (Super Admin - gestion globale)
 Email: aurelia@htf.com
 Password: password
 
 # Manager (gestion d'équipe)
-Email: jeromine@htf.com
+Email: manager3@htf.com
 Password: password
 
 # FBO (validation d'actions)
-Email: marie@htf.com
+Email: fbo1@htf.com
 Password: password
 ```
+
+> 💡 **Astuce** : En mode développement, utilisez les boutons de connexion rapide sur la page de login pour tester rapidement tous les rôles. Consultez [COMPTES_TEST_LOCAL.md](COMPTES_TEST_LOCAL.md) pour la liste complète.
 
 ### Ajout de Nouvelles Fonctionnalités
 
@@ -430,7 +435,7 @@ frontend:
 ./scripts/test-docker-facebook.sh enabled
 ```
 
-Voir [DOCKER_FACEBOOK_TESTING.md](./DOCKER_FACEBOOK_TESTING.md) pour plus de détails.
+Voir [DOCKER_FACEBOOK_TESTING.md](./docs/testing/DOCKER_FACEBOOK_TESTING.md) pour plus de détails.
 
 ### Commandes Utiles
 
@@ -479,14 +484,27 @@ Le projet est configuré pour un déploiement automatique :
 - **Frontend** : Vercel
 - **Backend + PostgreSQL** : Render
 
-Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les détails.
+Voir [DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md) pour les détails.
 
 ## 📚 Documentation
 
-- **Plan MVP** : [docs/MVP_PLAN.md](./docs/MVP_PLAN.md) - Plan détaillé du projet
+- **Plan MVP** : [MVP_PLAN.md](./MVP_PLAN.md) - Plan détaillé du projet
 - **API** : http://localhost:3001/api - Documentation Swagger
-- **TanStack Query** : [docs/TANSTACK_QUERY_DOCUMENTATION.md](./docs/TANSTACK_QUERY_DOCUMENTATION.md) - Gestion du cache et état serveur
-- **Déploiement** : [DEPLOYMENT.md](./DEPLOYMENT.md) - Guide de déploiement
+- **TanStack Query** : [docs/api/TANSTACK_QUERY_DOCUMENTATION.md](./docs/api/TANSTACK_QUERY_DOCUMENTATION.md) - Gestion du cache et état serveur
+- **Déploiement** : [docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md) - Guide de déploiement
+
+### 🧪 Tests & Qualité
+
+- **Audit des Tests** : [docs/testing/AUDIT_TESTS.md](./docs/testing/AUDIT_TESTS.md) - ⚠️ Audit complet de la couverture des tests
+  - État actuel : ~10-15% de couverture
+  - Recommandations et plan d'action
+  - Tests prioritaires à implémenter
+
+### 🚀 Performance & Optimisation
+
+- **Audit de Performance** : [docs/performance/PERFORMANCE_AUDIT.md](./docs/performance/PERFORMANCE_AUDIT.md) - Analyse complète des performances (Backend/Frontend/Database)
+- **Guide d'Optimisation Rapide** : [docs/performance/PERFORMANCE_QUICK_START.md](./docs/performance/PERFORMANCE_QUICK_START.md) - Quick wins en 30 minutes
+- **Test de Performance API** : `node scripts/test-api-performance.js` - Mesure automatique des temps de réponse
 
 ## 🤝 Contribution
 
@@ -569,7 +587,7 @@ NEXT_PUBLIC_FACEBOOK_APP_ID=your_facebook_app_id
 ./scripts/test-facebook-ui.sh
 ```
 
-Voir [FACEBOOK_UI_TEST_GUIDE.md](./FACEBOOK_UI_TEST_GUIDE.md) pour plus de détails.
+Voir [FACEBOOK_UI_TEST_GUIDE.md](./docs/testing/FACEBOOK_UI_TEST_GUIDE.md) pour plus de détails.
 
 ### 🎯 Flux d'authentification
 
