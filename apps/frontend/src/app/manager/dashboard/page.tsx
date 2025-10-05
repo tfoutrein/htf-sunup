@@ -11,7 +11,7 @@ import {
   Progress,
   AuroraBackground,
 } from '@/components/ui';
-import { Chip, Tabs, Tab } from '@heroui/react';
+import { Chip, Tabs, Tab, Select, SelectItem } from '@heroui/react';
 import { campaignService } from '@/services/campaigns';
 import { Campaign, UserAction } from '@/types/campaigns';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
@@ -90,6 +90,7 @@ export default function ManagerDashboard() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamProgress, setTeamProgress] = useState<TeamProgress[]>([]);
   const [currentCampaign, setCurrentCampaign] = useState<Campaign | null>(null);
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
   const [loading, setLoading] = useState(true);
@@ -214,10 +215,25 @@ export default function ManagerDashboard() {
     try {
       const token = localStorage.getItem('token');
 
-      // Fetch current active campaign
-      const activeCampaigns = await campaignService.getActiveCampaigns();
+      // Fetch ALL campaigns (active and finished)
+      const [activeCampaigns, allCampaignsData] = await Promise.all([
+        campaignService.getActiveCampaigns(),
+        campaignService.getCampaigns(),
+      ]);
+
+      // Sort campaigns by start date (most recent first)
+      const sortedCampaigns = allCampaignsData.sort(
+        (a, b) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+      );
+
+      setAllCampaigns(sortedCampaigns);
+
+      // Set current campaign to the active one by default, or the most recent one
       if (activeCampaigns.length > 0) {
         setCurrentCampaign(activeCampaigns[0]);
+      } else if (sortedCampaigns.length > 0) {
+        setCurrentCampaign(sortedCampaigns[0]);
       }
 
       // Fetch all team members (including hierarchy)
@@ -230,8 +246,12 @@ export default function ManagerDashboard() {
         setTeamMembers(teamData);
       }
 
-      // Fetch team campaign progress
-      await fetchTeamCampaignProgress(managerId, activeCampaigns[0]?.id);
+      // Fetch team campaign progress for the selected campaign
+      const selectedCampaignId =
+        activeCampaigns[0]?.id || sortedCampaigns[0]?.id;
+      if (selectedCampaignId) {
+        await fetchTeamCampaignProgress(managerId, selectedCampaignId);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
     } finally {
@@ -325,13 +345,61 @@ export default function ManagerDashboard() {
   };
 
   const handleMemberClick = (member: TeamMember) => {
-    router.push(`/manager/team/${member.id}`);
+    // Passer l'ID de la campagne sélectionnée dans l'URL
+    const campaignParam = currentCampaign
+      ? `?campaignId=${currentCampaign.id}`
+      : '';
+    router.push(`/manager/team/${member.id}${campaignParam}`);
+  };
+
+  const handleCampaignChange = async (campaignId: number) => {
+    const selectedCampaign = allCampaigns.find((c) => c.id === campaignId);
+    if (selectedCampaign && user) {
+      setCurrentCampaign(selectedCampaign);
+      // Reload team progress for the newly selected campaign
+      await fetchTeamCampaignProgress(user.id, campaignId);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     router.push('/login');
+  };
+
+  const getCampaignStatus = (campaign: Campaign) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const start = new Date(campaign.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(campaign.endDate);
+    end.setHours(0, 0, 0, 0);
+
+    if (now < start) {
+      return {
+        status: 'future',
+        label: 'À venir',
+        color: 'text-purple-700',
+        bgColor: 'bg-purple-100',
+        badgeBg: 'bg-purple-500',
+      };
+    } else if (now >= start && now <= end) {
+      return {
+        status: 'active',
+        label: 'En cours',
+        color: 'text-green-700',
+        bgColor: 'bg-green-100',
+        badgeBg: 'bg-green-600',
+      };
+    } else {
+      return {
+        status: 'finished',
+        label: 'Terminée',
+        color: 'text-gray-700',
+        bgColor: 'bg-gray-100',
+        badgeBg: 'bg-gray-500',
+      };
+    }
   };
 
   const getRoleInfo = (role: string) => {
@@ -680,24 +748,136 @@ export default function ManagerDashboard() {
           <CardHeader className="p-4 border-b dark:border-gray-700">
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-lg font-semibold">Gestion de campagne</h3>
-                {currentCampaign && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <Chip color="primary" variant="flat" size="sm">
-                      {currentCampaign.name}
-                    </Chip>
-                    <span className="text-sm text-gray-500">
-                      Jour{' '}
-                      {calculateCurrentDay(
-                        currentCampaign.startDate,
-                        currentCampaign.endDate,
-                      )}{' '}
-                      /{' '}
-                      {getTotalCampaignDays(
-                        currentCampaign.startDate,
-                        currentCampaign.endDate,
-                      )}
-                    </span>
+                <h3 className="text-lg font-semibold mb-3">
+                  Gestion de campagne
+                </h3>
+
+                {/* Campaign selector */}
+                {allCampaigns.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex flex-col gap-3 w-full">
+                      <label className="text-sm font-medium text-gray-600">
+                        Sélectionner une campagne :
+                      </label>
+                      <Select
+                        selectedKeys={
+                          currentCampaign ? [currentCampaign.id.toString()] : []
+                        }
+                        onSelectionChange={(keys) => {
+                          const selectedId = Array.from(keys)[0];
+                          if (selectedId) {
+                            handleCampaignChange(
+                              parseInt(selectedId as string),
+                            );
+                          }
+                        }}
+                        className="w-full sm:max-w-xl"
+                        classNames={{
+                          trigger:
+                            'bg-white border-gray-300 h-auto min-h-[48px] py-2',
+                          value: 'w-full',
+                        }}
+                        label=""
+                        placeholder="Choisir une campagne"
+                        renderValue={() => {
+                          if (!currentCampaign) return null;
+                          const statusInfo = getCampaignStatus(currentCampaign);
+
+                          return (
+                            <div className="flex items-center gap-2 flex-wrap py-1">
+                              <span className="font-medium text-sm sm:text-base">
+                                {currentCampaign.name}
+                              </span>
+                              <Badge
+                                variant="flat"
+                                className={`text-xs ${statusInfo.badgeBg} text-white px-2 py-1 shrink-0`}
+                              >
+                                {statusInfo.label}
+                              </Badge>
+                            </div>
+                          );
+                        }}
+                      >
+                        {allCampaigns.map((campaign) => {
+                          const statusInfo = getCampaignStatus(campaign);
+
+                          return (
+                            <SelectItem
+                              key={campaign.id.toString()}
+                              textValue={campaign.name}
+                              classNames={{
+                                base: 'data-[hover=true]:bg-gray-100 data-[selectable=true]:focus:bg-gray-100',
+                                title: 'text-gray-900',
+                                description: 'text-gray-600',
+                              }}
+                            >
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium text-gray-900 truncate">
+                                    {campaign.name}
+                                  </span>
+                                  <span className="text-xs text-gray-600">
+                                    {new Date(
+                                      campaign.startDate,
+                                    ).toLocaleDateString('fr-FR')}{' '}
+                                    -{' '}
+                                    {new Date(
+                                      campaign.endDate,
+                                    ).toLocaleDateString('fr-FR')}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="flat"
+                                  className={`text-xs ${statusInfo.badgeBg} text-white px-2 py-0.5 shrink-0`}
+                                >
+                                  {statusInfo.label}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </Select>
+                    </div>
+
+                    {/* Campaign info */}
+                    {currentCampaign && (
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4" />
+                          <span>
+                            Jour{' '}
+                            {calculateCurrentDay(
+                              currentCampaign.startDate,
+                              currentCampaign.endDate,
+                            )}{' '}
+                            /{' '}
+                            {getTotalCampaignDays(
+                              currentCampaign.startDate,
+                              currentCampaign.endDate,
+                            )}
+                          </span>
+                        </div>
+                        <div className="hidden sm:block text-gray-400">•</div>
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {new Date(
+                              currentCampaign.startDate,
+                            ).toLocaleDateString('fr-FR')}{' '}
+                            -{' '}
+                            {new Date(
+                              currentCampaign.endDate,
+                            ).toLocaleDateString('fr-FR')}
+                          </span>
+                        </div>
+                        <div className="hidden sm:block text-gray-400">•</div>
+                        <Badge
+                          variant="flat"
+                          className={`${getCampaignStatus(currentCampaign).badgeBg} text-white px-2 py-1`}
+                        >
+                          {getCampaignStatus(currentCampaign).label}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

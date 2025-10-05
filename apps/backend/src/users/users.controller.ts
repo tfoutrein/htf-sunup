@@ -70,8 +70,39 @@ export class UsersController {
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiResponse({ status: 200, description: 'User found', type: UserDto })
   @ApiResponse({ status: 404, description: 'User not found' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  @ApiResponse({ status: 403, description: 'Access denied - Not in your team' })
+  async findOne(@Param('id') id: string, @Request() req) {
+    const requestingUserId = req.user.id;
+    const requestingUserRole = req.user.role;
+    const targetUserId = +id;
+
+    // Si c'est le même utilisateur, autoriser
+    if (requestingUserId === targetUserId) {
+      return this.usersService.findOne(targetUserId);
+    }
+
+    // Si l'utilisateur est un manager, vérifier qu'il a accès à cet utilisateur
+    if (requestingUserRole === 'manager') {
+      const hasAccess = await this.usersService.canManagerAccessUser(
+        requestingUserId,
+        targetUserId,
+      );
+
+      if (!hasAccess) {
+        throw new Error(
+          `Vous n'avez pas accès aux informations de cet utilisateur. Il n'est pas dans votre équipe.`,
+        );
+      }
+    }
+
+    // Si c'est un FBO qui essaie d'accéder à un autre utilisateur, refuser
+    if (requestingUserRole === 'fbo' && requestingUserId !== targetUserId) {
+      throw new Error(
+        `Vous n'avez pas la permission d'accéder aux informations d'autres utilisateurs.`,
+      );
+    }
+
+    return this.usersService.findOne(targetUserId);
   }
 
   @Put(':id')

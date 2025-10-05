@@ -394,6 +394,20 @@ export class UsersService {
     return result;
   }
 
+  /**
+   * Vérifie si un manager a accès à un utilisateur donné (dans sa hiérarchie)
+   */
+  async canManagerAccessUser(
+    managerId: number,
+    targetUserId: number,
+  ): Promise<boolean> {
+    // Récupérer tous les membres de l'équipe du manager (hiérarchie complète)
+    const teamMembers = await this.getFullTeamList(managerId);
+
+    // Vérifier si l'utilisateur cible est dans la liste
+    return teamMembers.some((member) => member.id === targetUserId);
+  }
+
   // Advanced team management for hierarchy
   async getTeamHierarchy(managerId: number): Promise<any> {
     // Get the manager
