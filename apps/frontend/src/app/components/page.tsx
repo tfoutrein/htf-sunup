@@ -50,7 +50,7 @@ export default function ComponentsDemo() {
             Démonstration des Composants UI
           </h1>
           <div className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
-            Showcase complet du design system Hero UI utilisé dans HTF SunUp
+            Showcase complet du design system Hero UI utilisé dans l'application
           </div>
           <div className="flex justify-center">
             <Badge color="secondary" variant="flat" size="lg">
@@ -369,7 +369,8 @@ export default function ComponentsDemo() {
         {/* Footer */}
         <div className="text-center mt-12 p-6 bg-white/50 rounded-xl">
           <div className="text-gray-600">
-            Ces composants font partie du design system HTF SunUp basé sur{' '}
+            Ces composants font partie du design system de l'application basé
+            sur{' '}
             <Badge color="primary" variant="flat">
               Hero UI
             </Badge>

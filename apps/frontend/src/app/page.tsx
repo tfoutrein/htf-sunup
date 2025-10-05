@@ -64,17 +64,15 @@ export default function Home() {
 
       <div className="text-center relative max-w-2xl mx-auto z-20">
         <div className="mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-2">
-            ☀️ Les défis de l'été
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-4">
+            Les défis de la Happy Team
           </h1>
-          <h2 className="text-lg text-gray-500 mb-4">by Happy Team Factory</h2>
           <p className="text-lg text-gray-600 mb-4">
             Des défis quotidiens qui boostent ton équipe !
           </p>
           <p className="text-gray-500 max-w-lg mx-auto">
             Relevez des défis quotidiens en vente, recrutement et réseaux
-            sociaux. Progressez ensemble dans une ambiance estivale et
-            décontractée ! 🌻
+            sociaux. Progressez ensemble vers vos objectifs ! 🎯
           </p>
         </div>
 

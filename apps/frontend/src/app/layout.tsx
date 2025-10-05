@@ -9,9 +9,9 @@ import { ReleaseNotesProvider } from '@/components/ReleaseNotesProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Les défis de l'été - Happy Team Factory",
+  title: 'Les défis de la Happy Team',
   description:
-    "Les défis de l'été by Happy Team Factory - Des défis quotidiens pour booster ton équipe",
+    'Les défis de la Happy Team - Des défis quotidiens pour booster ton équipe',
 };
 
 export default function RootLayout({
