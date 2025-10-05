@@ -76,9 +76,7 @@ export default function CampaignsPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Gestion des Campagnes
           </h1>
-          <p className="text-gray-600">
-            Créez et gérez vos campagnes de défis d'été
-          </p>
+          <p className="text-gray-600">Créez et gérez vos campagnes de défis</p>
         </div>
 
         <CampaignList />

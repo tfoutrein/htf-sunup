@@ -148,7 +148,7 @@ export default function CampaignForm({
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Ex: Défis de l'été 2025"
+                placeholder="Ex: Défis Happy Team 2025"
                 required
               />
             </div>

@@ -7,14 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { LogoDisplay } from '@/components/ui/LogoDisplay';
 import { useAuth } from '@/hooks/useAuth';
-import { useLogo } from '@/contexts/LogoContext';
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isLoading, logout } = useAuth();
-  const { logoChoice } = useLogo();
 
   const getDashboardLink = () => {
     if (!user) return '#';
@@ -48,21 +46,15 @@ export function Navigation() {
               className="flex items-center space-x-2"
               onClick={closeMenu}
             >
-              <LogoDisplay logoChoice={logoChoice} size="sm" />
+              <LogoDisplay size="sm" />
               <div className="hidden xs:flex xs:flex-col">
-                <span className="font-bold text-lg bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-tight">
-                  Les défis de l'été
-                </span>
-                <span className="text-xs text-gray-500 leading-none">
-                  by Happy Team Factory
+                <span className="font-bold text-base bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-tight">
+                  Les défis de la Happy Team
                 </span>
               </div>
               <div className="flex xs:hidden flex-col">
-                <span className="font-bold text-base bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-tight">
-                  Défis d'été
-                </span>
-                <span className="text-xs text-gray-500 leading-none">
-                  by HTF
+                <span className="font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-tight">
+                  Les défis Happy Team
                 </span>
               </div>
             </Link>

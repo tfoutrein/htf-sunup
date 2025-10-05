@@ -218,7 +218,7 @@ export default function ReleaseNotesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">📝 Notes de version</h1>
           <p className="text-default-600">
-            Découvrez toutes les nouveautés et améliorations de HTF SunUp
+            Découvrez toutes les nouveautés et améliorations de l'application
           </p>
         </div>
 
