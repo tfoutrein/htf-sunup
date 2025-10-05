@@ -975,6 +975,17 @@ export class ActionsService {
     };
   }
 
+  /**
+   * Vérifie si un manager a accès aux détails de campagne d'un utilisateur
+   */
+  async canManagerAccessUserCampaignDetails(
+    managerId: number,
+    targetUserId: number,
+  ): Promise<boolean> {
+    // Utiliser la méthode du service users pour vérifier l'accès
+    return this.usersService.canManagerAccessUser(managerId, targetUserId);
+  }
+
   private getTotalCampaignDays(startDate: string, endDate: string): number {
     const start = new Date(startDate);
     const end = new Date(endDate);
