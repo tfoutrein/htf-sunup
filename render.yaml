@@ -1,3 +1,6 @@
+previews:
+  generation: automatic
+  expireAfterDays: 1
 services:
   # Backend API
   - type: web
