@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
 import { AuroraBackground } from '@/components/ui';
-import { SunIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { useLogo } from '@/contexts/LogoContext';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { ApiClient } from '@/services/api';
 import { validatePassword, getPasswordStrengthMessage } from '@/utils/password';
 import { PasswordRequirements } from '@/components/ui';
@@ -22,7 +21,6 @@ export default function RegisterPage() {
     confirmPassword: '',
   });
   const router = useRouter();
-  const { logoChoice } = useLogo();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,32 +83,17 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative z-20">
         <div className="text-center mb-8">
-          {logoChoice === 'sun' ? (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-[pulse-scale_1.5s_ease-in-out_1]">
-              <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center mx-auto mb-4">
-              {logoChoice === 'logo1' ? (
-                <img
-                  src="/logo1.png"
-                  alt="Logo 1"
-                  className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
-                />
-              ) : (
-                <img
-                  src="/logo2.png"
-                  alt="Logo 2"
-                  className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
-                />
-              )}
-            </div>
-          )}
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-2">
-            Les défis de l'été
+          <div className="flex items-center justify-center mx-auto mb-4">
+            <img
+              src="/Logo VERT Happy Team.png"
+              alt="Logo Happy Team Factory"
+              className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
+            />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent mb-4">
+            Les défis de la Happy Team
           </h1>
-          <p className="text-gray-500 text-sm">by Happy Team Factory</p>
-          <p className="text-sm text-gray-600 mt-1">Créer votre compte</p>
+          <p className="text-sm text-gray-600">Créer votre compte</p>
         </div>
 
         <Card className="bg-white/20 backdrop-blur-md shadow-2xl border border-white/30 shadow-orange-500/20">
@@ -119,7 +102,7 @@ export default function RegisterPage() {
               Inscription
             </h2>
             <p className="text-sm text-gray-600 mt-2">
-              Rejoignez l'aventure des défis de l'été !
+              Rejoignez l'aventure des défis de la Happy Team !
             </p>
           </CardHeader>
           <CardBody className="gap-4">

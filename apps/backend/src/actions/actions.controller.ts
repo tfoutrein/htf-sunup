@@ -216,10 +216,43 @@ export class ActionsController {
     status: 200,
     description: 'Détails des actions quotidiennes avec preuves',
   })
-  getUserCampaignDetails(
+  @ApiResponse({
+    status: 403,
+    description: 'Access denied - User not in your team',
+  })
+  async getUserCampaignDetails(
     @Param('userId', ParseIntPipe) userId: number,
     @Param('campaignId', ParseIntPipe) campaignId: number,
+    @Request() req,
   ) {
-    return this.actionsService.getUserCampaignDetails(userId, campaignId);
+    const requestingUserId = req.user.id;
+    const requestingUserRole = req.user.role;
+
+    // Si c'est le même utilisateur, autoriser
+    if (requestingUserId === userId) {
+      return this.actionsService.getUserCampaignDetails(userId, campaignId);
+    }
+
+    // Si l'utilisateur est un manager, vérifier qu'il a accès à cet utilisateur
+    if (requestingUserRole === 'manager') {
+      const hasAccess =
+        await this.actionsService.canManagerAccessUserCampaignDetails(
+          requestingUserId,
+          userId,
+        );
+
+      if (!hasAccess) {
+        throw new Error(
+          `Vous n'avez pas accès aux détails de campagne de cet utilisateur. Il n'est pas dans votre équipe.`,
+        );
+      }
+
+      return this.actionsService.getUserCampaignDetails(userId, campaignId);
+    }
+
+    // Si c'est un FBO qui essaie d'accéder aux données d'un autre utilisateur, refuser
+    throw new Error(
+      `Vous n'avez pas la permission d'accéder aux détails de campagne d'autres utilisateurs.`,
+    );
   }
 }

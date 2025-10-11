@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody, Input, Button } from '@heroui/react';
-import { SunIcon } from '@heroicons/react/24/outline';
 import { AuroraBackground, FacebookLoginButton } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
-import { useLogo } from '@/contexts/LogoContext';
 import { ApiClient, API_ENDPOINTS } from '@/services/api';
 import { isFacebookAuthEnabled } from '@/utils/facebook';
 
@@ -19,7 +17,6 @@ export default function LoginPage() {
     password: '',
   });
   const router = useRouter();
-  const { logoChoice } = useLogo();
   const { loginAsync, isLoggingIn } = useAuth();
 
   useEffect(() => {
@@ -111,35 +108,18 @@ export default function LoginPage() {
           <CardBody className="p-6 sm:p-8">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
-              {logoChoice === 'sun' ? (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-[pulse-scale_1.5s_ease-in-out_1]">
-                  <SunIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center mx-auto mb-4">
-                  {logoChoice === 'logo1' ? (
-                    <img
-                      src="/logo1.png"
-                      alt="Logo 1"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
-                    />
-                  ) : (
-                    <img
-                      src="/logo2.png"
-                      alt="Logo 2"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
-                    />
-                  )}
-                </div>
-              )}
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-                Les défis de l'été ☀️
+              <div className="flex items-center justify-center mx-auto mb-4">
+                <img
+                  src="/Logo VERT Happy Team.png"
+                  alt="Logo Happy Team Factory"
+                  className="w-24 h-24 sm:w-32 sm:h-32 object-contain animate-[pulse-scale_1.5s_ease-in-out_1]"
+                />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+                Les défis de la Happy Team
               </h1>
-              <p className="text-gray-500 text-xs sm:text-sm mb-2">
-                by Happy Team Factory
-              </p>
               <p className="text-gray-600 text-sm sm:text-base">
-                Connecte-toi pour accéder à tes défis d'été
+                Connecte-toi pour accéder à tes défis
               </p>
             </div>
 
@@ -254,7 +234,8 @@ export default function LoginPage() {
                   🔧 Comptes de test (dev only)
                 </h3>
                 <div className="text-xs text-blue-600 mb-3 bg-blue-100 p-2 rounded">
-                  💡 Mot de passe universel : <span className="font-mono font-bold">password</span>
+                  💡 Mot de passe universel :{' '}
+                  <span className="font-mono font-bold">password</span>
                 </div>
                 <div className="space-y-2">
                   {/* Marraine */}
