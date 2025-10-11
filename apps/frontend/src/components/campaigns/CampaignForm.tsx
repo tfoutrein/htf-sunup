@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react';
 import { Campaign } from '@/types/campaigns';
 import { useCreateCampaign, useUpdateCampaign } from '@/hooks/useCampaigns';
 import {
+  useCreateUnlockConditions,
+  useUnlockConditions,
+  useUpdateUnlockCondition,
+  useDeleteUnlockCondition,
+} from '@/hooks/useUnlockConditions';
+import UnlockConditionsManager, {
+  UnlockConditionInput,
+} from './UnlockConditionsManager';
+import {
   Card,
   Button,
   Input,
@@ -36,11 +45,21 @@ export default function CampaignForm({
     endDate: '',
     status: 'draft' as Campaign['status'],
   });
+  const [unlockConditions, setUnlockConditions] = useState<
+    UnlockConditionInput[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   // TanStack Query mutations
   const createCampaignMutation = useCreateCampaign();
   const updateCampaignMutation = useUpdateCampaign();
+  const createUnlockConditionsMutation = useCreateUnlockConditions();
+  const updateUnlockConditionMutation = useUpdateUnlockCondition();
+  const deleteUnlockConditionMutation = useDeleteUnlockCondition();
+
+  // Charger les conditions existantes si mode édition
+  const { data: existingConditions, isLoading: conditionsLoading } =
+    useUnlockConditions(campaign?.id);
 
   const isLoading =
     createCampaignMutation.isPending || updateCampaignMutation.isPending;
@@ -54,6 +73,18 @@ export default function CampaignForm({
         endDate: campaign.endDate.split('T')[0],
         status: campaign.status,
       });
+      // Charger les conditions existantes si disponibles
+      if (existingConditions && existingConditions.length > 0) {
+        setUnlockConditions(
+          existingConditions.map((c) => ({
+            id: c.id,
+            description: c.description,
+            displayOrder: c.displayOrder,
+          })),
+        );
+      } else {
+        setUnlockConditions([]);
+      }
     } else {
       setFormData({
         name: '',
@@ -62,13 +93,24 @@ export default function CampaignForm({
         endDate: '',
         status: 'draft',
       });
+      // Réinitialiser sans conditions
+      setUnlockConditions([]);
     }
     setError(null);
-  }, [campaign, isOpen]);
+  }, [campaign, isOpen, existingConditions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Vérifier que toutes les conditions ont une description
+    const hasEmptyCondition = unlockConditions.some(
+      (c) => !c.description.trim(),
+    );
+    if (hasEmptyCondition) {
+      setError('Toutes les conditions doivent avoir une description');
+      return;
+    }
 
     try {
       const campaignData = {
@@ -82,8 +124,65 @@ export default function CampaignForm({
           id: campaign.id,
           data: campaignData,
         });
+
+        // Gérer la mise à jour des conditions en mode édition
+        const existingIds = (existingConditions || []).map((c) => c.id);
+        const currentIds = unlockConditions
+          .filter((c) => c.id)
+          .map((c) => c.id!);
+
+        // 1. Créer les nouvelles conditions (sans id)
+        const newConditions = unlockConditions.filter((c) => !c.id);
+        if (newConditions.length > 0) {
+          await createUnlockConditionsMutation.mutateAsync({
+            campaignId: campaign.id,
+            conditions: newConditions.map((c) => ({
+              description: c.description,
+              displayOrder: c.displayOrder,
+            })),
+          });
+        }
+
+        // 2. Mettre à jour les conditions modifiées
+        const conditionsToUpdate = unlockConditions.filter((c) => {
+          if (!c.id) return false;
+          const existing = existingConditions?.find((e) => e.id === c.id);
+          return (
+            existing &&
+            (existing.description !== c.description ||
+              existing.displayOrder !== c.displayOrder)
+          );
+        });
+        for (const condition of conditionsToUpdate) {
+          await updateUnlockConditionMutation.mutateAsync({
+            conditionId: condition.id!,
+            description: condition.description,
+            displayOrder: condition.displayOrder,
+          });
+        }
+
+        // 3. Supprimer les conditions qui ont été retirées
+        const conditionsToDelete = existingIds.filter(
+          (id) => !currentIds.includes(id),
+        );
+        for (const conditionId of conditionsToDelete) {
+          await deleteUnlockConditionMutation.mutateAsync(conditionId);
+        }
       } else {
-        await createCampaignMutation.mutateAsync(campaignData);
+        // Créer la campagne
+        const newCampaign =
+          await createCampaignMutation.mutateAsync(campaignData);
+
+        // Créer les conditions de déblocage si on a un campaignId
+        if (newCampaign?.id && unlockConditions.length > 0) {
+          await createUnlockConditionsMutation.mutateAsync({
+            campaignId: newCampaign.id,
+            conditions: unlockConditions.map((c) => ({
+              description: c.description,
+              displayOrder: c.displayOrder,
+            })),
+          });
+        }
       }
 
       onSuccess();
@@ -135,7 +234,7 @@ export default function CampaignForm({
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalContent>
         <ModalHeader>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-gray-900">
             {campaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
           </h2>
         </ModalHeader>
@@ -186,6 +285,16 @@ export default function CampaignForm({
                   required
                 />
               </div>
+            </div>
+
+            {/* Conditions de déblocage */}
+            <div className="space-y-0 -mx-2">
+              <UnlockConditionsManager
+                conditions={unlockConditions}
+                onChange={setUnlockConditions}
+                minConditions={0}
+                maxConditions={10}
+              />
             </div>
 
             <Select
