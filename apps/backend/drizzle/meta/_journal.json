@@ -85,6 +85,13 @@
       "when": 1728086400000,
       "tag": "0011_add_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1759692028765,
+      "tag": "0012_clumsy_roughhouse",
+      "breakpoints": true
     }
   ]
 }

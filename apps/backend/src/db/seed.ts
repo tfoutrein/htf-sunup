@@ -12,6 +12,8 @@ import {
   dailyBonus,
   campaignBonusConfig,
   appVersions,
+  campaignUnlockConditions,
+  campaignValidations,
 } from './schema';
 
 const connectionString =
@@ -84,6 +86,8 @@ async function seed() {
     await db.delete(challenges);
     await db.delete(dailyBonus);
     await db.delete(campaignBonusConfig);
+    await db.delete(campaignValidations); // Supprimer les validations avant les conditions
+    await db.delete(campaignUnlockConditions); // Supprimer les conditions de déblocage
     await db.delete(campaigns);
     await db.delete(appVersions);
     await db.delete(users); // Supprimer aussi les users pour repartir de zéro
@@ -260,6 +264,91 @@ async function seed() {
       })
       .returning();
 
+    // Create unlock conditions for the campaign
+    console.log('🔐 Creating unlock conditions for campaign...');
+    await db.insert(campaignUnlockConditions).values([
+      {
+        campaignId: campaign.id,
+        description:
+          'Présence confirmée à toutes les formations du mois (minimum 3)',
+        displayOrder: 1,
+      },
+      {
+        campaignId: campaign.id,
+        description: 'Taux de conversion minimum de 10% sur les prospects',
+        displayOrder: 2,
+      },
+      {
+        campaignId: campaign.id,
+        description: 'Au moins 3 parrainages réalisés pendant la campagne',
+        displayOrder: 3,
+      },
+      {
+        campaignId: campaign.id,
+        description:
+          'Rapport de suivi hebdomadaire soumis chaque semaine (4 rapports minimum)',
+        displayOrder: 4,
+      },
+      {
+        campaignId: campaign.id,
+        description:
+          'Participation active au groupe WhatsApp équipe (messages quotidiens)',
+        displayOrder: 5,
+      },
+    ]);
+
+    // Create second campaign: "Le booster vente"
+    console.log('📊 Creating "Le booster vente" campaign...');
+    const [salesCampaign] = await db
+      .insert(campaigns)
+      .values({
+        name: 'Le booster vente',
+        description:
+          'Campagne spéciale pour stimuler les ventes via les cartes cadeaux',
+        startDate: '2025-09-01',
+        endDate: '2025-09-30',
+        status: 'draft',
+        createdBy: principalManager.id,
+      })
+      .returning();
+
+    // Create bonus configuration for the sales campaign
+    await db.insert(campaignBonusConfig).values({
+      campaignId: salesCampaign.id,
+      basketBonusAmount: '2.50',
+      sponsorshipBonusAmount: '10.00',
+    });
+
+    // Create unlock condition for the sales campaign
+    console.log('🔐 Creating unlock condition for sales campaign...');
+    await db.insert(campaignUnlockConditions).values([
+      {
+        campaignId: salesCampaign.id,
+        description: 'Réaliser 2 CC de vente sur la période de la campagne',
+        displayOrder: 1,
+      },
+    ]);
+
+    // Create campaign validations for FBOs (pending by default)
+    console.log('✅ Creating campaign validations for FBOs...');
+    await db.insert(campaignValidations).values([
+      {
+        userId: fbo1.id,
+        campaignId: campaign.id,
+        status: 'pending',
+      },
+      {
+        userId: fbo2.id,
+        campaignId: campaign.id,
+        status: 'pending',
+      },
+      {
+        userId: fbo3.id,
+        campaignId: campaign.id,
+        status: 'pending',
+      },
+    ]);
+
     // Create some sample daily bonuses with different dates and types
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
@@ -428,14 +517,22 @@ Bon été et bons défis ! 🌞`,
     * ${fbo3.email} (sous ${manager2.name})
 
 🎯 Campaign & Challenges:
-  - 1 Campaign: ${campaign.name}
+  - 2 Campaigns: 
+    * ${campaign.name} (active)
+    * ${salesCampaign.name} (draft)
   - 1 Challenge for ${today}
   - 3 Actions per challenge
   - 6 UserActions (2 FBOs × 3 actions)
 
 💰 Bonuses:
-  - 1 Bonus configuration (Panier: 2.50€, Parrainage: 10.00€)
+  - 2 Bonus configurations (Panier: 2.50€, Parrainage: 10.00€)
   - 6 Daily bonuses (various dates and types)
+
+🔐 Unlock Conditions:
+  - 6 Unlock conditions total:
+    * 5 conditions for "${campaign.name}"
+    * 1 condition for "${salesCampaign.name}"
+  - 3 Campaign validations (all pending)
 
 📱 App Versions:
   - 3 Release notes (v1.0.0, v1.1.0, v1.2.0)

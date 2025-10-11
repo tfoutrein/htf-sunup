@@ -207,6 +207,38 @@ export const campaignValidations = pgTable('campaign_validations', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Campaign Unlock Conditions - Conditions required to unlock campaign payout
+export const campaignUnlockConditions = pgTable('campaign_unlock_conditions', {
+  id: serial('id').primaryKey(),
+  campaignId: integer('campaign_id')
+    .notNull()
+    .references(() => campaigns.id, { onDelete: 'cascade' }), // Campaign these conditions belong to
+  description: text('description').notNull(), // Free text description of the condition (e.g., "Présence à toutes les formations")
+  displayOrder: integer('display_order').notNull().default(1), // Order in which conditions are displayed
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Campaign Validation Conditions - Tracking of which conditions are fulfilled during validation
+export const campaignValidationConditions = pgTable(
+  'campaign_validation_conditions',
+  {
+    id: serial('id').primaryKey(),
+    validationId: integer('validation_id')
+      .notNull()
+      .references(() => campaignValidations.id, { onDelete: 'cascade' }), // Validation this belongs to
+    conditionId: integer('condition_id')
+      .notNull()
+      .references(() => campaignUnlockConditions.id, { onDelete: 'cascade' }), // Condition being checked
+    isFulfilled: boolean('is_fulfilled').notNull().default(false), // Whether the condition is met
+    fulfilledAt: timestamp('fulfilled_at'), // When the condition was marked as fulfilled
+    fulfilledBy: integer('fulfilled_by').references(() => users.id), // Manager who marked it as fulfilled
+    comment: text('comment'), // Optional comment for this specific condition
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   manager: one(users, {
@@ -232,6 +264,7 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
   bonusConfig: one(campaignBonusConfig),
   dailyBonuses: many(dailyBonus),
   validations: many(campaignValidations),
+  unlockConditions: many(campaignUnlockConditions),
 }));
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
@@ -324,7 +357,7 @@ export const userVersionTrackingRelations = relations(
 
 export const campaignValidationsRelations = relations(
   campaignValidations,
-  ({ one }) => ({
+  ({ one, many }) => ({
     user: one(users, {
       fields: [campaignValidations.userId],
       references: [users.id],
@@ -335,6 +368,36 @@ export const campaignValidationsRelations = relations(
     }),
     validator: one(users, {
       fields: [campaignValidations.validatedBy],
+      references: [users.id],
+    }),
+    conditionFulfillments: many(campaignValidationConditions),
+  }),
+);
+
+export const campaignUnlockConditionsRelations = relations(
+  campaignUnlockConditions,
+  ({ one, many }) => ({
+    campaign: one(campaigns, {
+      fields: [campaignUnlockConditions.campaignId],
+      references: [campaigns.id],
+    }),
+    fulfillments: many(campaignValidationConditions),
+  }),
+);
+
+export const campaignValidationConditionsRelations = relations(
+  campaignValidationConditions,
+  ({ one }) => ({
+    validation: one(campaignValidations, {
+      fields: [campaignValidationConditions.validationId],
+      references: [campaignValidations.id],
+    }),
+    condition: one(campaignUnlockConditions, {
+      fields: [campaignValidationConditions.conditionId],
+      references: [campaignUnlockConditions.id],
+    }),
+    fulfilledByUser: one(users, {
+      fields: [campaignValidationConditions.fulfilledBy],
       references: [users.id],
     }),
   }),
@@ -363,3 +426,11 @@ export type UserVersionTracking = typeof userVersionTracking.$inferSelect;
 export type NewUserVersionTracking = typeof userVersionTracking.$inferInsert;
 export type CampaignValidation = typeof campaignValidations.$inferSelect;
 export type NewCampaignValidation = typeof campaignValidations.$inferInsert;
+export type CampaignUnlockCondition =
+  typeof campaignUnlockConditions.$inferSelect;
+export type NewCampaignUnlockCondition =
+  typeof campaignUnlockConditions.$inferInsert;
+export type CampaignValidationCondition =
+  typeof campaignValidationConditions.$inferSelect;
+export type NewCampaignValidationCondition =
+  typeof campaignValidationConditions.$inferInsert;
