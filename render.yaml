@@ -1,3 +1,5 @@
+preview:
+  generation: automatic
 services:
   # Backend API
   - type: web
