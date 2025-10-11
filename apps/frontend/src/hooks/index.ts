@@ -23,3 +23,4 @@ export * from './useReleaseNotesPopup';
 // Campaign validation hooks
 export * from './useCampaignValidation';
 export * from './useMyCampaignValidation';
+export * from './useUnlockConditions';
