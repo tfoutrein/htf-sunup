@@ -272,7 +272,16 @@ export default function CampaignForm({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      scrollBehavior="inside"
+      classNames={{
+        base: 'max-h-[95vh]',
+        body: 'overflow-y-auto',
+      }}
+    >
       <ModalContent>
         <ModalHeader>
           <h2 className="text-xl font-semibold text-gray-900">
