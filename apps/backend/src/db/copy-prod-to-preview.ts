@@ -9,6 +9,8 @@
  */
 
 import postgres from 'postgres';
+// @ts-ignore - Fix pour l'import en production
+const postgresClient = postgres || require('postgres');
 
 interface TableRow {
   tablename: string;
@@ -72,7 +74,7 @@ async function copyProdToPreview() {
   try {
     // Connexion aux deux bases
     console.log('🔗 Connexion à la base de production...');
-    prodSql = postgres(prodDbUrl, {
+    prodSql = postgresClient(prodDbUrl, {
       max: 1,
       ssl: 'require',
       idle_timeout: 20,
@@ -80,7 +82,7 @@ async function copyProdToPreview() {
     });
 
     console.log('🔗 Connexion à la base de preview...');
-    previewSql = postgres(previewDbUrl, {
+    previewSql = postgresClient(previewDbUrl, {
       max: 1,
       ssl: 'require',
       idle_timeout: 20,
