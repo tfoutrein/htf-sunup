@@ -307,6 +307,7 @@ export default function CampaignForm({
                 Vidéo de présentation (optionnel)
               </label>
               <CampaignVideoUpload
+                campaignId={campaign?.id}
                 videoUrl={campaign?.presentationVideoUrl}
                 onVideoChange={(file) => {
                   setVideoFile(file);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import {
   VideoCameraIcon,
@@ -8,8 +8,10 @@ import {
   ArrowUpTrayIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
+import { campaignService } from '@/services/campaigns';
 
 export interface CampaignVideoUploadProps {
+  campaignId?: number; // Pour récupérer l'URL signée si vidéo existante
   videoUrl?: string | null;
   onVideoChange: (file: File | null) => void;
   onDeleteExisting?: () => void;
@@ -18,6 +20,7 @@ export interface CampaignVideoUploadProps {
 }
 
 const CampaignVideoUpload: React.FC<CampaignVideoUploadProps> = ({
+  campaignId,
   videoUrl,
   onVideoChange,
   onDeleteExisting,
@@ -28,7 +31,43 @@ const CampaignVideoUpload: React.FC<CampaignVideoUploadProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [signedVideoUrl, setSignedVideoUrl] = useState<string | null>(null);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Récupérer l'URL signée si une vidéo existe
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchSignedUrl = async () => {
+      if (!campaignId || !videoUrl) {
+        setSignedVideoUrl(null);
+        return;
+      }
+
+      setIsLoadingVideo(true);
+
+      try {
+        const result =
+          await campaignService.getPresentationVideoSignedUrl(campaignId);
+        if (mounted && result) {
+          setSignedVideoUrl(result.url);
+        }
+      } catch (err) {
+        console.error('Error fetching signed URL for upload preview:', err);
+      } finally {
+        if (mounted) {
+          setIsLoadingVideo(false);
+        }
+      }
+    };
+
+    fetchSignedUrl();
+
+    return () => {
+      mounted = false;
+    };
+  }, [campaignId, videoUrl]);
 
   // Types de fichiers vidéo acceptés
   const acceptedFileTypes = [
@@ -150,13 +189,36 @@ const CampaignVideoUpload: React.FC<CampaignVideoUploadProps> = ({
       {/* Vidéo existante */}
       {videoUrl && !previewUrl && (
         <div className="relative rounded-lg overflow-hidden bg-black">
-          <video
-            src={videoUrl}
-            controls
-            className="w-full max-h-96 object-contain"
-          >
-            Votre navigateur ne supporte pas la lecture de vidéos.
-          </video>
+          {isLoadingVideo ? (
+            <div className="w-full h-96 flex items-center justify-center bg-gray-900">
+              <div className="text-center">
+                <VideoCameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-2 animate-pulse" />
+                <p className="text-gray-400 text-sm">
+                  Chargement de la vidéo...
+                </p>
+              </div>
+            </div>
+          ) : signedVideoUrl ? (
+            <video
+              src={signedVideoUrl}
+              controls
+              className="w-full max-h-96 object-contain"
+            >
+              Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+          ) : (
+            <div className="w-full h-96 flex items-center justify-center bg-gray-900">
+              <div className="text-center">
+                <VideoCameraIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">
+                  Vidéo de présentation existante
+                </p>
+                <p className="text-gray-500 text-xs mt-1">
+                  (Preview non disponible)
+                </p>
+              </div>
+            </div>
+          )}
           <div className="absolute top-2 right-2">
             <Button
               onClick={handleDeleteExisting}
