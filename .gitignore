@@ -61,5 +61,7 @@ coverage/
 # Backups (données sensibles de production)
 backups/
 *.sql
+# Mais autoriser les migrations Drizzle
+!apps/backend/drizzle/*.sql
 
 render-backup.yaml
