@@ -272,8 +272,16 @@ export default function CampaignForm({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <ModalContent>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      scrollBehavior="outside"
+      classNames={{
+        wrapper: 'overflow-y-auto',
+      }}
+    >
+      <ModalContent className="my-4">
         <ModalHeader>
           <h2 className="text-xl font-semibold text-gray-900">
             {campaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
