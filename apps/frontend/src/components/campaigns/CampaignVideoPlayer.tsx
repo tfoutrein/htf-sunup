@@ -29,6 +29,7 @@ const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   // Récupérer l'URL signée au chargement du composant
   useEffect(() => {
@@ -64,6 +65,54 @@ const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
       mounted = false;
     };
   }, [campaignId]);
+
+  // Générer le thumbnail à partir de la première frame de la vidéo
+  useEffect(() => {
+    if (!signedUrl || !showInModal) return;
+
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.src = signedUrl;
+    video.muted = true;
+    video.playsInline = true;
+
+    const generateThumbnail = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setThumbnail(thumbnailUrl);
+        }
+      } catch (error) {
+        console.error('Error generating thumbnail:', error);
+      } finally {
+        video.remove();
+      }
+    };
+
+    video.addEventListener('loadeddata', () => {
+      // Attendre un peu que la première frame soit bien chargée
+      video.currentTime = 0.1;
+    });
+
+    video.addEventListener('seeked', generateThumbnail);
+
+    video.addEventListener('error', () => {
+      console.error('Error loading video for thumbnail');
+      video.remove();
+    });
+
+    video.load();
+
+    return () => {
+      video.remove();
+    };
+  }, [signedUrl, showInModal]);
 
   const handleOpenModal = () => {
     if (showInModal) {
@@ -139,12 +188,22 @@ const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
           className={`relative group cursor-pointer rounded-lg overflow-hidden ${className}`}
           onClick={handleOpenModal}
         >
-          {/* Thumbnail - Premier frame de la vidéo ou icône */}
+          {/* Thumbnail - Vraie preview ou fond de couleur */}
           <div className="relative aspect-video bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+            {/* Image thumbnail si disponible */}
+            {thumbnail ? (
+              <img
+                src={thumbnail}
+                alt="Aperçu de la vidéo"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              /* Icône vidéo en arrière-plan si pas de thumbnail */
+              <VideoCameraIcon className="h-20 w-20 text-white/30 absolute" />
+            )}
 
-            {/* Icône vidéo en arrière-plan */}
-            <VideoCameraIcon className="h-20 w-20 text-white/30 absolute" />
+            {/* Overlay sombre */}
+            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
 
             {/* Bouton Play central */}
             <div className="relative z-10 transform group-hover:scale-110 transition-transform">
