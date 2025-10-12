@@ -50,6 +50,7 @@ databases:
     databaseName: htf_sunup_postgres
     user: htf_sunup_postgres_user
     plan: basic-256mb
+    previewPlan: basic-256mb
     region: oregon
     ipAllowList:
       - source: 0.0.0.0/0
