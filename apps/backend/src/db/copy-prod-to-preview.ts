@@ -104,8 +104,8 @@ async function copyProdToPreview() {
     const tableOrder = [
       'users',
       'campaigns',
+      'challenges', // ✅ AVANT actions (actions dépend de challenges)
       'actions',
-      'challenges',
       'campaign_bonus_config',
       'campaign_unlock_conditions',
       'campaign_validation_conditions',
