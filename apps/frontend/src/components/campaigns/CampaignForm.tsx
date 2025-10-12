@@ -308,7 +308,9 @@ export default function CampaignForm({
               </label>
               <CampaignVideoUpload
                 campaignId={campaign?.id}
-                videoUrl={campaign?.presentationVideoUrl}
+                videoUrl={
+                  shouldDeleteVideo ? null : campaign?.presentationVideoUrl
+                }
                 onVideoChange={(file) => {
                   setVideoFile(file);
                   setShouldDeleteVideo(false);
