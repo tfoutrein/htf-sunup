@@ -6,7 +6,7 @@ import { isAuthenticated, getUser } from '@/utils/auth';
 import { Campaign, Challenge, CampaignWithChallenges } from '@/types/campaigns';
 import { useCampaignWithChallenges } from '@/hooks/useCampaigns';
 import { Card, Button, Badge } from '@/components/ui';
-import { CampaignCalendar } from '@/components/campaigns';
+import { CampaignCalendar, CampaignVideoPlayer } from '@/components/campaigns';
 
 export default function CampaignDetailPage() {
   const router = useRouter();
@@ -141,6 +141,17 @@ export default function CampaignDetailPage() {
             </h1>
 
             <p className="text-gray-700 mb-4">{campaign?.description}</p>
+
+            {/* Vidéo de présentation */}
+            {campaign?.presentationVideoUrl && (
+              <div className="mb-6">
+                <CampaignVideoPlayer
+                  campaignId={campaign.id}
+                  campaignName={campaign.name}
+                  showInModal={true}
+                />
+              </div>
+            )}
 
             <div className="text-sm text-gray-600">
               Du{' '}

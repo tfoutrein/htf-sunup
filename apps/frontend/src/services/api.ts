@@ -136,6 +136,10 @@ export const API_ENDPOINTS = {
   CAMPAIGNS_ACTIVE: '/campaigns/active',
   CAMPAIGNS_BY_ID: (id: number) => `/campaigns/${id}`,
   CAMPAIGNS_WITH_CHALLENGES: (id: number) => `/campaigns/${id}/challenges`,
+  CAMPAIGNS_PRESENTATION_VIDEO: (id: number) =>
+    `/campaigns/${id}/presentation-video`,
+  CAMPAIGNS_PRESENTATION_VIDEO_SIGNED_URL: (id: number) =>
+    `/campaigns/${id}/presentation-video/signed-url`,
 
   // Challenges
   CHALLENGES: '/challenges',

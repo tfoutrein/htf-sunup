@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Campaign } from '@/types/campaigns';
-import { useCreateCampaign, useUpdateCampaign } from '@/hooks/useCampaigns';
+import {
+  useCreateCampaign,
+  useUpdateCampaign,
+  useUploadPresentationVideo,
+  useDeletePresentationVideo,
+} from '@/hooks/useCampaigns';
 import {
   useCreateUnlockConditions,
   useUnlockConditions,
@@ -12,6 +17,7 @@ import {
 import UnlockConditionsManager, {
   UnlockConditionInput,
 } from './UnlockConditionsManager';
+import CampaignVideoUpload from './CampaignVideoUpload';
 import {
   Card,
   Button,
@@ -48,6 +54,8 @@ export default function CampaignForm({
   const [unlockConditions, setUnlockConditions] = useState<
     UnlockConditionInput[]
   >([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [shouldDeleteVideo, setShouldDeleteVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // TanStack Query mutations
@@ -56,13 +64,18 @@ export default function CampaignForm({
   const createUnlockConditionsMutation = useCreateUnlockConditions();
   const updateUnlockConditionMutation = useUpdateUnlockCondition();
   const deleteUnlockConditionMutation = useDeleteUnlockCondition();
+  const uploadVideoMutation = useUploadPresentationVideo();
+  const deleteVideoMutation = useDeletePresentationVideo();
 
   // Charger les conditions existantes si mode édition
   const { data: existingConditions, isLoading: conditionsLoading } =
     useUnlockConditions(campaign?.id);
 
   const isLoading =
-    createCampaignMutation.isPending || updateCampaignMutation.isPending;
+    createCampaignMutation.isPending ||
+    updateCampaignMutation.isPending ||
+    uploadVideoMutation.isPending ||
+    deleteVideoMutation.isPending;
 
   useEffect(() => {
     if (campaign) {
@@ -73,6 +86,9 @@ export default function CampaignForm({
         endDate: campaign.endDate.split('T')[0],
         status: campaign.status,
       });
+      // Reset video state
+      setVideoFile(null);
+      setShouldDeleteVideo(false);
       // Charger les conditions existantes si disponibles
       if (existingConditions && existingConditions.length > 0) {
         setUnlockConditions(
@@ -95,6 +111,8 @@ export default function CampaignForm({
       });
       // Réinitialiser sans conditions
       setUnlockConditions([]);
+      setVideoFile(null);
+      setShouldDeleteVideo(false);
     }
     setError(null);
   }, [campaign, isOpen, existingConditions]);
@@ -183,6 +201,29 @@ export default function CampaignForm({
             })),
           });
         }
+
+        // Uploader la vidéo si fichier sélectionné
+        if (newCampaign?.id && videoFile) {
+          await uploadVideoMutation.mutateAsync({
+            campaignId: newCampaign.id,
+            file: videoFile,
+          });
+        }
+      }
+
+      // Gérer la vidéo en mode édition
+      if (campaign) {
+        // Supprimer la vidéo existante si demandé
+        if (shouldDeleteVideo && campaign.presentationVideoUrl) {
+          await deleteVideoMutation.mutateAsync(campaign.id);
+        }
+        // Uploader une nouvelle vidéo si fichier sélectionné
+        else if (videoFile) {
+          await uploadVideoMutation.mutateAsync({
+            campaignId: campaign.id,
+            file: videoFile,
+          });
+        }
       }
 
       onSuccess();
@@ -259,6 +300,28 @@ export default function CampaignForm({
               placeholder="Description de la campagne..."
               rows={3}
             />
+
+            {/* Vidéo de présentation */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Vidéo de présentation (optionnel)
+              </label>
+              <CampaignVideoUpload
+                campaignId={campaign?.id}
+                videoUrl={
+                  shouldDeleteVideo ? null : campaign?.presentationVideoUrl
+                }
+                onVideoChange={(file) => {
+                  setVideoFile(file);
+                  setShouldDeleteVideo(false);
+                }}
+                onDeleteExisting={() => {
+                  setShouldDeleteVideo(true);
+                  setVideoFile(null);
+                }}
+                disabled={isLoading}
+              />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

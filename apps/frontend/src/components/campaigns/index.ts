@@ -5,3 +5,5 @@ export { default as ChallengeForm } from './ChallengeForm';
 export { default as CampaignCalendar } from './CampaignCalendar';
 export { default as QuickChallengeForm } from './QuickChallengeForm';
 export { default as ActionForm } from './ActionForm';
+export { default as CampaignVideoUpload } from './CampaignVideoUpload';
+export { default as CampaignVideoPlayer } from './CampaignVideoPlayer';

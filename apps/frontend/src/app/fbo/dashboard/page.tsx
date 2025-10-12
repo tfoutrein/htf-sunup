@@ -44,6 +44,7 @@ import {
   StatisticsSection,
 } from '@/components/dashboard';
 import { CampaignValidationStatus } from '@/components/CampaignValidationStatus';
+import { CampaignVideoPlayer } from '@/components/campaigns';
 
 // Types et utilitaires
 import { Action } from '@/types/dashboard';
@@ -369,6 +370,17 @@ export default function FBODashboard() {
             <CampaignValidationStatus
               campaignId={activeCampaign.id}
               campaignName={activeCampaign.name}
+            />
+          </div>
+        )}
+
+        {/* Vidéo de présentation de la campagne */}
+        {activeCampaign?.presentationVideoUrl && (
+          <div className="mb-6 sm:mb-8">
+            <CampaignVideoPlayer
+              campaignId={activeCampaign.id}
+              campaignName={activeCampaign.name}
+              showInModal={true}
             />
           </div>
         )}

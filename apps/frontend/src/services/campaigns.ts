@@ -98,6 +98,64 @@ class CampaignService {
     }
   }
 
+  async uploadPresentationVideo(
+    campaignId: number,
+    file: File,
+  ): Promise<Campaign> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await ApiClient.post(
+      API_ENDPOINTS.CAMPAIGNS_PRESENTATION_VIDEO(campaignId),
+      formData,
+      true, // isFormData
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to upload presentation video: ${response.status} - ${errorText}`,
+      );
+    }
+
+    return response.json();
+  }
+
+  async deletePresentationVideo(campaignId: number): Promise<Campaign> {
+    const response = await ApiClient.delete(
+      API_ENDPOINTS.CAMPAIGNS_PRESENTATION_VIDEO(campaignId),
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to delete presentation video: ${response.status} - ${errorText}`,
+      );
+    }
+
+    return response.json();
+  }
+
+  async getPresentationVideoSignedUrl(
+    campaignId: number,
+  ): Promise<{ url: string } | null> {
+    try {
+      const response = await ApiClient.get(
+        API_ENDPOINTS.CAMPAIGNS_PRESENTATION_VIDEO_SIGNED_URL(campaignId),
+      );
+
+      if (!response.ok) {
+        console.error('Failed to get signed URL');
+        return null;
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
+  }
+
   // Challenges
   async getChallenges(
     campaignId?: number,

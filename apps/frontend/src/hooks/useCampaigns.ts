@@ -220,3 +220,68 @@ export function useDeleteCampaign() {
     },
   });
 }
+
+// Presentation Video Mutations
+export function useUploadPresentationVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ campaignId, file }: { campaignId: number; file: File }) =>
+      campaignService.uploadPresentationVideo(campaignId, file),
+    onSuccess: (updatedCampaign) => {
+      // Update the campaign in cache
+      queryClient.setQueryData(
+        campaignKeys.detail(updatedCampaign.id),
+        updatedCampaign,
+      );
+
+      // Update the campaign in lists cache
+      queryClient.setQueryData(
+        campaignKeys.lists(),
+        (old: Campaign[] | undefined) => {
+          if (!old) return [updatedCampaign];
+          return old.map((campaign) =>
+            campaign.id === updatedCampaign.id ? updatedCampaign : campaign,
+          );
+        },
+      );
+
+      // Invalidate active campaigns if needed
+      if (updatedCampaign.status === 'active') {
+        queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
+      }
+    },
+  });
+}
+
+export function useDeletePresentationVideo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (campaignId: number) =>
+      campaignService.deletePresentationVideo(campaignId),
+    onSuccess: (updatedCampaign) => {
+      // Update the campaign in cache
+      queryClient.setQueryData(
+        campaignKeys.detail(updatedCampaign.id),
+        updatedCampaign,
+      );
+
+      // Update the campaign in lists cache
+      queryClient.setQueryData(
+        campaignKeys.lists(),
+        (old: Campaign[] | undefined) => {
+          if (!old) return [updatedCampaign];
+          return old.map((campaign) =>
+            campaign.id === updatedCampaign.id ? updatedCampaign : campaign,
+          );
+        },
+      );
+
+      // Invalidate active campaigns if needed
+      if (updatedCampaign.status === 'active') {
+        queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
+      }
+    },
+  });
+}
