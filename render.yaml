@@ -34,7 +34,9 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: htf-sunup-postgres
+          property: connectionString
       - key: PORT
         sync: false
       - key: NODE_ENV
