@@ -31,7 +31,9 @@
     "db:migrate-proofs": "ts-node src/db/migrate-proofs.ts",
     "db:diagnose-production": "ts-node src/db/diagnose-production.ts",
     "db:fix-proofs-table": "ts-node src/db/fix-proofs-table.ts",
-    "render:fix-db": "node render-fix-database.js"
+    "render:fix-db": "node render-fix-database.js",
+    "preview:copy-prod": "ts-node src/db/copy-prod-to-preview.ts",
+    "preview:copy-prod:prod": "node dist/src/db/copy-prod-to-preview.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.837.0",
