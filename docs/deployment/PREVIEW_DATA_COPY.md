@@ -47,16 +47,16 @@ services:
         fromDatabase:
           name: htf-sunup-postgres
           property: connectionString
-      - key: PRODUCTION_DATABASE_URL
-        sync: false # ⚠️ NE PAS utiliser fromDatabase !
+      # PRODUCTION_DATABASE_URL n'est PAS dans le render.yaml
+      # Elle doit être ajoutée manuellement dans le Dashboard
     initialDeployHook: cd apps/backend && pnpm preview:copy-prod:prod
 ```
 
-⚠️ **IMPORTANT** : `PRODUCTION_DATABASE_URL` utilise `sync: false` car :
+⚠️ **IMPORTANT** : `PRODUCTION_DATABASE_URL` n'est **pas définie** dans le `render.yaml` car :
 
-- Avec `fromDatabase`, Render remplacerait automatiquement l'URL en preview
-- On copierait alors la preview vers elle-même !
-- Il faut configurer manuellement cette variable dans le Dashboard Render
+- Si on utilisait `fromDatabase`, Render remplacerait automatiquement l'URL en preview → on copierait la preview vers elle-même !
+- Si on utilisait `sync: false`, la variable ne serait pas transmise aux previews
+- **En ne la définissant PAS dans le yaml**, elle peut être ajoutée manuellement dans le Dashboard du service principal et sera **automatiquement héritée** par tous les previews
 
 ### Variables d'environnement
 
@@ -77,15 +77,21 @@ services:
 
 2. **Configurer dans le service principal** :
 
-   - Aller sur le service `htf-sunup-backend`
-   - Environment → Environment Variables
-   - Ajouter `PRODUCTION_DATABASE_URL` avec l'URL de prod
-   - Cette valeur sera utilisée par tous les previews
+   - Aller sur le service `htf-sunup-backend` : https://dashboard.render.com/web/srv-d1b8fsadbo4c73c9ieqg
+   - Onglet **"Environment"**
+   - Cliquer sur **"Add Environment Variable"**
+   - **Key** : `PRODUCTION_DATABASE_URL`
+   - **Value** : (Coller l'URL de la base de prod copiée à l'étape 1)
+   - ⚠️ **IMPORTANT** : **Ne PAS** cocher "Secret File" ni aucune restriction
+   - La variable sera automatiquement transmise aux previews (comportement par défaut)
+   - **Sauvegarder**
 
 3. **Vérification** :
-   - Les previews hériteront automatiquement de cette valeur
-   - Le script vérifiera que l'URL pointe bien vers la prod
-   - Un message d'erreur clair apparaîtra si mal configurée
+
+   - ✅ La variable sera **automatiquement héritée** par tous les previews (car non définie dans render.yaml)
+   - ✅ Le script vérifiera que l'URL pointe bien vers la prod
+   - ✅ Un message d'erreur clair apparaîtra si mal configurée
+   - ✅ Pas besoin de configuration par preview
 
 ⚠️ **Ne jamais committer cette URL dans Git** - elle contient des credentials !
 
