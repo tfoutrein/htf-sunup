@@ -1,0 +1,4 @@
+# Fichier de déclenchement de redéploiement preview
+# Ce fichier déclenche le hook initialDeployHook avec la copie des données de prod
+Timestamp: 2025-10-12T19:15:00Z
+
