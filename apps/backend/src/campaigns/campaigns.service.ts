@@ -308,4 +308,32 @@ export class CampaignsService {
 
     return updatedCampaign;
   }
+
+  // Obtenir une URL signée pour la vidéo de présentation (valide 1 heure)
+  async getPresentationVideoSignedUrl(
+    id: number,
+  ): Promise<{ url: string } | null> {
+    const campaign = await this.findOne(id);
+
+    if (!campaign.presentationVideoUrl) {
+      return null;
+    }
+
+    try {
+      // Extraire la clé du fichier depuis l'URL stockée
+      const key = this.storageService.extractKeyFromUrl(
+        campaign.presentationVideoUrl,
+      );
+      if (!key) {
+        throw new Error('Format URL invalide');
+      }
+
+      // Générer l'URL signée valide pendant 1 heure
+      const signedUrl = await this.storageService.getSignedUrl(key, 3600);
+      return { url: signedUrl };
+    } catch (error) {
+      console.error('Erreur génération URL signée vidéo:', error);
+      throw new BadRequestException("Impossible de générer l'URL de la vidéo");
+    }
+  }
 }

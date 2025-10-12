@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import {
   PlayIcon,
   XMarkIcon,
   VideoCameraIcon,
 } from '@heroicons/react/24/solid';
+import { campaignService } from '@/services/campaigns';
 
 export interface CampaignVideoPlayerProps {
-  videoUrl: string;
+  campaignId: number;
   campaignName?: string;
   showInModal?: boolean;
   autoPlay?: boolean;
@@ -17,7 +18,7 @@ export interface CampaignVideoPlayerProps {
 }
 
 const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
-  videoUrl,
+  campaignId,
   campaignName = 'Campagne',
   showInModal = false,
   autoPlay = false,
@@ -25,6 +26,44 @@ const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Récupérer l'URL signée au chargement du composant
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchSignedUrl = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result =
+          await campaignService.getPresentationVideoSignedUrl(campaignId);
+        if (mounted && result) {
+          setSignedUrl(result.url);
+        } else if (mounted) {
+          setError('Impossible de charger la vidéo');
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Error fetching signed URL:', err);
+          setError('Erreur lors du chargement de la vidéo');
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchSignedUrl();
+
+    return () => {
+      mounted = false;
+    };
+  }, [campaignId]);
 
   const handleOpenModal = () => {
     if (showInModal) {
@@ -42,20 +81,55 @@ const CampaignVideoPlayer: React.FC<CampaignVideoPlayerProps> = ({
     isFullscreen = false,
   }: {
     isFullscreen?: boolean;
-  }) => (
-    <video
-      controls
-      autoPlay={autoPlay || (isFullscreen && isPlaying)}
-      className={`w-full ${isFullscreen ? 'max-h-[80vh]' : 'max-h-96'} object-contain bg-black`}
-      onPlay={() => setIsPlaying(true)}
-      onPause={() => setIsPlaying(false)}
-    >
-      <source src={videoUrl} type="video/mp4" />
-      <source src={videoUrl} type="video/webm" />
-      <source src={videoUrl} type="video/quicktime" />
-      Votre navigateur ne supporte pas la lecture de vidéos.
-    </video>
-  );
+  }) => {
+    if (!signedUrl) return null;
+
+    return (
+      <video
+        controls
+        autoPlay={autoPlay || (isFullscreen && isPlaying)}
+        className={`w-full ${isFullscreen ? 'max-h-[80vh]' : 'max-h-96'} object-contain bg-black`}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+      >
+        <source src={signedUrl} type="video/mp4" />
+        <source src={signedUrl} type="video/webm" />
+        <source src={signedUrl} type="video/quicktime" />
+        Votre navigateur ne supporte pas la lecture de vidéos.
+      </video>
+    );
+  };
+
+  // États de chargement et d'erreur
+  if (isLoading) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg p-8 ${className}`}
+      >
+        <div className="text-center">
+          <VideoCameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-2 animate-pulse" />
+          <p className="text-gray-500 dark:text-gray-400">
+            Chargement de la vidéo...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg p-8 ${className}`}
+      >
+        <div className="text-center">
+          <XMarkIcon className="h-12 w-12 text-red-500 mx-auto mb-2" />
+          <p className="text-red-600 dark:text-red-400">
+            {error || 'Vidéo non disponible'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (showInModal) {
     return (

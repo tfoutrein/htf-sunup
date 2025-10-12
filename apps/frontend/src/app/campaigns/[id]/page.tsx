@@ -146,7 +146,7 @@ export default function CampaignDetailPage() {
             {campaign?.presentationVideoUrl && (
               <div className="mb-6">
                 <CampaignVideoPlayer
-                  videoUrl={campaign.presentationVideoUrl}
+                  campaignId={campaign.id}
                   campaignName={campaign.name}
                   showInModal={true}
                 />

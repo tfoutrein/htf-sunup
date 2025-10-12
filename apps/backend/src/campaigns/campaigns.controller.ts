@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -130,5 +131,28 @@ export class CampaignsController {
   @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
   deletePresentationVideo(@Param('id', ParseIntPipe) id: number) {
     return this.campaignsService.deletePresentationVideo(id);
+  }
+
+  @Get(':id/presentation-video/signed-url')
+  @ApiOperation({
+    summary: 'Obtenir une URL signée pour la vidéo de présentation (valide 1h)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'URL signée générée avec succès',
+    schema: {
+      properties: {
+        url: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Campagne ou vidéo non trouvée' })
+  async getPresentationVideoSignedUrl(@Param('id', ParseIntPipe) id: number) {
+    const result =
+      await this.campaignsService.getPresentationVideoSignedUrl(id);
+    if (!result) {
+      throw new NotFoundException('Aucune vidéo de présentation trouvée');
+    }
+    return result;
   }
 }

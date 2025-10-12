@@ -378,7 +378,7 @@ export default function FBODashboard() {
         {activeCampaign?.presentationVideoUrl && (
           <div className="mb-6 sm:mb-8">
             <CampaignVideoPlayer
-              videoUrl={activeCampaign.presentationVideoUrl}
+              campaignId={activeCampaign.id}
               campaignName={activeCampaign.name}
               showInModal={true}
             />

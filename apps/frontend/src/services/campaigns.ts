@@ -136,6 +136,26 @@ class CampaignService {
     return response.json();
   }
 
+  async getPresentationVideoSignedUrl(
+    campaignId: number,
+  ): Promise<{ url: string } | null> {
+    try {
+      const response = await ApiClient.get(
+        API_ENDPOINTS.CAMPAIGNS_PRESENTATION_VIDEO_SIGNED_URL(campaignId),
+      );
+
+      if (!response.ok) {
+        console.error('Failed to get signed URL');
+        return null;
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
+  }
+
   // Challenges
   async getChallenges(
     campaignId?: number,
