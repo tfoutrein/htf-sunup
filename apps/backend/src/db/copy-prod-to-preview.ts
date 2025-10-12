@@ -154,10 +154,7 @@ async function copyProdToPreview() {
         const rows = await prodSql`SELECT * FROM ${prodSql(tableName)}`;
 
         if (rows.length > 0) {
-          // Désactiver temporairement les triggers et contraintes
-          await previewSql`SET session_replication_role = replica`;
-
-          // Vider la table de preview
+          // Vider la table de preview (CASCADE gère les FK automatiquement)
           await previewSql`TRUNCATE ${previewSql(tableName)} CASCADE`;
 
           // Insérer les données par batch de 100
@@ -166,9 +163,6 @@ async function copyProdToPreview() {
             const batch = rows.slice(i, i + batchSize);
             await previewSql`INSERT INTO ${previewSql(tableName)} ${previewSql(batch)}`;
           }
-
-          // Réactiver les triggers et contraintes
-          await previewSql`SET session_replication_role = DEFAULT`;
 
           totalRows += rows.length;
           console.log(`   ✅ ${rows.length} lignes copiées`);
