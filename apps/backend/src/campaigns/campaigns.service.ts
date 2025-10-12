@@ -320,16 +320,30 @@ export class CampaignsService {
     }
 
     try {
-      // Extraire la clé du fichier depuis l'URL stockée
+      // Extraire la clé et le bucket du fichier depuis l'URL stockée
       const key = this.storageService.extractKeyFromUrl(
         campaign.presentationVideoUrl,
       );
-      if (!key) {
+      const bucket = this.storageService.extractBucketFromUrl(
+        campaign.presentationVideoUrl,
+      );
+
+      if (!key || !bucket) {
+        console.error(
+          'Invalid video URL format:',
+          campaign.presentationVideoUrl,
+        );
         throw new Error('Format URL invalide');
       }
 
-      // Générer l'URL signée valide pendant 1 heure
-      const signedUrl = await this.storageService.getSignedUrl(key, 3600);
+      console.log(`Generating signed URL for bucket: ${bucket}, key: ${key}`);
+
+      // Générer l'URL signée valide pendant 1 heure avec le bon bucket
+      const signedUrl = await this.storageService.getSignedUrl(
+        key,
+        3600,
+        bucket,
+      );
       return { url: signedUrl };
     } catch (error) {
       console.error('Erreur génération URL signée vidéo:', error);

@@ -42,9 +42,13 @@ export class StorageService {
     return `${url}/${this.bucketName}/${key}`;
   }
 
-  async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  async getSignedUrl(
+    key: string,
+    expiresIn: number = 3600,
+    bucketName?: string,
+  ): Promise<string> {
     const command = new GetObjectCommand({
-      Bucket: this.bucketName,
+      Bucket: bucketName || this.bucketName,
       Key: key,
     });
 
@@ -72,12 +76,51 @@ export class StorageService {
   }
 
   // Extract key from S3 URL
+  // Supports URLs in format: https://endpoint/bucket-name/key/path
   extractKeyFromUrl(url: string): string | null {
     try {
-      const urlParts = url.split(`/${this.bucketName}/`);
-      return urlParts.length > 1 ? urlParts[1] : null;
+      // Parse the URL
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname; // e.g., /happy-team-factory/campaign-videos/2/1760297427841.mov
+
+      // Remove leading slash and split by /
+      const parts = pathname.substring(1).split('/');
+
+      // First part is bucket name, rest is the key
+      if (parts.length < 2) {
+        console.error('Invalid S3 URL format:', url);
+        return null;
+      }
+
+      // Join all parts after the bucket name
+      const key = parts.slice(1).join('/');
+      return key;
     } catch (error) {
       console.error('Error extracting key from URL:', error);
+      return null;
+    }
+  }
+
+  // Extract bucket name from S3 URL
+  // Supports URLs in format: https://endpoint/bucket-name/key/path
+  extractBucketFromUrl(url: string): string | null {
+    try {
+      // Parse the URL
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname; // e.g., /happy-team-factory/campaign-videos/2/1760297427841.mov
+
+      // Remove leading slash and split by /
+      const parts = pathname.substring(1).split('/');
+
+      // First part is bucket name
+      if (parts.length < 1) {
+        console.error('Invalid S3 URL format:', url);
+        return null;
+      }
+
+      return parts[0];
+    } catch (error) {
+      console.error('Error extracting bucket from URL:', error);
       return null;
     }
   }
