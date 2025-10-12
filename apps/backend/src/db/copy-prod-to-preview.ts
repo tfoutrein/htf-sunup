@@ -45,6 +45,24 @@ async function copyProdToPreview() {
     process.exit(0);
   }
 
+  // Vérifier que les URLs sont différentes
+  if (previewDbUrl === prodDbUrl) {
+    console.error(
+      '❌ Erreur : DATABASE_URL et PRODUCTION_DATABASE_URL sont identiques !',
+    );
+    console.error('   Vous ne pouvez pas copier une base sur elle-même.');
+    console.error('');
+    console.error('💡 Solution :');
+    console.error(
+      '   1. Configurez PRODUCTION_DATABASE_URL avec sync: false dans render.yaml',
+    );
+    console.error(
+      '   2. Ajoutez manuellement la connection string de prod dans le Dashboard Render',
+    );
+    console.error('   3. Cette valeur sera héritée par tous les previews');
+    process.exit(1);
+  }
+
   console.log(`📊 Source: Base de production`);
   console.log(`🎯 Destination: Base de preview (${serviceName})\n`);
 

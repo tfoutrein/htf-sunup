@@ -48,11 +48,15 @@ services:
           name: htf-sunup-postgres
           property: connectionString
       - key: PRODUCTION_DATABASE_URL
-        fromDatabase:
-          name: htf-sunup-postgres # Pointe vers la prod
-          property: connectionString
+        sync: false # ⚠️ NE PAS utiliser fromDatabase !
     initialDeployHook: cd apps/backend && pnpm preview:copy-prod:prod
 ```
+
+⚠️ **IMPORTANT** : `PRODUCTION_DATABASE_URL` utilise `sync: false` car :
+
+- Avec `fromDatabase`, Render remplacerait automatiquement l'URL en preview
+- On copierait alors la preview vers elle-même !
+- Il faut configurer manuellement cette variable dans le Dashboard Render
 
 ### Variables d'environnement
 
@@ -60,6 +64,30 @@ services:
 | ------------------------- | ------------------ | ------------------ | --------------------------- |
 | `DATABASE_URL`            | Base de preview    | Base de production | Base de données cible       |
 | `PRODUCTION_DATABASE_URL` | Base de production | Base de production | Source des données à copier |
+
+### Configuration manuelle de PRODUCTION_DATABASE_URL
+
+**Cette variable DOIT être configurée manuellement** dans le Dashboard Render :
+
+1. **Récupérer l'URL de la base de production** :
+
+   - Aller sur le Dashboard Render
+   - Ouvrir la base de données `htf-sunup-postgres`
+   - Copier la "Internal Connection String" ou "External Connection String"
+
+2. **Configurer dans le service principal** :
+
+   - Aller sur le service `htf-sunup-backend`
+   - Environment → Environment Variables
+   - Ajouter `PRODUCTION_DATABASE_URL` avec l'URL de prod
+   - Cette valeur sera utilisée par tous les previews
+
+3. **Vérification** :
+   - Les previews hériteront automatiquement de cette valeur
+   - Le script vérifiera que l'URL pointe bien vers la prod
+   - Un message d'erreur clair apparaîtra si mal configurée
+
+⚠️ **Ne jamais committer cette URL dans Git** - elle contient des credentials !
 
 ## ⚠️ Considérations importantes
 

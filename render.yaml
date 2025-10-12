@@ -38,9 +38,7 @@ services:
           name: htf-sunup-postgres
           property: connectionString
       - key: PRODUCTION_DATABASE_URL
-        fromDatabase:
-          name: htf-sunup-postgres
-          property: connectionString
+        sync: false
       - key: PORT
         sync: false
       - key: NODE_ENV
