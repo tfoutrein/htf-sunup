@@ -36,7 +36,10 @@ export class StorageService {
 
     await this.s3.send(command);
 
-    return `${this.configService.get<string>('S3_ENDPOINT')}/${this.bucketName}/${key}`;
+    const endpoint = this.configService.get<string>('S3_ENDPOINT');
+    // Ensure URL has protocol
+    const url = endpoint.startsWith('http') ? endpoint : `https://${endpoint}`;
+    return `${url}/${this.bucketName}/${key}`;
   }
 
   async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
