@@ -43,6 +43,7 @@ export const campaigns = pgTable('campaigns', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
+  presentationVideoUrl: varchar('presentation_video_url', { length: 500 }),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft' | 'active' | 'completed' | 'cancelled'

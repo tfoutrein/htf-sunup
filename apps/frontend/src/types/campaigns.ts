@@ -2,6 +2,7 @@ export interface Campaign {
   id: number;
   name: string;
   description: string;
+  presentationVideoUrl?: string | null;
   startDate: string;
   endDate: string;
   status: 'draft' | 'active' | 'completed' | 'cancelled';

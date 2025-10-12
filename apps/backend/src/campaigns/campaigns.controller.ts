@@ -9,12 +9,16 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CampaignsService } from './campaigns.service';
@@ -90,5 +94,41 @@ export class CampaignsController {
   @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
   archive(@Param('id', ParseIntPipe) id: number) {
     return this.campaignsService.archive(id);
+  }
+
+  @Post(':id/presentation-video')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Uploader une vidéo de présentation pour une campagne',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Vidéo de présentation uploadée avec succès',
+  })
+  @ApiResponse({ status: 400, description: 'Fichier manquant ou invalide' })
+  @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
+  uploadPresentationVideo(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.campaignsService.uploadPresentationVideo(id, file);
+  }
+
+  @Delete(':id/presentation-video')
+  @ApiOperation({
+    summary: "Supprimer la vidéo de présentation d'une campagne",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Vidéo de présentation supprimée avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Aucune vidéo de présentation à supprimer',
+  })
+  @ApiResponse({ status: 404, description: 'Campagne non trouvée' })
+  deletePresentationVideo(@Param('id', ParseIntPipe) id: number) {
+    return this.campaignsService.deletePresentationVideo(id);
   }
 }

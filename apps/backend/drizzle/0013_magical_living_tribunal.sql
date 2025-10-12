@@ -1,0 +1,1 @@
+ALTER TABLE "campaigns" ADD COLUMN "presentation_video_url" varchar(500);
