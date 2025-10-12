@@ -1,45 +1,58 @@
+version: '1'
 previews:
   generation: automatic
   expireAfterDays: 1
 services:
-  # Backend API
   - type: web
     name: htf-sunup-backend
     runtime: node
-    plan: free
+    repo: https://github.com/tfoutrein/htf-sunup
+    plan: starter
+    envVars:
+      - key: FACEBOOK_CALLBACK_URL
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: PASSWORD_SALT_ROUNDS
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        sync: false
+      - key: NODE_ENV
+        sync: false
+    region: oregon
     buildCommand: cd apps/backend && pnpm install && pnpm build
     startCommand: cd apps/backend && pnpm start:prod
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-      - key: FRONTEND_URL
-        value: https://htf-sunup-frontend.vercel.app
-      - key: CORS_ORIGIN
-        value: https://htf-sunup-frontend.vercel.app
-      - key: JWT_SECRET
-        generateValue: true
-      - key: PASSWORD_SALT_ROUNDS
-        value: '12'
-      - key: DATABASE_URL
-        fromDatabase:
-          name: htf-sunup-postgres
-          property: connectionString
-      - key: S3_ENDPOINT
-        value: https://b2y8.par5.idrivee2-11.com
-      - key: S3_REGION
-        value: eu-west-1
-      - key: S3_ACCESS_KEY_ID
-        value: PBL16uf72p6Ohufxizs5
-      - key: S3_SECRET_ACCESS_KEY
-        value: CZ4kHYSS2HWIyKMf0VvRXDmJPdYAl47QJf4tGkze
-      - key: S3_BUCKET_NAME
-        value: htf-sunup-storage
     healthCheckPath: /api/health
+    autoDeployTrigger: commit
 
 databases:
   - name: htf-sunup-postgres
-    plan: free
-    databaseName: htf_sunup_production
-    user: htf_sunup_user
+    databaseName: htf_sunup_postgres
+    user: htf_sunup_postgres_user
+    plan: basic-256mb
+    region: oregon
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    postgresMajorVersion: '16'
+    diskSizeGB: 1

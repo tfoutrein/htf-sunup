@@ -61,3 +61,5 @@ coverage/
 # Backups (données sensibles de production)
 backups/
 *.sql
+
+render-backup.yaml
