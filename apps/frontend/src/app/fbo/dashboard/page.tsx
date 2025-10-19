@@ -133,6 +133,7 @@ export default function FBODashboard() {
   const [bonusProofFiles, setBonusProofFiles] = useState<ProofFile[]>([]);
   const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
   const [earningsAccordionOpen, setEarningsAccordionOpen] = useState(false);
+  const [earningsInfoModalOpen, setEarningsInfoModalOpen] = useState(false);
 
   // Modal states
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -414,11 +415,20 @@ export default function FBODashboard() {
                   <p className="text-orange-700 font-semibold text-sm sm:text-base mb-2">
                     📋 Règle importante
                   </p>
-                  <p className="text-orange-600 text-sm">
+                  <p className="text-orange-600 text-sm mb-3">
                     Les défis et les bonus ne sont disponibles que pendant les
                     campagnes actives. Chaque nouvelle campagne démarre avec une
                     cagnotte à 0€.
                   </p>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    onPress={() => setEarningsInfoModalOpen(true)}
+                    className="text-xs"
+                  >
+                    💡 En savoir plus sur les cagnottes
+                  </Button>
                 </div>
                 <p className="text-gray-500 text-sm sm:text-base">
                   Les nouvelles campagnes arriveront bientôt ! ☀️
@@ -850,6 +860,129 @@ export default function FBODashboard() {
           userBadges={userBadges}
         />
       </div>
+
+      {/* Modal d'information sur les cagnottes */}
+      <Modal
+        isOpen={earningsInfoModalOpen}
+        onClose={() => setEarningsInfoModalOpen(false)}
+        size="lg"
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <CurrencyEuroIcon className="w-6 h-6 text-purple-600" />
+              <h2 className="text-xl font-bold text-gray-900">
+                Comment fonctionnent les cagnottes ?
+              </h2>
+            </div>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">✅</div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">
+                    Ton travail n'est jamais perdu !
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    Toutes tes cagnottes sont conservées et liées à leur
+                    campagne respective. Quand une campagne se termine, tes
+                    gains restent enregistrés.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span>🎯</span>
+                Principe des cagnottes par campagne
+              </h3>
+
+              <div className="space-y-2 text-sm text-gray-700">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">1.</span>
+                  <p>
+                    <strong>Chaque campagne = Une nouvelle cagnotte</strong>
+                    <br />
+                    Quand une campagne démarre, ta cagnotte repart à 0€ pour
+                    cette nouvelle campagne.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">2.</span>
+                  <p>
+                    <strong>Gains uniquement pendant la campagne</strong>
+                    <br />
+                    Tu peux gagner de l'argent uniquement quand une campagne est
+                    active. Pas de campagne = pas de défis ni de bonus
+                    disponibles.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">3.</span>
+                  <p>
+                    <strong>Cagnotte visible dans le header</strong>
+                    <br />
+                    Quand une campagne est active, tu vois ta cagnotte en haut
+                    de la page. Sans campagne active, la cagnotte est masquée
+                    pour éviter toute confusion.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">4.</span>
+                  <p>
+                    <strong>Validation en fin de campagne</strong>
+                    <br />À la fin de chaque campagne, ton manager valide ta
+                    cagnotte. Une fois validée, elle est comptabilisée pour le
+                    versement.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💡</div>
+                <div>
+                  <h3 className="font-semibold text-purple-900 mb-1">
+                    Exemple pratique
+                  </h3>
+                  <p className="text-sm text-purple-800">
+                    <strong>Campagne Été 2024</strong> : Tu as gagné 150€
+                    <br />
+                    <strong>Campagne Automne 2024</strong> : Tu repars à 0€ et
+                    tu gagnes 200€
+                    <br />
+                    <strong>Total sur l'année</strong> : 150€ + 200€ = 350€
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-green-800">
+                <CheckCircleIcon className="w-5 h-5" />
+                <p className="text-sm font-medium">
+                  En résumé : Chaque campagne est une nouvelle opportunité de
+                  gagner, et toutes tes cagnottes sont conservées !
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="primary"
+              onPress={() => setEarningsInfoModalOpen(false)}
+            >
+              J'ai compris
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de completion d'action */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
