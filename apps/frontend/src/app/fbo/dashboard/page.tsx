@@ -132,6 +132,7 @@ export default function FBODashboard() {
   const [actionProofFiles, setActionProofFiles] = useState<ProofFile[]>([]);
   const [bonusProofFiles, setBonusProofFiles] = useState<ProofFile[]>([]);
   const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
+  const [earningsAccordionOpen, setEarningsAccordionOpen] = useState(false);
 
   // Modal states
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -364,16 +365,6 @@ export default function FBODashboard() {
           challengeActions={challengeActions}
           userActions={userActions}
         />
-
-        {/* Section détaillée de la cagnotte */}
-        {activeCampaign && (
-          <div className="mb-6 sm:mb-8">
-            <CampaignEarningsBreakdown
-              earningsData={earningsData}
-              campaignName={activeCampaign.name}
-            />
-          </div>
-        )}
 
         {/* Statut de validation de campagne */}
         {activeCampaign && (
@@ -793,6 +784,59 @@ export default function FBODashboard() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Détails de la cagnotte - Accordéon fermé par défaut */}
+        {activeCampaign && (
+          <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+            <CardBody className="p-0">
+              <div
+                className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                onClick={() => setEarningsAccordionOpen(!earningsAccordionOpen)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <CurrencyEuroIcon className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Détails de ma cagnotte
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <span className="text-purple-600 font-semibold">
+                            {earningsData.totalEarnings.toFixed(2)}€
+                          </span>
+                          au total
+                        </span>
+                        <span>•</span>
+                        <span className="truncate max-w-[150px]">
+                          {activeCampaign.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {earningsAccordionOpen ? (
+                      <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronRightIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {earningsAccordionOpen && (
+                <div className="p-4 sm:p-6 pt-0 border-t border-gray-100">
+                  <CampaignEarningsBreakdown
+                    earningsData={earningsData}
+                    campaignName={activeCampaign.name}
+                  />
                 </div>
               )}
             </CardBody>
