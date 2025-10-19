@@ -46,10 +46,13 @@ export const useUnseenAppVersions = () => {
 };
 
 // Hook pour récupérer la dernière version non vue
-export const useLatestUnseenAppVersion = () => {
+export const useLatestUnseenAppVersion = (enabled = true) => {
   return useQuery({
     queryKey: appVersionKeys.unseenLatest(),
     queryFn: appVersionsService.getLatestUnseenVersion,
+    enabled,
+    retry: false, // Ne pas retry en cas d'erreur 401
+    staleTime: 5 * 60 * 1000, // 5 minutes - éviter les requêtes répétées
   });
 };
 
