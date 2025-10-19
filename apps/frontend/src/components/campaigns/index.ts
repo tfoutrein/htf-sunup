@@ -7,3 +7,5 @@ export { default as QuickChallengeForm } from './QuickChallengeForm';
 export { default as ActionForm } from './ActionForm';
 export { default as CampaignVideoUpload } from './CampaignVideoUpload';
 export { default as CampaignVideoPlayer } from './CampaignVideoPlayer';
+export { default as CampaignDetailsModal } from './CampaignDetailsModal';
+export { default as CampaignDetailsAccordion } from './CampaignDetailsAccordion';

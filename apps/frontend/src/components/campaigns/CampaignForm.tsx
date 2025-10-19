@@ -29,6 +29,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Switch,
 } from '@/components/ui';
 
 interface CampaignFormProps {
@@ -50,6 +51,7 @@ export default function CampaignForm({
     startDate: '',
     endDate: '',
     status: 'draft' as Campaign['status'],
+    bonusesEnabled: true, // Par défaut, les bonus sont activés
   });
   const [unlockConditions, setUnlockConditions] = useState<
     UnlockConditionInput[]
@@ -85,6 +87,7 @@ export default function CampaignForm({
         startDate: campaign.startDate.split('T')[0],
         endDate: campaign.endDate.split('T')[0],
         status: campaign.status,
+        bonusesEnabled: campaign.bonusesEnabled ?? true, // Par défaut true si undefined
       });
       // Reset video state
       setVideoFile(null);
@@ -108,6 +111,7 @@ export default function CampaignForm({
         startDate: '',
         endDate: '',
         status: 'draft',
+        bonusesEnabled: true,
       });
       // Réinitialiser sans conditions
       setUnlockConditions([]);
@@ -331,29 +335,77 @@ export default function CampaignForm({
               />
             </div>
 
+            {/* Activation des bonus quotidiens */}
+            <Card className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-2xl">💰</span>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Bonus quotidiens
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {formData.bonusesEnabled
+                      ? 'Les FBO peuvent déclarer des bonus (paniers, parrainages)'
+                      : 'Seuls les défis quotidiens seront disponibles'}
+                  </p>
+                </div>
+                <Switch
+                  isSelected={formData.bonusesEnabled}
+                  onValueChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      bonusesEnabled: checked,
+                    }))
+                  }
+                  color="warning"
+                  size="lg"
+                  aria-label="Activer ou désactiver les bonus quotidiens"
+                  classNames={{
+                    wrapper: 'group-data-[selected=true]:bg-amber-500',
+                  }}
+                >
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    {formData.bonusesEnabled ? 'Activés' : 'Désactivés'}
+                  </span>
+                </Switch>
+              </div>
+            </Card>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="campaign-start-date"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Date de début *
                 </label>
                 <Input
+                  id="campaign-start-date"
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => handleStartDateChange(e.target.value)}
                   required
+                  aria-label="Date de début de la campagne"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="campaign-end-date"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Date de fin *
                 </label>
                 <Input
+                  id="campaign-end-date"
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
                   min={getMinEndDate()}
                   required
+                  aria-label="Date de fin de la campagne"
                 />
               </div>
             </div>
@@ -378,6 +430,7 @@ export default function CampaignForm({
                 { value: 'completed', label: 'Terminée' },
                 { value: 'cancelled', label: 'Annulée' },
               ]}
+              aria-label="Statut de la campagne"
             />
 
             {error && (

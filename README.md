@@ -9,8 +9,10 @@ Application de gestion des défis quotidiens pour la Happy Team Factory - Équip
 ### Architecture des Défis
 
 - **Campagnes** : Périodes définies (ex: "Les défis de l'été") contenant plusieurs défis
+  - 🆕 **Bonus optionnels** : Les managers peuvent choisir d'activer/désactiver les bonus quotidiens par campagne
 - **Défis quotidiens** : Ensemble de 1 à 6 actions à réaliser chaque jour
 - **Actions** : Tâches individuelles (Vente, Recrutement, Réseaux sociaux)
+- **Bonus quotidiens** (optionnel) : Parrainages et dépôts de panier
 
 ### Rôles Utilisateurs
 
