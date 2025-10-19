@@ -71,27 +71,31 @@ export const DashboardHeader = ({
             )}
           </div>
 
-          {/* Gains totaux - Desktop uniquement dans le header */}
-          <EarningsDisplay
-            earningsData={earningsData}
-            isMoneyUpdated={isMoneyUpdated}
-            showConfetti={showConfetti}
-            isMobile={false}
-            triggerTestAnimation={triggerTestAnimation}
-            campaignName={activeCampaign?.name}
-          />
+          {/* Gains totaux - Desktop uniquement dans le header (si campagne active) */}
+          {activeCampaign && (
+            <EarningsDisplay
+              earningsData={earningsData}
+              isMoneyUpdated={isMoneyUpdated}
+              showConfetti={showConfetti}
+              isMobile={false}
+              triggerTestAnimation={triggerTestAnimation}
+              campaignName={activeCampaign.name}
+            />
+          )}
         </div>
       </div>
 
-      {/* Mobile Sticky Cagnotte - Version mobile séparée */}
-      <EarningsDisplay
-        earningsData={earningsData}
-        isMoneyUpdated={isMoneyUpdated}
-        showConfetti={showConfetti}
-        isMobile={true}
-        triggerTestAnimation={triggerTestAnimation}
-        campaignName={activeCampaign?.name}
-      />
+      {/* Mobile Sticky Cagnotte - Version mobile séparée (si campagne active) */}
+      {activeCampaign && (
+        <EarningsDisplay
+          earningsData={earningsData}
+          isMoneyUpdated={isMoneyUpdated}
+          showConfetti={showConfetti}
+          isMobile={true}
+          triggerTestAnimation={triggerTestAnimation}
+          campaignName={activeCampaign.name}
+        />
+      )}
     </>
   );
 };
