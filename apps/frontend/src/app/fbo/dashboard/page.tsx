@@ -941,6 +941,18 @@ export default function FBODashboard() {
                     versement.
                   </p>
                 </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="text-orange-600 font-bold">⚠️</span>
+                  <p>
+                    <strong>Conditions de déblocage obligatoires</strong>
+                    <br />
+                    Les gains ne peuvent être touchés que si les conditions de
+                    la campagne sont respectées (présence aux formations,
+                    objectifs atteints, etc.). Ces conditions sont définies au
+                    début de chaque campagne.
+                  </p>
+                </div>
               </div>
             </div>
 
