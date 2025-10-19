@@ -8,6 +8,8 @@ import { DatabaseService } from '../db/database.module';
 import {
   userActions,
   actions,
+  challenges,
+  campaigns,
   type UserAction,
   type NewUserAction,
 } from '../db/schema';
@@ -91,7 +93,49 @@ export class UserActionsService {
     id: number,
     updateUserActionDto: UpdateUserActionDto,
   ): Promise<UserAction> {
-    await this.findOne(id); // Vérifier que l'action existe
+    // Si l'action est marquée comme complétée, vérifier que la campagne est active
+    if (updateUserActionDto.completed) {
+      // 1. Récupérer le userAction avec son challenge et sa campagne
+      const [existingUserAction] = await this.db.db
+        .select({
+          userAction: userActions,
+          challenge: challenges,
+          campaign: campaigns,
+        })
+        .from(userActions)
+        .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
+        .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+        .where(eq(userActions.id, id));
+
+      if (!existingUserAction) {
+        throw new NotFoundException(
+          `Action utilisateur avec l'ID ${id} non trouvée`,
+        );
+      }
+
+      const { campaign } = existingUserAction;
+
+      // 2. Vérifier que la campagne est active
+      if (campaign.status !== 'active' || campaign.archived) {
+        throw new BadRequestException(
+          "Impossible de compléter une action : la campagne n'est pas active",
+        );
+      }
+
+      // 3. Vérifier que la date est dans la période de campagne
+      const today = new Date();
+      const startDate = new Date(campaign.startDate);
+      const endDate = new Date(campaign.endDate);
+
+      if (today < startDate || today > endDate) {
+        throw new BadRequestException(
+          'Impossible de compléter une action en dehors de la période de campagne',
+        );
+      }
+    } else {
+      // Juste vérifier que l'action existe
+      await this.findOne(id);
+    }
 
     const updateData = {
       ...updateUserActionDto,

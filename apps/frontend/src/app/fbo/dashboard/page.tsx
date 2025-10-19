@@ -42,6 +42,7 @@ import {
   ProgressSection,
   NextChallengesSection,
   StatisticsSection,
+  CampaignEarningsBreakdown,
 } from '@/components/dashboard';
 import { CampaignValidationStatus } from '@/components/CampaignValidationStatus';
 import { CampaignVideoPlayer } from '@/components/campaigns';
@@ -364,6 +365,16 @@ export default function FBODashboard() {
           userActions={userActions}
         />
 
+        {/* Section détaillée de la cagnotte */}
+        {activeCampaign && (
+          <div className="mb-6 sm:mb-8">
+            <CampaignEarningsBreakdown
+              earningsData={earningsData}
+              campaignName={activeCampaign.name}
+            />
+          </div>
+        )}
+
         {/* Statut de validation de campagne */}
         {activeCampaign && (
           <div className="mb-6 sm:mb-8">
@@ -400,12 +411,24 @@ export default function FBODashboard() {
         {/* Grille des actions */}
         <div className="grid gap-6 sm:gap-8 mb-6 sm:mb-8">
           {!activeCampaign ? (
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-300">
               <CardBody className="text-center p-6 sm:p-8">
-                <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
+                <div className="bg-orange-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-4xl sm:text-5xl">⚠️</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-orange-600 mb-3">
                   Aucune campagne active
                 </h3>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                  <p className="text-orange-700 font-semibold text-sm sm:text-base mb-2">
+                    📋 Règle importante
+                  </p>
+                  <p className="text-orange-600 text-sm">
+                    Les défis et les bonus ne sont disponibles que pendant les
+                    campagnes actives. Chaque nouvelle campagne démarre avec une
+                    cagnotte à 0€.
+                  </p>
+                </div>
                 <p className="text-gray-500 text-sm sm:text-base">
                   Les nouvelles campagnes arriveront bientôt ! ☀️
                 </p>

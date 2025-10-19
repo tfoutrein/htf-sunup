@@ -239,6 +239,45 @@ export class ActionsService {
     userActionId: number,
     proofUrl?: string,
   ): Promise<UserAction> {
+    // 1. Récupérer le userAction avec son challenge et sa campagne
+    const [existingUserAction] = await this.db.db
+      .select({
+        userAction: userActions,
+        challenge: challenges,
+        campaign: campaigns,
+      })
+      .from(userActions)
+      .innerJoin(challenges, eq(userActions.challengeId, challenges.id))
+      .innerJoin(campaigns, eq(challenges.campaignId, campaigns.id))
+      .where(eq(userActions.id, userActionId));
+
+    if (!existingUserAction) {
+      throw new NotFoundException(
+        `UserAction avec l'ID ${userActionId} non trouvée`,
+      );
+    }
+
+    const { campaign } = existingUserAction;
+
+    // 2. Vérifier que la campagne est active
+    if (campaign.status !== 'active' || campaign.archived) {
+      throw new BadRequestException(
+        "Impossible de compléter une action : la campagne n'est pas active",
+      );
+    }
+
+    // 3. Vérifier que la date est dans la période de campagne
+    const today = new Date();
+    const startDate = new Date(campaign.startDate);
+    const endDate = new Date(campaign.endDate);
+
+    if (today < startDate || today > endDate) {
+      throw new BadRequestException(
+        'Impossible de compléter une action en dehors de la période de campagne',
+      );
+    }
+
+    // 4. Compléter l'action
     const [userAction] = await this.db.db
       .update(userActions)
       .set({
@@ -249,12 +288,6 @@ export class ActionsService {
       })
       .where(eq(userActions.id, userActionId))
       .returning();
-
-    if (!userAction) {
-      throw new NotFoundException(
-        `UserAction avec l'ID ${userActionId} non trouvée`,
-      );
-    }
 
     return userAction;
   }
