@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Card, CardBody, Badge } from '@/components/ui';
-import { Accordion, AccordionItem } from '@heroui/react';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { Card, CardBody } from '@/components/ui';
+import {
+  ChartBarIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/24/outline';
 import { UserStreaks, UserBadge, CampaignStats } from '@/types/dashboard';
 import { StreaksCard } from './StreaksCard';
 import { BadgesCard } from './BadgesCard';
@@ -25,48 +28,50 @@ export const StatisticsSection = ({
   }
 
   return (
-    <div className="mt-8 sm:mt-12">
-      <Accordion
-        variant="splitted"
-        className="px-0"
-        selectedKeys={isOpen ? ['statistics'] : []}
-        onSelectionChange={(keys) => {
-          setIsOpen(Array.from(keys).includes('statistics'));
-        }}
-      >
-        <AccordionItem
-          key="statistics"
-          aria-label="Mes Statistiques"
-          title={
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
+    <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+      <CardBody className="p-0">
+        {/* Header cliquable */}
+        <div
+          className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50/50 transition-colors"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg">
                 <ChartBarIcon className="w-6 h-6 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-800">
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
                   Mes Statistiques
-                </span>
+                </h3>
               </div>
             </div>
-          }
-          className="bg-white/80 backdrop-blur-sm shadow-lg border-0 rounded-lg"
-          classNames={{
-            trigger: 'py-4 px-6 hover:bg-gray-50/50 transition-colors',
-            content: 'px-6 pb-6',
-            title: 'text-left w-full',
-            indicator: 'text-medium',
-          }}
-        >
-          <div className="space-y-6">
-            {/* Cartes de Streaks et Badges */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <StreaksCard userStreaks={userStreaks} />
-              <BadgesCard userBadges={userBadges} />
+            <div className="flex items-center gap-2">
+              {isOpen ? (
+                <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+              ) : (
+                <ChevronRightIcon className="w-5 h-5 text-gray-500" />
+              )}
             </div>
-
-            {/* Carte de Progression détaillée */}
-            <ProgressCard campaignStats={campaignStats} />
           </div>
-        </AccordionItem>
-      </Accordion>
-    </div>
+        </div>
+
+        {/* Contenu dépliable */}
+        {isOpen && (
+          <div className="p-4 sm:p-6 pt-0 border-t border-gray-100">
+            <div className="space-y-6">
+              {/* Cartes de Streaks et Badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <StreaksCard userStreaks={userStreaks} />
+                <BadgesCard userBadges={userBadges} />
+              </div>
+
+              {/* Carte de Progression détaillée */}
+              <ProgressCard campaignStats={campaignStats} />
+            </div>
+          </div>
+        )}
+      </CardBody>
+    </Card>
   );
 };

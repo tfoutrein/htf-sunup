@@ -53,6 +53,7 @@ interface Campaign {
   name: string;
   startDate: string;
   endDate: string;
+  bonusesEnabled: boolean;
 }
 
 interface Action {
@@ -559,15 +560,26 @@ export default function MemberDetailsPage() {
                               <span className="font-medium text-gray-900 truncate">
                                 {campaign.name}
                               </span>
-                              <span className="text-xs text-gray-600">
-                                {new Date(
-                                  campaign.startDate,
-                                ).toLocaleDateString('fr-FR')}{' '}
-                                -{' '}
-                                {new Date(campaign.endDate).toLocaleDateString(
-                                  'fr-FR',
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <span>
+                                  {new Date(
+                                    campaign.startDate,
+                                  ).toLocaleDateString('fr-FR')}{' '}
+                                  -{' '}
+                                  {new Date(campaign.endDate).toLocaleDateString(
+                                    'fr-FR',
+                                  )}
+                                </span>
+                                {campaign.bonusesEnabled ? (
+                                  <span className="text-amber-600 font-semibold">
+                                    • Bonus ✓
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">
+                                    • Pas de bonus
+                                  </span>
                                 )}
-                              </span>
+                              </div>
                             </div>
                             <Badge
                               variant="flat"

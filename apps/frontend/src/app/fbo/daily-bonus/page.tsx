@@ -9,7 +9,7 @@ import {
   ListBulletIcon,
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import { useActiveCampaigns } from '@/hooks';
+import { useActiveCampaigns, useBonusesEnabled } from '@/hooks';
 import {
   DailyBonusForm,
   DailyBonusList,
@@ -25,6 +25,7 @@ export default function DailyBonusPage() {
   const { data: activeCampaigns = [], isLoading: campaignsLoading } =
     useActiveCampaigns();
   const activeCampaign = activeCampaigns[0] || null;
+  const { bonusesEnabled } = useBonusesEnabled();
 
   if (campaignsLoading) {
     return (
@@ -90,6 +91,57 @@ export default function DailyBonusPage() {
               <p className="text-gray-500">
                 Il n'y a actuellement aucune campagne active pour créer des
                 bonus quotidiens.
+              </p>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Vérifier si les bonus sont désactivés pour cette campagne
+  if (!bonusesEnabled) {
+    return (
+      <div className="min-h-screen relative p-4">
+        {/* Aurora Background */}
+        <div className="absolute inset-0 z-0">
+          <AuroraBackground
+            colorStops={['#FFA500', '#FFD700', '#FF6347']}
+            blend={0.4}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/80 z-10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-20">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="light"
+              startContent={<ArrowLeftIcon className="w-4 h-4" />}
+              onPress={() => router.push('/fbo/dashboard')}
+            >
+              Retour au dashboard
+            </Button>
+          </div>
+
+          <Card className="bg-white/80 backdrop-blur-sm">
+            <CardBody className="text-center p-8">
+              <CurrencyEuroIcon className="w-16 h-16 text-amber-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Bonus non disponibles
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Les bonus quotidiens ne sont pas activés pour la campagne{' '}
+                <span className="font-semibold text-amber-600">
+                  {activeCampaign.name}
+                </span>
+                .
+              </p>
+              <p className="text-sm text-gray-400">
+                Concentre-toi sur les défis quotidiens pour gagner des euros ! 🚀
               </p>
             </CardBody>
           </Card>

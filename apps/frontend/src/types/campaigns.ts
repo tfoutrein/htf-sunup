@@ -6,6 +6,7 @@ export interface Campaign {
   startDate: string;
   endDate: string;
   status: 'draft' | 'active' | 'completed' | 'cancelled';
+  bonusesEnabled: boolean; // Permet de désactiver les bonus quotidiens pour cette campagne
   createdBy: number;
   createdAt: string;
   updatedAt: string;

@@ -34,7 +34,7 @@ import { ApiClient, API_ENDPOINTS } from '@/services/api';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardAnimations } from '@/hooks/useDashboardAnimations';
 import { useBonusActions } from '@/hooks/useBonusActions';
-import { useBonusProofs, useMultipleProofUpload } from '@/hooks';
+import { useBonusProofs, useMultipleProofUpload, useBonusesEnabled } from '@/hooks';
 
 // Composants
 import {
@@ -45,7 +45,7 @@ import {
   CampaignEarningsBreakdown,
 } from '@/components/dashboard';
 import { CampaignValidationStatus } from '@/components/CampaignValidationStatus';
-import { CampaignVideoPlayer } from '@/components/campaigns';
+import { CampaignVideoPlayer, CampaignDetailsAccordion } from '@/components/campaigns';
 
 // Types et utilitaires
 import { Action } from '@/types/dashboard';
@@ -83,6 +83,9 @@ export default function FBODashboard() {
     refetchUserActions,
     refetchGamificationData,
   } = useDashboardData();
+
+  // Hook pour vérifier si les bonus sont activés
+  const { bonusesEnabled } = useBonusesEnabled();
 
   // Hooks pour les animations
   const {
@@ -156,6 +159,7 @@ export default function FBODashboard() {
     };
 
     enrichBonuses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myBonuses]);
 
   // Hook pour l'upload multiple de preuves
@@ -376,6 +380,7 @@ export default function FBODashboard() {
             />
           </div>
         )}
+
 
         {/* Vidéo de présentation de la campagne */}
         {activeCampaign?.presentationVideoUrl && (
@@ -644,8 +649,8 @@ export default function FBODashboard() {
           )}
         </div>
 
-        {/* Section Bonus */}
-        {activeCampaign && (
+        {/* Section Bonus - Masquée si les bonus sont désactivés pour la campagne */}
+        {activeCampaign && bonusesEnabled && (
           <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
             <CardBody className="p-4 sm:p-6">
               <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
@@ -697,8 +702,8 @@ export default function FBODashboard() {
           </Card>
         )}
 
-        {/* Section Accordéon Bonus Déclarés */}
-        {activeCampaign && (
+        {/* Section Accordéon Bonus Déclarés - Masquée si les bonus sont désactivés */}
+        {activeCampaign && bonusesEnabled && (
           <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
             <CardBody className="p-0">
               <div
@@ -798,6 +803,14 @@ export default function FBODashboard() {
               )}
             </CardBody>
           </Card>
+        )}
+
+        {/* Détails de la campagne - Accordéon */}
+        {activeCampaign && (
+          <CampaignDetailsAccordion
+            campaign={activeCampaign}
+            challengeCount={campaignStats?.stats?.totalChallenges || 0}
+          />
         )}
 
         {/* Détails de la cagnotte - Accordéon fermé par défaut */}
@@ -1182,6 +1195,7 @@ export default function FBODashboard() {
         title="Preuves du bonus"
         onNavigate={bonusProofsHook.navigateProof}
       />
+
     </div>
   );
 }
