@@ -9,14 +9,12 @@ module.exports = {
       {
         isolatedModules: true,
         tsconfig: {
-          compilerOptions: {
-            module: 'commonjs',
-            target: 'es2020',
-            allowSyntheticDefaultImports: true,
-            experimentalDecorators: true,
-            emitDecoratorMetadata: true,
-            skipLibCheck: true,
-          },
+          module: 'commonjs',
+          target: 'es2020',
+          allowSyntheticDefaultImports: true,
+          experimentalDecorators: true,
+          emitDecoratorMetadata: true,
+          skipLibCheck: true,
         },
       },
     ],
