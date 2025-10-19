@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsOptional,
   IsEnum,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -36,4 +37,14 @@ export class CreateCampaignDto {
   @IsEnum(['draft', 'active', 'completed', 'cancelled'])
   @IsOptional()
   status?: string;
+
+  @ApiProperty({
+    description:
+      'Permet de désactiver les bonus quotidiens pour cette campagne',
+    default: true,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  bonusesEnabled?: boolean;
 }

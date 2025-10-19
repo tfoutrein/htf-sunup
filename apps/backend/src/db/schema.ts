@@ -48,6 +48,7 @@ export const campaigns = pgTable('campaigns', {
   endDate: date('end_date').notNull(),
   status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft' | 'active' | 'completed' | 'cancelled'
   archived: boolean('archived').notNull().default(false), // true si archivée
+  bonusesEnabled: boolean('bonuses_enabled').notNull().default(true), // Permet de désactiver les bonus quotidiens pour une campagne
   createdBy: integer('created_by')
     .notNull()
     .references(() => users.id),
