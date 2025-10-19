@@ -42,6 +42,7 @@ import {
   ProgressSection,
   NextChallengesSection,
   StatisticsSection,
+  CampaignEarningsBreakdown,
 } from '@/components/dashboard';
 import { CampaignValidationStatus } from '@/components/CampaignValidationStatus';
 import { CampaignVideoPlayer } from '@/components/campaigns';
@@ -131,6 +132,7 @@ export default function FBODashboard() {
   const [actionProofFiles, setActionProofFiles] = useState<ProofFile[]>([]);
   const [bonusProofFiles, setBonusProofFiles] = useState<ProofFile[]>([]);
   const [enrichedBonuses, setEnrichedBonuses] = useState<any[]>([]);
+  const [earningsAccordionOpen, setEarningsAccordionOpen] = useState(false);
 
   // Modal states
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -400,12 +402,24 @@ export default function FBODashboard() {
         {/* Grille des actions */}
         <div className="grid gap-6 sm:gap-8 mb-6 sm:mb-8">
           {!activeCampaign ? (
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-300">
               <CardBody className="text-center p-6 sm:p-8">
-                <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
+                <div className="bg-orange-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-4xl sm:text-5xl">⚠️</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-orange-600 mb-3">
                   Aucune campagne active
                 </h3>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                  <p className="text-orange-700 font-semibold text-sm sm:text-base mb-2">
+                    📋 Règle importante
+                  </p>
+                  <p className="text-orange-600 text-sm">
+                    Les défis et les bonus ne sont disponibles que pendant les
+                    campagnes actives. Chaque nouvelle campagne démarre avec une
+                    cagnotte à 0€.
+                  </p>
+                </div>
                 <p className="text-gray-500 text-sm sm:text-base">
                   Les nouvelles campagnes arriveront bientôt ! ☀️
                 </p>
@@ -770,6 +784,59 @@ export default function FBODashboard() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Détails de la cagnotte - Accordéon fermé par défaut */}
+        {activeCampaign && (
+          <Card className="mb-8 sm:mb-10 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+            <CardBody className="p-0">
+              <div
+                className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                onClick={() => setEarningsAccordionOpen(!earningsAccordionOpen)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <CurrencyEuroIcon className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Détails de ma cagnotte
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <span className="text-purple-600 font-semibold">
+                            {earningsData.totalEarnings.toFixed(2)}€
+                          </span>
+                          au total
+                        </span>
+                        <span>•</span>
+                        <span className="truncate max-w-[150px]">
+                          {activeCampaign.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {earningsAccordionOpen ? (
+                      <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronRightIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {earningsAccordionOpen && (
+                <div className="p-4 sm:p-6 pt-0 border-t border-gray-100">
+                  <CampaignEarningsBreakdown
+                    earningsData={earningsData}
+                    campaignName={activeCampaign.name}
+                  />
                 </div>
               )}
             </CardBody>

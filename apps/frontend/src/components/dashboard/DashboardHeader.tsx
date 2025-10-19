@@ -53,6 +53,14 @@ export const DashboardHeader = ({
             <p className="text-orange-100 text-sm sm:text-base">
               {activeCampaign ? activeCampaign.name : "Tes défis t'attendent"}
             </p>
+            {activeCampaign && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <span className="animate-pulse">🟢</span>
+                  Campagne Active
+                </span>
+              </div>
+            )}
             {todayChallenge && (
               <div className="flex items-center gap-2 mt-1">
                 <CalendarDaysIcon className="w-4 h-4" />
@@ -70,6 +78,7 @@ export const DashboardHeader = ({
             showConfetti={showConfetti}
             isMobile={false}
             triggerTestAnimation={triggerTestAnimation}
+            campaignName={activeCampaign?.name}
           />
         </div>
       </div>
@@ -81,6 +90,7 @@ export const DashboardHeader = ({
         showConfetti={showConfetti}
         isMobile={true}
         triggerTestAnimation={triggerTestAnimation}
+        campaignName={activeCampaign?.name}
       />
     </>
   );

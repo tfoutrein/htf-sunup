@@ -11,6 +11,7 @@ interface EarningsDisplayProps {
   showConfetti: boolean;
   isMobile?: boolean;
   triggerTestAnimation: () => void;
+  campaignName?: string;
 }
 
 interface ConfettiPortalProps {
@@ -61,6 +62,7 @@ export const EarningsDisplay = ({
   showConfetti,
   isMobile = false,
   triggerTestAnimation,
+  campaignName,
 }: EarningsDisplayProps) => {
   const {
     campaignEarnings,
@@ -150,6 +152,12 @@ export const EarningsDisplay = ({
             </div>
 
             <div className="text-orange-100 text-xs text-center">
+              {campaignName && (
+                <div className="text-white font-semibold mb-1 flex items-center justify-center gap-1">
+                  <span>🎯</span>
+                  <span className="truncate max-w-[180px]">{campaignName}</span>
+                </div>
+              )}
               <div className="flex justify-center gap-4">
                 <span>Défis: {campaignEarnings.toFixed(2)}€</span>
                 {totalBonusAmount > 0 && (
@@ -224,6 +232,12 @@ export const EarningsDisplay = ({
             </div>
 
             <div className="text-orange-100 text-xs space-y-0.5">
+              {campaignName && (
+                <div className="text-white font-semibold mb-1 flex items-center gap-1">
+                  <span>🎯</span>
+                  <span className="truncate max-w-[200px]">{campaignName}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Défis: {campaignEarnings.toFixed(2)}€</span>
                 {totalBonusAmount > 0 && (
