@@ -6,14 +6,26 @@ import {
   useLatestUnseenAppVersion,
 } from './useAppVersions';
 import type { AppVersion } from '../types/app-versions';
+import { getToken } from '../utils/auth';
 
 export const useReleaseNotesPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<AppVersion | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const markVersionSeenMutation = useMarkVersionSeen();
 
+  // Vérifier l'authentification avant de faire la requête
+  useEffect(() => {
+    setIsAuthenticated(!!getToken());
+  }, []);
+
   // Utiliser l'API réelle pour récupérer la dernière version non vue
-  const { data: unseenVersion, isLoading, error } = useLatestUnseenAppVersion();
+  // Ne charger que si l'utilisateur est authentifié
+  const {
+    data: unseenVersion,
+    isLoading,
+    error,
+  } = useLatestUnseenAppVersion(isAuthenticated);
 
   useEffect(() => {
     const checkForNewVersion = () => {
