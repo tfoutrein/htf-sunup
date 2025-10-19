@@ -53,6 +53,13 @@ export class DailyBonusService {
       );
     }
 
+    // Vérifier que les bonus sont activés pour cette campagne
+    if (!campaign.bonusesEnabled) {
+      throw new BadRequestException(
+        'Les bonus quotidiens ne sont pas autorisés pour cette campagne',
+      );
+    }
+
     if (campaign.status !== 'active' || campaign.archived) {
       throw new BadRequestException("La campagne n'est pas active");
     }
